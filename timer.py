@@ -1,9 +1,7 @@
-from typing import Callable
-
 import pygame as pg
 
 class Timer:
-    def __init__(self, length: int, function: Callable[..., any], auto_start: bool, loop: bool) -> None:
+    def __init__(self, length: int, function: callable, auto_start: bool, loop: bool) -> None:
         self.length = length
         self.function = function
         self.auto_start = auto_start
