@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 import pygame as pg
-pg.init()
 import numpy as np
 
 from settings import *
@@ -29,8 +28,7 @@ class Player(pg.sprite.Sprite):
         physics_engine: PhysicsEngine,
 
         inventory: Inventory
-    ) -> None:
-
+    ):
         super().__init__(*sprite_groups)
         self.frames = frames
         self.frame_index = 0
@@ -52,7 +50,7 @@ class Player(pg.sprite.Sprite):
         self.item_holding = 'pickaxe' # just for testing purposes, normally self.inventory[self.inv_index]
         
         self.direction = pg.Vector2()
-        self.speed = 600
+        self.speed = 200
         self.gravity = 1200
         self.jump_height = 350
         

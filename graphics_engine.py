@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     import numpy as np
     
 import pygame as pg
-pg.init()
 from os import walk
 from os.path import join
 import math
@@ -27,8 +26,7 @@ class GraphicsEngine:
         proc_gen: ProcGen, 
         sprite_manager: SpriteManager,
         chunk_manager: ChunkManager
-    ) -> None:
-
+    ):
         self.screen = screen
         self.camera = camera
         self.camera_offset = camera.offset

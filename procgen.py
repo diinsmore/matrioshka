@@ -1,17 +1,16 @@
 import pygame as pg
-pg.init()
 import numpy as np
 import noise
 import random
 
-from settings import *
+from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH
 from sprites import *
 from timer import Timer
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 
 class ProcGen:
-    def __init__(self) -> None:
+    def __init__(self):
         self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
         self.height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
         self.biome_order = self.order_biomes()
@@ -21,8 +20,6 @@ class ProcGen:
         self.generate_terrain()
     
     def get_tile_data(self) -> dict[str, int]:
-        # TODO: add a hardness value for mining
-
         # give each tile a unique number to store in the tile map when it appears
         id_data = {}
         for index, tile in enumerate(TILES):

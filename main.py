@@ -1,14 +1,13 @@
 import pygame as pg
-pg.init()
 import sys
-from os.path import join
 
 from settings import RES, FPS
 from engine import Engine
 
 class Main:
-    def __init__(self) -> None:
-        pg.display.set_caption('?')
+    def __init__(self):
+        pg.init()
+        pg.display.set_caption('matrioshka')
         self.running = True 
         self.screen = pg.display.set_mode(RES)
         self.clock = pg.time.Clock()

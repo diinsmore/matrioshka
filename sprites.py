@@ -1,5 +1,4 @@
 import pygame as pg
-pg.init()
 from random import randint, choice
 from math import sin
 
@@ -12,13 +11,13 @@ class Sprite(pg.sprite.Sprite):
         image: dict[str, dict[str, pg.Surface]], 
         z: dict[str, int],  
         sprite_groups: list[pg.sprite.Group]
-    ) -> None:
-
+    ):
         super().__init__(*sprite_groups)
         self.image = image
         self.rect = self.image.get_rect(topleft = coords)
         self.z = z # layer to render on
 
+# nature
 class Cloud(Sprite):
     def __init__(
         self, 
@@ -28,8 +27,7 @@ class Cloud(Sprite):
         speed: int,
         player_x: int,
         sprite_groups: list[pg.sprite.Group], 
-    ) -> None: 
-
+    ):
         super().__init__(coords, image, z, *sprite_groups)
         # associated sprite groups
         self.all_sprites = sprites
@@ -71,7 +69,31 @@ class Tree(Sprite):
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group]
-    ) -> None:
-    
+    ):
         super().__init__(coords, image, z, *sprite_groups)
         self.strength = 50 # chopped down when <= 0
+
+
+# machinery
+class Furnace(Sprite):
+    def __init__(
+        self, 
+        coords: pg.Vector2, 
+        image: dict[str, dict[str, pg.Surface]],
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group]
+    ):
+        super().__init__(coords, image, z, *sprite_groups)
+        self.recipe = {'stone': 3}
+        self.valid_inputs = {
+            'smelting': ['copper', 'iron', 'silver', 'gold'],
+            'fuel': ['wood', 'coal']
+        }
+        self.max_capacity = {'smelting': 100, 'fuel': 50} 
+        self.placed = False 
+
+    def make(self) -> None:
+        pass
+
+    def smelt(self) -> None:
+        pass

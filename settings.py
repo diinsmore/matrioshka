@@ -15,10 +15,20 @@ Z_LAYERS = {
     'player': 3,
 }
 
-TILES = [
-    'air', 'dirt', 'stone', 'sandstone', 'ice', 'coal', 'obsidian', 'hellstone',
-    'copper', 'iron', 'silver', 'gold'
-]
+TILES = {
+    'air': {'hardness': 0},
+    'dirt': {'hardness': 1},
+    'stone': {'hardness': 6},
+    'sandstone': {'hardness': 3}, 
+    'ice': {'hardness': 2},
+    'coal': {'hardness': 7}, 
+    'obsidian': {'hardness': 10},
+    'hellstone': {'hardness': 9},
+    'copper': {'ore': True, 'hardness': 3},
+    'iron': {'ore': True, 'hardness': 8},
+    'silver': {'ore': True, 'hardness': 5},
+    'gold': {'ore': True, 'hardness': 4},
+}
 
 # ordered from left-right
 # since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world

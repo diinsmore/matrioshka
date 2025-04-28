@@ -1,5 +1,4 @@
 import pygame as pg
-
 from settings import RES, MAP_SIZE, TILE_SIZE
 
 class Camera:

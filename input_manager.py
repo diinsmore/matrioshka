@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from physics_engine import PhysicsEngine
     from sprite_manager import SpriteManager
+    from ui import UI
     from player import Player
 
 import pygame as pg
-
 from settings import TILE_SIZE
 
 class InputManager:
@@ -14,11 +14,12 @@ class InputManager:
         self, 
         physics_engine: PhysicsEngine, 
         sprite_manager: SpriteManager, 
+        ui: UI,
         camera_offset: pg.Vector2
-    ) -> None:
-
+    ):
         self.physics_engine = physics_engine
         self.sprite_manager = sprite_manager
+        self.ui = ui
         self.camera_offset = camera_offset
 
         self.mouse_coords = pg.Vector2()
@@ -47,6 +48,9 @@ class InputManager:
         
         if keys[pg.K_RSHIFT]:
             player.inventory.expand = not player.inventory.expand
+
+        if keys[pg.K_c]:
+            self.ui.craft_window.open = not self.ui.craft_window.open
 
         # select an inventory item by index number 
         # only applies to the top row (first 10)

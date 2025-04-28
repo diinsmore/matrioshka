@@ -4,13 +4,12 @@ if TYPE_CHECKING:
     import numpy as np
     
 import pygame as pg
-pg.init()
 import math
 
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE
 
 class PhysicsEngine:
-    def __init__(self, tile_map: np.ndarray, tile_data: dict[str, dict[str, any]]) -> None:
+    def __init__(self, tile_map: np.ndarray, tile_data: dict[str, dict[str, any]]):
         self.tile_map = tile_map
         self.tile_data = tile_data 
         
@@ -143,5 +142,6 @@ class PhysicsEngine:
         sprite.direction.y = 0
                                   
     def jump(self, sprite: pg.sprite.Sprite) -> None:
-        sprite.direction.y -= sprite.jump_height
-        sprite.state = 'jumping'
+        #if sprite.grounded:
+            sprite.direction.y -= sprite.jump_height
+            sprite.state = 'jumping'

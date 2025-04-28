@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 class Inventory:
-    def __init__(self) -> None:
+    def __init__(self):
         self.data = defaultdict(int)
 
         self.slots = 50

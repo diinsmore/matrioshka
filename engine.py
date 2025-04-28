@@ -1,5 +1,4 @@
 import pygame as pg
-pg.init()
 from os.path import join
 
 from settings import Z_LAYERS, MAP_SIZE
@@ -16,28 +15,32 @@ from input_manager import InputManager
 from ui import UI
 
 class Engine:
-    def __init__(self, screen: pg.Surface) -> None:
+    def __init__(self, screen: pg.Surface):
         self.proc_gen = ProcGen()
         tile_map = self.proc_gen.tile_map
         tile_data = self.proc_gen.tile_data
 
         self.physics_engine = PhysicsEngine(tile_map, tile_data)
 
-        self.camera = Camera() # added later
+        self.camera = Camera()
         
         asset_manager = AssetManager(tile_data)
+
         self.sprite_manager = SpriteManager( 
             asset_manager, 
             tile_map, 
             tile_data, 
             self.physics_engine.collision_map
         )
-        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.camera.offset)
-        self.chunk_manager = ChunkManager(self.camera.offset)
-        
+
         self.inv = Inventory()
 
         ui = UI(screen, self.camera.offset, asset_manager, self.inv)
+
+        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, ui, self.camera.offset)
+        
+        self.chunk_manager = ChunkManager(self.camera.offset)
+        
         self.graphics_engine = GraphicsEngine(
             screen,
             self.camera,

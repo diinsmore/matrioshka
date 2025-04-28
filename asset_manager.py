@@ -5,11 +5,11 @@ from os.path import join
 from settings import BIOMES
 
 class AssetManager:
-    def __init__(self, tile_data: dict[str, dict[str, any]]) -> None:
+    def __init__(self, tile_data: dict[str, dict[str, any]]):
         self.assets = {
             'graphics': {
                 'clouds': self.load_folder(join('..', 'graphics', 'weather', 'clouds')),
-                'walls': self.load_folder(join('..', 'graphics',  'backgrounds', 'walls'))
+                'walls': self.load_folder(join('..', 'graphics',  'backgrounds', 'walls')),
             },
         
             'fonts': {
@@ -23,18 +23,20 @@ class AssetManager:
                 'inv bg': 'lightsteelblue4'
             }
         }
+        self.tile_data = tile_data
         self.load_biome_graphics()
-        self.load_tile_graphics(tile_data)
+        self.load_tile_graphics(self.tile_data)
 
-    def load_image(self, dir_path: str) -> pg.Surface:
+    @staticmethod
+    def load_image(dir_path: str) -> pg.Surface:
         return pg.image.load(dir_path).convert_alpha()
 
     def load_folder(self, dir_path: str) -> dict[str, pg.Surface]:
         images = {}
         for path, _, files in walk(dir_path):    
-            for name in files:
-                key = name.split('.')[0] # not reassigning 'name' because it needs the file extension when passed to load_image() below
-                images[int(key) if key.isnumeric() else key] = self.load_image(join(path, name))
+            for file_name in files:
+                key = file_name.split('.')[0] # not reassigning 'file_name' because it needs the file extension when passed to load_image()
+                images[int(key) if key.isnumeric() else key] = self.load_image(join(path, file_name))
 
         return images
  
@@ -60,7 +62,7 @@ class AssetManager:
         for biome in BIOMES:
             self.assets['graphics'][biome] = {
                 'landscape': self.load_image(join('..', 'graphics', 'backgrounds', f'{biome} landscape.png')), 
-                'underground': self.load_image(join('..', 'graphics', 'backgrounds', f'{biome} underground.png')), 
+                'underground': self.load_image(join('..', 'graphics', 'backgrounds', f'{biome} underground.png'))
             }
             
             if biome in ('forest', 'taiga', 'desert'):

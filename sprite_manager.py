@@ -5,7 +5,6 @@ if TYPE_CHECKING:
     import numpy as np
 
 import pygame as pg
-pg.init()
 from os.path import join
 
 from settings import TILE_SIZE
@@ -18,8 +17,7 @@ class SpriteManager:
         tile_map: np.ndarray,
         tile_data: dict[str, dict[str, any]],
         collision_map: dict[tuple[int, int], pg.Rect]
-    ) -> None:
-
+    ):
         self.asset_manager = asset_manager
         self.tile_map = tile_map
         self.tile_data = tile_data
@@ -27,6 +25,7 @@ class SpriteManager:
 
         self.all_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
+        self.mech_sprites = pg.sprite.Group() 
 
     def mining(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_map: callable) -> None:
         if isinstance(sprite, Player): 
