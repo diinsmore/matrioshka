@@ -57,7 +57,7 @@ class InputManager:
         # TODO: add arrow key navigation
         for key in self.num_keys:
             if keys[key]:
-                self.player.inventory.index = self.key_map[key]
+                player.inventory.index = self.key_map[key]
                 break
                 
     def get_key_held(self, player: Player, dt: float) -> None:
