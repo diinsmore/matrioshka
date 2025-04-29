@@ -9,9 +9,9 @@ import math
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE
 
 class PhysicsEngine:
-    def __init__(self, tile_map: np.ndarray, tile_data: dict[str, dict[str, any]]):
+    def __init__(self, tile_map: np.ndarray, tile_id_map: dict[str, dict[str, any]]):
         self.tile_map = tile_map
-        self.tile_data = tile_data 
+        self.tile_id_map = tile_id_map 
         
         self.world_edge_right = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
         self.world_edge_bottom = MAP_SIZE[1] * TILE_SIZE
@@ -51,7 +51,7 @@ class PhysicsEngine:
         '''precompute rects with the coordinates of solid tiles'''
         for x in range(MAP_SIZE[0]):
             for y in range(MAP_SIZE[1]):
-                if self.tile_map[x, y] != self.tile_data['air']['id']: 
+                if self.tile_map[x, y] != self.tile_id_map['air'] : 
                     cell_coords = (x // CELL_SIZE, y // CELL_SIZE)
                     if cell_coords not in self.collision_map:
                         self.collision_map[cell_coords] = []  
@@ -121,11 +121,12 @@ class PhysicsEngine:
             # also check if the tile above the player's head is air
             above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2])
 
-            return all(tile_id == self.tile_data['air']['id'] for tile_id in above_tiles)
+            return all(tile_id == self.tile_id_map['air']  for tile_id in above_tiles)
 
         return False
 
-    def tile_collision_y(self, sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
+    @staticmethod
+    def tile_collision_y(sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
         if direction == 'up': 
             sprite.rect.top = tile.bottom
         else:
@@ -140,8 +141,9 @@ class PhysicsEngine:
                 sprite.state = 'idle'
 
         sprite.direction.y = 0
-                                  
-    def jump(self, sprite: pg.sprite.Sprite) -> None:
+    
+    @staticmethod
+    def jump(sprite: pg.sprite.Sprite) -> None:
         #if sprite.grounded:
             sprite.direction.y -= sprite.jump_height
             sprite.state = 'jumping'

@@ -2,10 +2,10 @@ import pygame as pg
 from os import walk
 from os.path import join
 
-from settings import BIOMES
+from settings import BIOMES, TILES
 
 class AssetManager:
-    def __init__(self, tile_data: dict[str, dict[str, any]]):
+    def __init__(self, tile_id_map: dict[str, dict[str, any]]):
         self.assets = {
             'graphics': {
                 'clouds': self.load_folder(join('..', 'graphics', 'weather', 'clouds')),
@@ -23,9 +23,9 @@ class AssetManager:
                 'inv bg': 'lightsteelblue4'
             }
         }
-        self.tile_data = tile_data
+        self.tile_id_map = tile_id_map
         self.load_biome_graphics()
-        self.load_tile_graphics(self.tile_data)
+        self.load_tile_graphics(self.tile_id_map)
 
     @staticmethod
     def load_image(dir_path: str) -> pg.Surface:
@@ -68,7 +68,7 @@ class AssetManager:
             if biome in ('forest', 'taiga', 'desert'):
                 self.assets['graphics'][biome]['trees'] = self.load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
 
-    def load_tile_graphics(self, tile_data) -> None:
-        for tile, data in tile_data.items():
+    def load_tile_graphics(self, tile_id_map) -> None:
+        for tile in TILES.keys():
             if tile != 'air':
-                data['graphic'] = self.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
+                self.assets['graphics'][tile] = self.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))

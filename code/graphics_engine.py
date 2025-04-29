@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from procgen import ProcGen
     from sprite_manager import SpriteManager
     from chunk_manager import ChunkManager
-    import numpy as np
     
 import pygame as pg
 from os import walk
@@ -37,7 +36,7 @@ class GraphicsEngine:
         self.chunk_manager = chunk_manager
 
         self.tile_map = proc_gen.tile_map
-        self.tile_data = proc_gen.tile_data
+        self.tile_id_map = proc_gen.tile_id_map
         self.biome_order = proc_gen.biome_order
 
         self.all_sprites = sprite_manager.all_sprites
@@ -103,14 +102,14 @@ class GraphicsEngine:
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
                 if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] \
-                and self.tile_map[x, y] != self.tile_data['air']['id']:
+                and self.tile_map[x, y] != self.tile_id_map['air']:
                     # match the tile to its graphic
-                    for tile in self.tile_data.keys():
-                        if self.tile_data[tile]['id'] == self.tile_map[x, y]:
+                    for tile in self.tile_id_map.keys():
+                        if self.tile_id_map[tile]  == self.tile_map[x, y]:
                             # convert from tile to pixel coordinates
                             px_x = (x * TILE_SIZE) - self.camera_offset.x
                             px_y = (y * TILE_SIZE) - self.camera_offset.y 
-                            self.screen.blit(self.tile_data[tile]['graphic'], (px_x, px_y))
+                            self.screen.blit(self.graphics[tile], (px_x, px_y))
 
 
     # sprites

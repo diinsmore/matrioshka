@@ -1,7 +1,7 @@
 import pygame as pg
 
 class Timer:
-    def __init__(self, length: int, function: callable, auto_start: bool, loop: bool) -> None:
+    def __init__(self, length: int, function: callable, auto_start: bool, loop: bool):
         self.length = length
         self.function = function
         self.auto_start = auto_start
@@ -27,6 +27,7 @@ class Timer:
             self.start()
 
     def update(self):
-        time = pg.time.get_ticks()
-        if self.running and time - self.start_time >= self.length: # timer has expired
-            self.end()
+        if self.running:
+            time = pg.time.get_ticks()
+            if time - self.start_time >= self.length: # expired
+                self.end()

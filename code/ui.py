@@ -197,7 +197,7 @@ class MouseGrid:
                     pg.draw.rect(cell_surf, (255, 255, 255, 20), (0, 0, TILE_SIZE, TILE_SIZE), 1) # position (0, 0) is relative to the Surface's topleft corner
                     cell_rect = cell_surf.get_rect(topleft = (topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)))
                     self.screen.blit(cell_surf, cell_rect)
-        print(left_click)
+        
     def get_grid_coords(self, width: int, height: int, mouse_coords: tuple[int, int]) -> pg.Vector2:
         '''align the grid with the tile map and return its topleft point'''
         width, height = width // 2, height // 2

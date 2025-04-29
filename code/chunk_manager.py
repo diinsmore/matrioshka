@@ -10,7 +10,8 @@ class ChunkManager:
     def __init__(self, camera_offset: pg.Vector2) -> None:
         self.camera_offset = camera_offset
 
-    def get_chunk(self, topleft_x: int, topleft_y: int) -> list[tuple[int, int]]:
+    @staticmethod
+    def get_chunk(topleft_x: int, topleft_y: int) -> list[tuple[int, int]]:
         '''divide the map into chunks of tiles to render as needed'''
         chunk_coords = []
         for x in range(CHUNK_SIZE):

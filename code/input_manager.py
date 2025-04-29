@@ -102,7 +102,10 @@ class InputManager:
                 player.frame_index = 0
     
     def activate_mouse_action(self, player: Player, update_map: callable) -> None:
-        match player.item_holding:
+        # ignore the item's material if specified
+        item_holding = player.item_holding.split()[1] if ' ' in player.item_holding else player.item_holding
+        # once more items are added, this should probably be divided into categories to avoid a colossal switch statement
+        match item_holding:
             case 'pickaxe':
                  self.sprite_manager.mining(player, self.tile_coords, update_map)
 

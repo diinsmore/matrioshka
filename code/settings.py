@@ -17,17 +17,17 @@ Z_LAYERS = {
 
 TILES = {
     'air': {'hardness': 0},
-    'dirt': {'hardness': 1},
-    'stone': {'hardness': 6},
-    'sandstone': {'hardness': 3}, 
-    'ice': {'hardness': 2},
-    'coal': {'hardness': 7}, 
-    'obsidian': {'hardness': 10},
-    'hellstone': {'hardness': 9},
-    'copper': {'ore': True, 'hardness': 3},
-    'iron': {'ore': True, 'hardness': 8},
-    'silver': {'ore': True, 'hardness': 5},
-    'gold': {'ore': True, 'hardness': 4},
+    'dirt': {'hardness': 10},
+    'stone': {'hardness': 45},
+    'sandstone': {'hardness': 30}, 
+    'ice': {'hardness': 20},
+    'coal': {'hardness': 50}, 
+    'obsidian': {'hardness': 100},
+    'hellstone': {'hardness': 90},
+    'copper': {'ore': True, 'hardness': 35},
+    'iron': {'ore': True, 'hardness': 75},
+    'silver': {'ore': True, 'hardness': 55},
+    'gold': {'ore': True, 'hardness': 60},
 }
 
 # ordered from left-right
@@ -75,4 +75,15 @@ BIOMES = {
         'tile probs': {'hellstone': 7, 'obsidian': 6, 'coal': 8, 'copper': 8, 'iron': 8, 'silver': 5, 'gold': 4},
         'liquid probs': {'oil': 6, 'lava': 9} 
     },
+}
+
+# 'producers' specifies who/what can craft a given item
+TOOLS = {
+    'pickaxe': {
+        'stone': {'recipe': {'wood': 2, 'stone': 2}, 'strength': 5, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'iron': {'recipe': {'wood': 2, 'iron bar': 2}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'copper': {'recipe': {'wood': 2, 'copper bar': 2}, 'strength': 10, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'silver': {'recipe': {'wood': 2, 'silver bar': 2}, 'strength': 15, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'gold': {'recipe': {'wood': 2, 'gold bar': 2}, 'strength': 20, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+    }
 }
