@@ -16,7 +16,7 @@ class SpriteManager:
         self, 
         asset_manager: AssetManager,
         tile_map: np.ndarray,
-        tile_id_map: dict[str, dict[str, any]],
+        tile_id_map: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         mining_map: dict[tuple[int, int], dict[str, int]],
     ):
@@ -31,19 +31,19 @@ class SpriteManager:
         self.mech_sprites = pg.sprite.Group() 
 
         self.timers = {
-            'mining': Timer(length = 1_000, function = None, auto_start = False, loop = False)
+            'mining': Timer(length = 1_000, function = self.hit_tile, auto_start = False, loop = False)
         }
 
     def mining(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_map: callable) -> None:
         if isinstance(sprite, Player): 
-            mine_radius = 5
+            mine_radius = 4
             sprite_center = pg.Vector2(sprite.rect.center) // TILE_SIZE
             tile_distance = sprite_center.distance_to(tile_coords)
             if tile_distance <= mine_radius and self.tile_map[tile_coords] != self.tile_id_map['air']:
                 sprite.state = 'mining'
-
                 if tile_coords not in self.mining_map:
-                    tile_index = int(self.tile_map[tile_coords]) # wrapping with int to convert from a numpy int
+                    # initialize the tile's hardness value
+                    tile_index = self.tile_map[tile_coords]
                     for index, tile in enumerate(TILES):
                         if index == tile_index:
                             self.mining_map[tile_coords] = {'hardness': TILES[tile]['hardness'], 'hits': 0}
@@ -53,7 +53,9 @@ class SpriteManager:
                 # TODO: add varying mining speeds based on the tool used, fatigue, hunger/thirst, etc.
                 if not self.timers['mining'].running:
                     self.timers['mining'].start()
-                    self.mining_map[tile_coords]['hits'] += 1
+                    # this is less than an ideal solution but passing tile_coords as a parameter to hit_tile() throws an error
+                    # since currently the Timer class lacks a system to handle parameters within functions it's assigned to call
+                    self.tile_coords = tile_coords 
 
                 if self.tile_is_mined(sprite, tile_coords):
                    self.tile_map[tile_coords] = self.tile_id_map['air']  
@@ -61,6 +63,9 @@ class SpriteManager:
             pass
 
         update_map(tile_coords, self.collision_map)
+
+    def hit_tile(self) -> None:
+        self.mining_map[self.tile_coords]['hits'] += 1
         
     def tile_is_mined(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
         tool_strength = self.get_tool_strength(sprite)

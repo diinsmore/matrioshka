@@ -187,14 +187,14 @@ class MouseGrid:
         self.camera_offset = camera_offset
 
     def render_grid(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
-        tiles_x, tiles_y = 4, 4
+        tiles_x, tiles_y = 3, 3
         if pg.mouse.get_rel()[0] != 0 or pg.mouse.get_rel()[1] != 0 or left_click:
             topleft = self.get_grid_coords(tiles_x, tiles_y, mouse_coords)
             for x in range(tiles_x):
                 for y in range(tiles_y):
                     cell_surf = pg.Surface((TILE_SIZE, TILE_SIZE), pg.SRCALPHA)
                     cell_surf.fill((0, 0, 0, 0))
-                    pg.draw.rect(cell_surf, (255, 255, 255, 20), (0, 0, TILE_SIZE, TILE_SIZE), 1) # position (0, 0) is relative to the Surface's topleft corner
+                    pg.draw.rect(cell_surf, (255, 255, 255, 20), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf
                     cell_rect = cell_surf.get_rect(topleft = (topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)))
                     self.screen.blit(cell_surf, cell_rect)
         
