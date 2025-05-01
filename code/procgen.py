@@ -16,8 +16,6 @@ class ProcGen:
         self.biome_order = self.order_biomes()
         self.current_biome = 'forest'
         self.tile_id_map = self.get_tile_id_map()
-        # stores the strength of tiles in the process of being mined
-        self.mining_map = {}
        
         self.generate_terrain()
 
@@ -180,7 +178,7 @@ class ProcGen:
                all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
 
     # update tiles that have been mined, will also have to account for the use of explosives and perhaps weather altering the terrain
-    def update_map(self, tile_coords: tuple[int, int], collision_map: dict[tuple[int, int], pg.Rect]) -> None:
+    def update_collision_map(self, tile_coords: tuple[int, int], collision_map: dict[tuple[int, int], pg.Rect]) -> None:
         cell_coords = (
             tile_coords[0] // CELL_SIZE, 
             tile_coords[1] // CELL_SIZE

@@ -81,7 +81,7 @@ class InputManager:
         direction_x = move_keys['d'] - move_keys['a']
         self.physics_engine.move_sprite(player, direction_x, dt)
 
-    def mouse_input(self, player: Player, update_map: callable) -> None:
+    def mouse_input(self, player: Player, update_collision_map: callable) -> None:
         mouse_screen_coords = pg.mouse.get_pos()
         # update the mouse position from screen-space to world-space
         self.mouse_coords = (
@@ -95,20 +95,20 @@ class InputManager:
                 self.mouse_coords[0] // TILE_SIZE, 
                 self.mouse_coords[1] // TILE_SIZE
             )
-            self.activate_mouse_action(player, update_map)
+            self.activate_mouse_action(player, update_collision_map)
         else:
             if player.state != 'walking':
                 player.state = 'idle' 
                 player.frame_index = 0
     
-    def activate_mouse_action(self, player: Player, update_map: callable) -> None:
+    def activate_mouse_action(self, player: Player, update_collision_map: callable) -> None:
         # ignore the item's material if specified
         item_holding = player.item_holding.split()[1] if ' ' in player.item_holding else player.item_holding
         # once more items are added, this should probably be divided into categories to avoid a colossal switch statement
         match item_holding:
             case 'pickaxe':
-                 self.sprite_manager.mining(player, self.tile_coords, update_map)
+                 self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
 
-    def update(self, player: Player, update_map: callable, dt: float) -> None:
+    def update(self, player: Player, update_collision_map: callable, dt: float) -> None:
         self.keyboard_input(player, dt)
-        self.mouse_input(player, update_map)
+        self.mouse_input(player, update_collision_map)

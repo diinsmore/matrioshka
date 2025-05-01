@@ -17,17 +17,17 @@ Z_LAYERS = {
 
 TILES = {
     'air': {'hardness': 0},
-    'dirt': {'hardness': 10},
-    'stone': {'hardness': 45},
-    'sandstone': {'hardness': 30}, 
-    'ice': {'hardness': 20},
-    'coal': {'hardness': 50}, 
-    'obsidian': {'hardness': 100},
-    'hellstone': {'hardness': 90},
-    'copper': {'ore': True, 'hardness': 35},
-    'iron': {'ore': True, 'hardness': 75},
-    'silver': {'ore': True, 'hardness': 55},
-    'gold': {'ore': True, 'hardness': 60},
+    'dirt': {'hardness': 100},
+    'stone': {'hardness': 400},
+    'sandstone': {'hardness': 300}, 
+    'ice': {'hardness': 200},
+    'coal': {'hardness': 500}, 
+    'obsidian': {'hardness': 1000},
+    'hellstone': {'hardness': 900},
+    'copper': {'ore': True, 'hardness': 350},
+    'iron': {'ore': True, 'hardness': 750},
+    'silver': {'ore': True, 'hardness': 550},
+    'gold': {'ore': True, 'hardness': 600},
 }
 
 # ordered from left-right
@@ -80,10 +80,10 @@ BIOMES = {
 # 'producers' specifies who/what can craft a given item
 TOOLS = {
     'pickaxe': {
-        'stone': {'recipe': {'wood': 2, 'stone': 2}, 'strength': 5, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'iron': {'recipe': {'wood': 2, 'iron bar': 2}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'copper': {'recipe': {'wood': 2, 'copper bar': 2}, 'strength': 10, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'silver': {'recipe': {'wood': 2, 'silver bar': 2}, 'strength': 15, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'gold': {'recipe': {'wood': 2, 'gold bar': 2}, 'strength': 20, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'stone': {'recipe': {'wood': 2, 'stone': 2}, 'strength': 15, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'iron': {'recipe': {'wood': 2, 'iron bar': 2}, 'strength': 50, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'copper': {'recipe': {'wood': 2, 'copper bar': 2}, 'strength': 30, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'silver': {'recipe': {'wood': 2, 'silver bar': 2}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
+        'gold': {'recipe': {'wood': 2, 'gold bar': 2}, 'strength': 35, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
     }
 }

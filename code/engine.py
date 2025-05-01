@@ -31,7 +31,6 @@ class Engine:
             tile_map, 
             tile_id_map, 
             self.physics_engine.collision_map,
-            self.proc_gen.mining_map
         )
 
         self.inv = Inventory()
@@ -65,7 +64,7 @@ class Engine:
         )
         
     def update(self, dt: float) -> None:
-        self.input_manager.update(self.player, self.proc_gen.update_map, dt)
+        self.input_manager.update(self.player, self.proc_gen.update_collision_map, dt)
         self.graphics_engine.update(self.input_manager.mouse_coords, self.input_manager.clicks['left'], dt)
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
         self.inv.update()
