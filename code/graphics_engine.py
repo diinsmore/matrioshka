@@ -114,8 +114,8 @@ class GraphicsEngine:
 
     # sprites
     def animate(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state != 'idle':
-            sprite.frame_index += sprite.animation_speed * dt
+        if sprite.state not in ('idle', 'jumping'):
+            sprite.frame_index += sprite.animation_speed[sprite.state] * dt
             if self.update_flip(sprite):
                 sprite.facing_left = not sprite.facing_left
             sprite.image = pg.transform.flip(

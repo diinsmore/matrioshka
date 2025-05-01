@@ -145,7 +145,6 @@ class InvGrid:
             (self.inv_outline.left, self.inv_outline.top - padding)
         )
         
-        
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 

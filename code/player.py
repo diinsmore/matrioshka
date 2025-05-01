@@ -36,7 +36,7 @@ class Player(pg.sprite.Sprite):
         self.image = self.frames[self.state][self.frame_index]
         self.rect = self.image.get_rect(midbottom = coords)
         self.z = z
-        self.animation_speed = 6
+        self.animation_speed = {'walking': 6, 'mining': 10}
 
         self.tile_map = tile_map
         self.tile_id_map = tile_id_map

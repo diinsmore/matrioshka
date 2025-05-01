@@ -69,9 +69,12 @@ class InputManager:
         direction_x = self.get_direction_x(keys)
         self.physics_engine.move_sprite(player, direction_x, dt)
 
-        # holding left-click while mining hurts my fingers after awhile
         if keys[pg.K_s]:
             self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
+        else:
+            if player.state == 'mining':
+                player.state = 'idle'
+                player.image = player.frames['idle'][0] #'player.frame_index = 0' defaulted to the rendering the first of the mining frames
 
     @staticmethod
     def get_direction_x(keys: list[bool]) -> int:
@@ -86,7 +89,7 @@ class InputManager:
 
     def mouse_input(self, player: Player, camera_offset: pg.Vector2, update_collision_map: callable) -> None:
         self.mouse_moving = False
-        if pg.mouse.get_rel()[0] != 0 or pg.mouse.get_rel()[1] != 0:
+        if pg.mouse.get_rel():
             self.mouse_moving = True
             self.mouse_coords = self.get_mouse_coords(camera_offset)
             
@@ -98,7 +101,6 @@ class InputManager:
         click = pg.mouse.get_pressed()
         if click[0]: 
             self.clicks['left'] = True
-            self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
         
     @staticmethod
     def get_mouse_coords(camera_offset: pg.Vector2, rel_screen: bool = False) -> tuple[int, int]:

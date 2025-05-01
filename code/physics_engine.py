@@ -31,9 +31,10 @@ class PhysicsEngine:
                 
             self.tile_collision_detection(sprite, axis = 'x')
         else:
-            sprite.state = 'idle'
-            sprite.frame_index = 0
-        
+            if sprite.state != 'mining':
+                sprite.state = 'idle'
+                sprite.frame_index = 0
+                
         if not sprite.spawned: 
             # safeguard against a collision detection issue where the player falls through the map after being spawned
             # downward velocity is severely limited until the 1st player/tile collision is detected 
