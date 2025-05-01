@@ -129,21 +129,23 @@ class InvGrid:
         self.screen.blit(image, rect)
 
         # decorative lines to the left/right of the text
+        padding = 3
+
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
             (self.inv_outline.left, rect.midleft[1]), 
-            (rect.left - 4, rect.midleft[1])
+            (rect.left - padding, rect.midleft[1])
         )
 
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
             (self.inv_outline.left, rect.midleft[1]), 
-            (self.inv_outline.left, self.inv_outline.top - 4)
+            (self.inv_outline.left, self.inv_outline.top - padding)
         )
         
-        padding = 3
+        
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
