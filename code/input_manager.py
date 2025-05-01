@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from physics_engine import PhysicsEngine
     from sprite_manager import SpriteManager
@@ -15,17 +15,16 @@ class InputManager:
         physics_engine: PhysicsEngine, 
         sprite_manager: SpriteManager, 
         ui: UI,
-        camera_offset: pg.Vector2
     ):
         self.physics_engine = physics_engine
         self.sprite_manager = sprite_manager
         self.ui = ui
-        self.camera_offset = camera_offset
 
         self.mouse_coords = pg.Vector2()
         self.tile_coords = pg.Vector2()
 
         self.clicks = {'left': False, 'right': False} 
+        self.mouse_moving = False
 
         self.num_keys = [pg.K_0 + num for num in range(10)]
         # map the key's ascii value to the key number pressed 
@@ -65,67 +64,54 @@ class InputManager:
         tracks keys being held down
         associated functions will be called continuously until the key is lifted
         '''
-        keys = pg.key.get_pressed()  
-        move_keys = {'a': False, 'd': False}
+        keys = pg.key.get_pressed()
 
-        if keys[pg.K_a]:
-            move_keys['a'] = True
-            if not player.facing_left:
-                player.facing_left = True
-
-        if keys[pg.K_d]:
-            move_keys['d'] = True
-            if player.facing_left:
-                player.facing_left = True
-
-        direction_x = move_keys['d'] - move_keys['a']
+        direction_x = self.get_direction_x(keys)
         self.physics_engine.move_sprite(player, direction_x, dt)
 
-        # holding the left click for mining hurts my fingers after awhile
-        if keys[pg.K_x]:
-            # locate the tile at the mouse's current coordinates
-            self.mouse_coords = self.get_mouse_coords()
+        # holding left-click while mining hurts my fingers after awhile
+        if keys[pg.K_s]:
+            self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
+
+    @staticmethod
+    def get_direction_x(keys: list[bool]) -> int:
+        direction = {'left': False, 'right': False}
+        if keys[pg.K_a]: 
+            direction['left'] = True
+
+        if keys[pg.K_d]: 
+            direction['right'] = True
+
+        return direction['right'] - direction['left']
+
+    def mouse_input(self, player: Player, camera_offset: pg.Vector2, update_collision_map: callable) -> None:
+        self.mouse_moving = False
+        if pg.mouse.get_rel()[0] != 0 or pg.mouse.get_rel()[1] != 0:
+            self.mouse_moving = True
+            self.mouse_coords = self.get_mouse_coords(camera_offset)
+            
             self.tile_coords = (
                 self.mouse_coords[0] // TILE_SIZE, 
                 self.mouse_coords[1] // TILE_SIZE
             )
-            self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
-
-    def mouse_input(self, player: Player, update_collision_map: callable) -> None:
-        if pg.mouse.get_rel(): # only update after the mouse has moved
-            self.mouse_coords = self.get_mouse_coords()
-
+        
         click = pg.mouse.get_pressed()
         if click[0]: 
             self.clicks['left'] = True
-            self.tile_coords = (
-                self.mouse_coords[0] // TILE_SIZE, 
-                self.mouse_coords[1] // TILE_SIZE
-            )
-            self.activate_mouse_action(player, update_collision_map)
-        else:
-            if player.state != 'walking':
-                player.state = 'idle' 
-                player.frame_index = 0
+            self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
+        
+    @staticmethod
+    def get_mouse_coords(camera_offset: pg.Vector2, rel_screen: bool = False) -> tuple[int, int]:
+        screen_space = pg.mouse.get_pos()
+        if rel_screen:
+            return screen_space
     
-    def get_mouse_coords(self, screen_space: bool = False) -> tuple[int, int]:
-        screen_coords = pg.mouse.get_pos()
-        if screen_space:
-            return screen_coords
-        # convert to world-space
-        return (
-            int(screen_coords[0] + self.camera_offset.x),
-            int(screen_coords[1] + self.camera_offset.y)
+        world_space = (
+            int(screen_space[0] + camera_offset.x),
+            int(screen_space[1] + camera_offset.y)
         )
+        return world_space
 
-    def activate_mouse_action(self, player: Player, update_collision_map: callable) -> None:
-        # ignore the item's material if specified
-        item_holding = player.item_holding.split()[1] if ' ' in player.item_holding else player.item_holding
-        # once more items are added, this should probably be divided into categories to avoid a colossal switch statement
-        match item_holding:
-            case 'pickaxe':
-                self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
-
-    def update(self, player: Player, update_collision_map: callable, dt: float) -> None:
+    def update(self, player: Player, camera_offset: pg.Vector2, update_collision_map: callable, dt: float) -> None:
         self.keyboard_input(player, update_collision_map, dt)
-        self.mouse_input(player, update_collision_map)
+        self.mouse_input(player, camera_offset, update_collision_map)

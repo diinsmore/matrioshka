@@ -30,11 +30,11 @@ class UI:
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
         self.craft_window = CraftWindow(self.screen)
 
-    def update(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
+    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.HUD.update()
         self.inv_grid.update()
         self.mini_map.update()
-        self.mouse_grid.update(mouse_coords, left_click)
+        self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
         self.craft_window.update()
 
 class HUD:
@@ -186,9 +186,9 @@ class MouseGrid:
         self.screen = screen
         self.camera_offset = camera_offset
 
-    def render_grid(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
+    def render_grid(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         tiles_x, tiles_y = 3, 3
-        if pg.mouse.get_rel()[0] != 0 or pg.mouse.get_rel()[1] != 0 or left_click:
+        if mouse_moving or left_click:
             topleft = self.get_grid_coords(tiles_x, tiles_y, mouse_coords)
             for x in range(tiles_x):
                 for y in range(tiles_y):
@@ -208,8 +208,8 @@ class MouseGrid:
         topleft = pg.Vector2(x - (width * TILE_SIZE), y - (height * TILE_SIZE))
         return pg.Vector2(topleft.x - self.camera_offset.x, topleft.y - self.camera_offset.y)
 
-    def update(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
-        self.render_grid(mouse_coords, left_click)
+    def update(self, mouse_coords: tuple[int, int], mouse_moving, left_click: bool) -> None:
+        self.render_grid(mouse_coords, mouse_moving, left_click)
 
 
 class CraftWindow:

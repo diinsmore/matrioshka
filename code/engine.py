@@ -37,7 +37,7 @@ class Engine:
 
         self.ui = UI(screen, self.camera.offset, self.asset_manager, self.inv)
 
-        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui, self.camera.offset)
+        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
         
         self.chunk_manager = ChunkManager(self.camera.offset)
         
@@ -64,9 +64,10 @@ class Engine:
         )
         
     def update(self, dt: float) -> None:
-        self.input_manager.update(self.player, self.proc_gen.update_collision_map, dt)
-        self.graphics_engine.update(self.input_manager.mouse_coords, self.input_manager.clicks['left'], dt)
+        self.input_manager.update(self.player, self.camera.offset, self.proc_gen.update_collision_map, dt)
+        self.graphics_engine.update(self.input_manager.mouse_coords, self.input_manager.mouse_moving, self.input_manager.clicks['left'], dt)
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
         self.inv.update()
-        
+       
         self.proc_gen.current_biome = self.player.current_biome
+        print(self.player.state)

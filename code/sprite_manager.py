@@ -67,20 +67,21 @@ class Mining:
         self.pick_up_item = pick_up_item
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
-        self.tile_reach_radius = 4
+        self.tile_reach_radius = 100
 
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
-        if isinstance(sprite, Player): 
-            if self.valid_tile(sprite, tile_coords):
-                sprite.state = 'mining'
+        if sprite.item_holding.split()[1] == 'pickaxe': # ignore the item's material if specified
+            if isinstance(sprite, Player): 
+                if self.valid_tile(sprite, tile_coords):
+                    sprite.state = 'mining'
 
-                if tile_coords not in self.mining_map:
-                    self.init_tile(tile_coords)
+                    if tile_coords not in self.mining_map:
+                        self.init_tile(tile_coords)
 
-                self.update_tile(sprite, tile_coords) 
-                update_collision_map(tile_coords, self.collision_map)
-        else:
-            pass
+                    self.update_tile(sprite, tile_coords) 
+                    update_collision_map(tile_coords, self.collision_map)
+            else:
+                pass
        
     def init_tile(self, tile_coords: tuple[int, int]) -> None:
         '''initialize a new key/value pair in the mining map'''
@@ -105,4 +106,4 @@ class Mining:
         
         if self.mining_map[tile_coords]['hardness'] <= 0:
             self.tile_map[tile_coords] = self.tile_id_map['air']
-            del self.mining_map[tile_coords] 
+            del self.mining_map[tile_coords]

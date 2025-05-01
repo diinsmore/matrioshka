@@ -114,26 +114,26 @@ class GraphicsEngine:
 
     # sprites
     def animate(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state != 'idle' and sprite.direction.x:
+        if sprite.state != 'idle':
             sprite.frame_index += sprite.animation_speed * dt
-            flip_x = False
-            if sprite.facing_left:
-                if sprite.direction.x > 0:
-                    flip_x = True
-            else:
-                if sprite.direction.x < 0:
-                    flip_x = True
+            if self.update_flip(sprite):
+                sprite.facing_left = not sprite.facing_left
             sprite.image = pg.transform.flip(
                 sprite.frames[sprite.state][int(sprite.frame_index % len(sprite.frames[sprite.state]))],
-                flip_x,
+                not sprite.facing_left,
                 False
-            ) 
+            )
+    
+    @staticmethod
+    def update_flip(sprite: pg.sprite.Sprite) -> bool:
+        '''signals when the sprite's facing & movement directions misalign'''
+        return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
     def render_sprites(self) -> None:
         for sprite in sorted(self.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
             self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
 
-    def update(self, mouse_coords, left_click, dt) -> None:
+    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
         self.sprite_manager.update(dt)
         self.weather.update()
 
@@ -141,7 +141,7 @@ class GraphicsEngine:
             self.render_bg_images(bg)
         self.render_tiles()
         self.render_sprites()
-        self.ui.update(mouse_coords, left_click)
+        self.ui.update(mouse_coords, mouse_moving, left_click)
 
         for sprite in self.sprite_manager.all_sprites:
             self.animate(sprite, dt)

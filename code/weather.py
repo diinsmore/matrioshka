@@ -28,14 +28,14 @@ class Sky:
         }
 
     def day_night_cycle(self) -> None:
-        '''Update the rgb values as time passes.'''
+        '''update the rgb values as time passes'''
         for i in range(3):
             self.rgb[i] = max(self.min_rgb[i], min(self.rgb[i] + self.rgb_update, self.max_rgb[i]))
             if self.rgb in (self.max_rgb, self.min_rgb):
                 self.rgb_update *= -1
     
     def render_tint(self) -> None:
-        '''Add a pinkish tint to the sky during twilight/dawn.'''
+        '''add a pinkish tint to the sky during twilight/dawn'''
         image = pg.Surface(RES)
         image.fill((255, 100, 100))
         image.set_alpha(self.tint_alpha)
@@ -44,7 +44,7 @@ class Sky:
     def update_tint(self) -> None:
         self.sky_tint_alpha = max(0, min(self.tint_alpha + self.tint_update, 255))
         
-        if self.tint_alpha in (0, 255): 
+        if self.tint_alpha in (0, 255):
             self.tint_update *= -1
 
     def render(self) -> None:
