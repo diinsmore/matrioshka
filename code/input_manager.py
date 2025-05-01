@@ -32,9 +32,9 @@ class InputManager:
         # subtracting 1 so the 1 key corresponds to index 0 and the 0 key to index 9
         self.key_map = {key: (key - pg.K_0 - 1) % 10 for key in self.num_keys}
    
-    def keyboard_input(self, player: Player, dt: float) -> None:
+    def keyboard_input(self, player: Player, update_collision_map: callable, dt: float) -> None:
         self.get_key_pressed(player)
-        self.get_key_held(player, dt)
+        self.get_key_held(player, update_collision_map, dt)
 
     def get_key_pressed(self, player: Player) -> None:
         '''
@@ -60,7 +60,7 @@ class InputManager:
                 player.inventory.index = self.key_map[key]
                 break
                 
-    def get_key_held(self, player: Player, dt: float) -> None:
+    def get_key_held(self, player: Player, update_collision_map: callable, dt: float) -> None:
         '''
         tracks keys being held down
         associated functions will be called continuously until the key is lifted
@@ -81,13 +81,20 @@ class InputManager:
         direction_x = move_keys['d'] - move_keys['a']
         self.physics_engine.move_sprite(player, direction_x, dt)
 
+        # holding the left click for mining hurts my fingers after awhile
+        if keys[pg.K_x]:
+            # locate the tile at the mouse's current coordinates
+            self.mouse_coords = self.get_mouse_coords()
+            self.tile_coords = (
+                self.mouse_coords[0] // TILE_SIZE, 
+                self.mouse_coords[1] // TILE_SIZE
+            )
+            self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
+
     def mouse_input(self, player: Player, update_collision_map: callable) -> None:
-        mouse_screen_coords = pg.mouse.get_pos()
-        # update the mouse position from screen-space to world-space
-        self.mouse_coords = (
-            int(mouse_screen_coords[0] + self.camera_offset.x),
-            int(mouse_screen_coords[1] + self.camera_offset.y)
-        )
+        if pg.mouse.get_rel(): # only update after the mouse has moved
+            self.mouse_coords = self.get_mouse_coords()
+
         click = pg.mouse.get_pressed()
         if click[0]: 
             self.clicks['left'] = True
@@ -101,14 +108,24 @@ class InputManager:
                 player.state = 'idle' 
                 player.frame_index = 0
     
+    def get_mouse_coords(self, screen_space: bool = False) -> tuple[int, int]:
+        screen_coords = pg.mouse.get_pos()
+        if screen_space:
+            return screen_coords
+        # convert to world-space
+        return (
+            int(screen_coords[0] + self.camera_offset.x),
+            int(screen_coords[1] + self.camera_offset.y)
+        )
+
     def activate_mouse_action(self, player: Player, update_collision_map: callable) -> None:
         # ignore the item's material if specified
         item_holding = player.item_holding.split()[1] if ' ' in player.item_holding else player.item_holding
         # once more items are added, this should probably be divided into categories to avoid a colossal switch statement
         match item_holding:
             case 'pickaxe':
-                 self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
+                self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
 
     def update(self, player: Player, update_collision_map: callable, dt: float) -> None:
-        self.keyboard_input(player, dt)
+        self.keyboard_input(player, update_collision_map, dt)
         self.mouse_input(player, update_collision_map)

@@ -67,7 +67,7 @@ class Mining:
         self.pick_up_item = pick_up_item
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
-        self.tile_reach_radius = 100
+        self.tile_reach_radius = 4
 
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
         if isinstance(sprite, Player): 
