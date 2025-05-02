@@ -2,7 +2,7 @@ import pygame as pg
 from os import walk
 from os.path import join
 
-from settings import BIOMES, TILES
+from settings import BIOMES, TILES, TOOLS
 
 class AssetManager:
     def __init__(self, tile_id_map: dict[str, dict[str, any]]):
@@ -26,6 +26,7 @@ class AssetManager:
         self.tile_id_map = tile_id_map
         self.load_biome_graphics()
         self.load_tile_graphics(self.tile_id_map)
+        self.load_tool_graphics()
 
     @staticmethod
     def load_image(dir_path: str) -> pg.Surface:
@@ -72,3 +73,7 @@ class AssetManager:
         for tile in TILES.keys():
             if tile != 'air':
                 self.assets['graphics'][tile] = self.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
+
+    def load_tool_graphics(self) -> None:
+        for tool in TOOLS.keys():
+            self.assets['graphics'][f'{tool}s'] = self.load_folder(join('..', 'graphics', 'tools', f'{tool}s'))

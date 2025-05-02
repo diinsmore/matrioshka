@@ -40,6 +40,7 @@ class GraphicsEngine:
         self.biome_order = proc_gen.biome_order
 
         self.all_sprites = sprite_manager.all_sprites
+        self.human_sprites = sprite_manager.human_sprites
         self.cloud_sprites = sprite_manager.cloud_sprites
         
         self.weather = Weather(screen)
@@ -133,6 +134,17 @@ class GraphicsEngine:
         for sprite in sorted(self.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
             self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
 
+    def render_item_held(self) -> None:
+        for sprite in self.human_sprites:
+            if sprite.item_holding:
+                if ' ' in sprite.item_holding:
+                    item = sprite.item_holding.split()[1] # ignore the material
+                
+                image = pg.transform.flip(self.graphics[f'{item}s'][sprite.item_holding], sprite.facing_left, False)
+                coords = sprite.rect.center - self.camera_offset
+                rect = image.get_rect(center = coords)
+                self.screen.blit(image, rect)
+
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
         self.sprite_manager.update(dt)
         self.weather.update()
@@ -141,6 +153,7 @@ class GraphicsEngine:
             self.render_bg_images(bg)
         self.render_tiles()
         self.render_sprites()
+        self.render_item_held()
         self.ui.update(mouse_coords, mouse_moving, left_click)
 
         for sprite in self.sprite_manager.all_sprites:

@@ -55,7 +55,7 @@ class Engine:
             coords = self.proc_gen.get_player_spawn_point(), 
             frames = self.asset_manager.load_subfolders(join('..', 'graphics', 'player')), 
             z = Z_LAYERS['player'],
-            sprite_groups = [self.sprite_manager.all_sprites], # passing a list since more groups will likely be added
+            sprite_groups = [self.sprite_manager.all_sprites, self.sprite_manager.human_sprites],
             tile_map = tile_map,
             tile_id_map = tile_id_map,
             biome_order = self.proc_gen.biome_order,
@@ -70,4 +70,3 @@ class Engine:
         self.inv.update()
        
         self.proc_gen.current_biome = self.player.current_biome
-        print(self.player.state)

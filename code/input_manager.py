@@ -72,7 +72,8 @@ class InputManager:
         if keys[pg.K_s]:
             self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
         else:
-            self.sprite_manager.end_action(player)
+            if player.state == 'mining':
+                self.sprite_manager.end_action(player)
                 
     @staticmethod
     def get_direction_x(keys: list[bool]) -> int:

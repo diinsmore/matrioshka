@@ -80,10 +80,22 @@ BIOMES = {
 # 'producers' specifies who/what can craft a given item
 TOOLS = {
     'pickaxe': {
-        'stone': {'recipe': {'wood': 2, 'stone': 2}, 'strength': 15, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'iron': {'recipe': {'wood': 2, 'iron bar': 2}, 'strength': 50, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'copper': {'recipe': {'wood': 2, 'copper bar': 2}, 'strength': 30, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'silver': {'recipe': {'wood': 2, 'silver bar': 2}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-        'gold': {'recipe': {'wood': 2, 'gold bar': 2}, 'strength': 35, 'producers': {'player', 'workbench', 'anvil', 'assembler'}},
-    }
+        'stone': {'recipe': {'wood': 2, 'stone': 6}, 'strength': 15, 'producers': {'player', 'workbench', 'anvil'}},
+        'iron': {'recipe': {'wood': 2, 'iron bar': 4}, 'strength': 50, 'producers': {'player', 'workbench', 'anvil'}},
+        'copper': {'recipe': {'wood': 2, 'copper bar': 4}, 'strength': 30, 'producers': {'player', 'workbench', 'anvil'}},
+        'silver': {'recipe': {'wood': 2, 'silver bar': 4}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
+        'gold': {'recipe': {'wood': 2, 'gold bar': 4}, 'strength': 35, 'producers': {'player', 'workbench', 'anvil'}},
+    },
+
+    'axe': {
+        'stone': {'recipe': {'wood': 3, 'stone': 4}, 'strength': 10, 'producers': {'player', 'workbench', 'anvil'}},
+        'iron': {'recipe': {'wood': 3, 'iron bar': 2}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
+        'copper': {'recipe': {'wood': 3, 'stone': 2}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
+    },
+
+    'sword': {
+        'stone': {'recipe': {'stone': 12}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
+        'iron': {'recipe': {'iron bar': 9}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
+        'copper': {'recipe': {'copper bar': 9}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
+    },
 }

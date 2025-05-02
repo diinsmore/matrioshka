@@ -25,8 +25,10 @@ class SpriteManager:
         self.collision_map = collision_map
 
         self.all_sprites = pg.sprite.Group()
+        self.human_sprites = pg.sprite.Group()
+        self.mech_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
-        self.mech_sprites = pg.sprite.Group() 
+         
 
         self.mining = Mining(
             self.tile_map, 
