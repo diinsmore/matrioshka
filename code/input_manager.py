@@ -74,7 +74,13 @@ class InputManager:
         else:
             if player.state == 'mining':
                 player.state = 'idle'
-                player.image = player.frames['idle'][0] #'player.frame_index = 0' defaulted to the rendering the first of the mining frames
+                #'player.frame_index = 0' defaulted to the rendering the first of the mining frames
+                player.image = pg.transform.flip(
+                    player.frames['idle'][0],
+                    not player.facing_left,
+                    False
+                )
+                
 
     @staticmethod
     def get_direction_x(keys: list[bool]) -> int:
