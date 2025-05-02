@@ -72,16 +72,8 @@ class InputManager:
         if keys[pg.K_s]:
             self.sprite_manager.mining.start(player, self.tile_coords, update_collision_map)
         else:
-            if player.state == 'mining':
-                player.state = 'idle'
-                #'player.frame_index = 0' defaulted to the rendering the first of the mining frames
-                player.image = pg.transform.flip(
-                    player.frames['idle'][0],
-                    not player.facing_left,
-                    False
-                )
+            self.sprite_manager.end_action(player)
                 
-
     @staticmethod
     def get_direction_x(keys: list[bool]) -> int:
         direction = {'left': False, 'right': False}

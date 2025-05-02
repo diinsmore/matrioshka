@@ -42,6 +42,13 @@ class SpriteManager:
             data = sprite.item_holding.split() # ['<material>', '<tool>']
             return TOOLS[data[1]][data[0]]['strength']
         return sprite.arm_strength
+    
+    @staticmethod
+    def end_action(sprite: pg.sprite.Sprite) -> None:
+        '''return a sprite to an idle state and update its graphic'''
+        sprite.state = 'idle'
+        #'sprite.frame_index = 0' defaults to rendering the first frame of the old animation state
+        sprite.image = sprite.frames['idle'][0] if sprite.facing_left else pg.transform.flip(sprite.frames['idle'][0], True, False)
 
     def pick_up_item(self, sprite: pg.sprite.Sprite) -> None:
         pass
