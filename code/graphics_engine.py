@@ -36,16 +36,91 @@ class GraphicsEngine:
         self.chunk_manager = chunk_manager
 
         self.tile_map = proc_gen.tile_map
-        self.tile_id_map = proc_gen.tile_id_map
+        self.tile_IDs = proc_gen. tile_IDs
         self.biome_order = proc_gen.biome_order
 
         self.all_sprites = sprite_manager.all_sprites
         self.human_sprites = sprite_manager.human_sprites
         self.cloud_sprites = sprite_manager.cloud_sprites
-        
+
+        self.terrain = Terrain(self.screen, self.graphics, self.camera_offset, self.proc_gen, self.chunk_manager)
+        self.mining_animation = MiningAnimation(self.screen, self.render_item_held)
         self.weather = Weather(screen)
-     
-    # world
+
+        self.active_items = self.sprite_manager.active_items
+
+    def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
+        if sprite.state not in ('idle', 'jumping'):
+            sprite.frame_index += sprite.animation_speed[sprite.state] * dt
+            if self.update_flip(sprite):
+                sprite.facing_left = not sprite.facing_left
+            sprite.image = pg.transform.flip(
+                sprite.frames[sprite.state][int(sprite.frame_index % len(sprite.frames[sprite.state]))],
+                not sprite.facing_left,
+                False
+            )
+    
+    @staticmethod
+    def update_flip(sprite: pg.sprite.Sprite) -> bool:
+        '''signals when the sprite's facing & movement directions misalign'''
+        return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
+        
+    def render_sprites(self, dt: float) -> None:
+        for sprite in sorted(self.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
+            self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
+            if sprite in self.sprite_manager.animated_sprites:
+                self.animate_sprite(sprite, dt)
+
+    def render_item_held(self, align_offset: pg.Vector2 = None) -> None:
+        for sprite in self.human_sprites:
+            item = sprite.item_holding
+            if item != self.active_items[sprite]:
+                self.active_items[sprite] = item
+                if ' ' in item:
+                    item = item.split()[1] # ignore the material
+
+                image = pg.transform.flip(self.graphics[f'{item}s'][item], sprite.facing_left, False)
+                coords = sprite.rect.center - self.camera_offset + (align_offset if align_offset else 0)
+                rect = image.get_rect(center = coords)
+                
+                self.get_item_animation(sprite, item, image)
+                self.screen.blit(image, rect)
+                
+    def get_item_animation(self, sprite: pg.sprite.Sprite, item: str, image: pg.Surface) -> None:
+        match item:
+            case 'pickaxe':
+                if sprite.state == 'mining':
+                    self.mining_animation.run(sprite, image)
+
+    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
+        self.sprite_manager.update(dt)
+        
+        self.weather.update()
+        # update the weather first to keep the sky behind the rest of the world
+        self.terrain.update()
+        self.render_sprites(dt)
+        self.render_item_held()
+        self.ui.update(mouse_coords, mouse_moving, left_click)
+
+
+class Terrain:
+    def __init__(
+        self, 
+        screen: pg.Surface, 
+        graphics: dict[str, list[pg.Surface]], 
+        camera_offset: pg.Vector2, 
+        proc_gen: ProcGen, 
+        chunk_manager: ChunkManager
+    ):
+        self.screen = screen
+        self.graphics = graphics
+        self.camera_offset = camera_offset
+        self.proc_gen = proc_gen
+        self.chunk_manager = chunk_manager
+        
+        self.tile_map = self.proc_gen.tile_map
+        self.tile_IDs = self.proc_gen.tile_IDs
+
     def render_bg_images(self, bg_type: str) -> None:
         '''render the current biome's landscape & underground graphics''' 
         if bg_type != 'terrain wall':
@@ -103,58 +178,31 @@ class GraphicsEngine:
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
                 if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] \
-                and self.tile_map[x, y] != self.tile_id_map['air']:
+                and self.tile_map[x, y] != self.tile_IDs['air']:
                     # match the tile to its graphic
-                    for tile in self.tile_id_map.keys():
-                        if self.tile_id_map[tile]  == self.tile_map[x, y]:
+                    for tile in self.tile_IDs.keys():
+                        if self.tile_IDs[tile] == self.tile_map[x, y]:
                             # convert from tile to pixel coordinates
                             px_x = (x * TILE_SIZE) - self.camera_offset.x
                             px_y = (y * TILE_SIZE) - self.camera_offset.y 
                             self.screen.blit(self.graphics[tile], (px_x, px_y))
 
-
-    # sprites
-    def animate(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state not in ('idle', 'jumping'):
-            sprite.frame_index += sprite.animation_speed[sprite.state] * dt
-            if self.update_flip(sprite):
-                sprite.facing_left = not sprite.facing_left
-            sprite.image = pg.transform.flip(
-                sprite.frames[sprite.state][int(sprite.frame_index % len(sprite.frames[sprite.state]))],
-                not sprite.facing_left,
-                False
-            )
-    
-    @staticmethod
-    def update_flip(sprite: pg.sprite.Sprite) -> bool:
-        '''signals when the sprite's facing & movement directions misalign'''
-        return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
-        
-    def render_sprites(self) -> None:
-        for sprite in sorted(self.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
-            self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
-
-    def render_item_held(self) -> None:
-        for sprite in self.human_sprites:
-            if sprite.item_holding:
-                if ' ' in sprite.item_holding:
-                    item = sprite.item_holding.split()[1] # ignore the material
-                
-                image = pg.transform.flip(self.graphics[f'{item}s'][sprite.item_holding], sprite.facing_left, False)
-                coords = sprite.rect.center - self.camera_offset
-                rect = image.get_rect(center = coords)
-                self.screen.blit(image, rect)
-
-    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
-        self.sprite_manager.update(dt)
-        self.weather.update()
-
+    def update(self) -> None:
         for bg in ('landscape', 'terrain wall', 'underground'):
             self.render_bg_images(bg)
-        self.render_tiles()
-        self.render_sprites()
-        self.render_item_held()
-        self.ui.update(mouse_coords, mouse_moving, left_click)
 
-        for sprite in self.sprite_manager.all_sprites:
-            self.animate(sprite, dt)
+        self.render_tiles()
+
+
+class MiningAnimation:
+    def __init__(self, screen: pg.Surface, render_item_held: callable):
+        self.screen = screen
+        self.render_item_held = render_item_held
+
+    @staticmethod
+    def rotate_pickaxe(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
+        angle = 10 * int(sprite.frame_index) * dt
+        image = pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise
+
+    def run(self, sprite: pg.sprite.Sprite, image: pg.Surface):
+        self.rotate_pickaxe(sprite, image)

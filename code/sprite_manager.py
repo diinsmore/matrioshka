@@ -16,27 +16,36 @@ class SpriteManager:
         self, 
         asset_manager: AssetManager,
         tile_map: np.ndarray,
-        tile_id_map: dict[str, int],
+         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
     ):
         self.asset_manager = asset_manager
         self.tile_map = tile_map
-        self.tile_id_map = tile_id_map
+        self.tile_IDs =  tile_IDs
         self.collision_map = collision_map
 
         self.all_sprites = pg.sprite.Group()
         self.human_sprites = pg.sprite.Group()
         self.mech_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
-         
+        self.animated_sprites = pg.sprite.Group()
 
+        self.active_items = {} # block/tool currently held by a given sprite
+         
         self.mining = Mining(
             self.tile_map, 
-            self.tile_id_map, 
+            self. tile_IDs, 
             self.collision_map, 
             self.get_tool_strength, 
             self.pick_up_item
         )
+
+    # not doing a list comprehension in __init__ since sprites aren't 
+    # assigned their groups until after SpriteManager is initialized
+    def init_active_items(self) -> None:
+        # TODO: update this for loop once a sprite group for mobs is added, unless you decide they can't hold items
+        for sprite in self.human_sprites: 
+            self.active_items[sprite] = sprite.item_holding
         
     @staticmethod
     def get_tool_strength(sprite: pg.sprite.Sprite) -> int:
@@ -64,13 +73,13 @@ class Mining:
     def __init__(
         self, 
         tile_map: np.ndarray,
-        tile_id_map: dict[str, int],
+        tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         get_tool_strength: callable,
         pick_up_item: callable
     ):
         self.tile_map = tile_map
-        self.tile_id_map = tile_id_map
+        self. tile_IDs =  tile_IDs
         self.collision_map = collision_map
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
@@ -104,7 +113,7 @@ class Mining:
     def valid_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
         tile_distance = sprite_coords.distance_to(tile_coords)
-        return tile_distance <= self.tile_reach_radius and self.tile_map[tile_coords] != self.tile_id_map['air']
+        return tile_distance <= self.tile_reach_radius and self.tile_map[tile_coords] != self. tile_IDs['air']
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
     def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
@@ -114,5 +123,5 @@ class Mining:
         data['hardness'] -= tool_strength * data['hits'] 
         
         if self.mining_map[tile_coords]['hardness'] <= 0:
-            self.tile_map[tile_coords] = self.tile_id_map['air']
+            self.tile_map[tile_coords] = self. tile_IDs['air']
             del self.mining_map[tile_coords]

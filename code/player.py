@@ -22,7 +22,7 @@ class Player(pg.sprite.Sprite):
         sprite_groups: list[pg.sprite.Group], 
 
         tile_map: np.ndarray,
-        tile_id_map: dict[str, dict[str, any]],
+         tile_IDs: dict[str, dict[str, any]],
         biome_order: dict[str, int],
 
         physics_engine: PhysicsEngine,
@@ -39,7 +39,7 @@ class Player(pg.sprite.Sprite):
         self.animation_speed = {'walking': 6, 'mining': 10}
 
         self.tile_map = tile_map
-        self.tile_id_map = tile_id_map
+        self. tile_IDs =  tile_IDs
 
         self.biome_order = biome_order
         self.current_biome = 'forest'
@@ -61,7 +61,7 @@ class Player(pg.sprite.Sprite):
         self.grounded = True
 
     def place_block(self) -> None:
-        self.tile_map[self.tile_coords] = self.tile_id_map[self.item_holding][tile_id]
+        self.tile_map[self.tile_coords] = self. tile_IDs[self.item_holding][tile_id]
                
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH

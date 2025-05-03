@@ -18,18 +18,18 @@ class Engine:
     def __init__(self, screen: pg.Surface):
         self.proc_gen = ProcGen()
         tile_map = self.proc_gen.tile_map
-        tile_id_map = self.proc_gen.tile_id_map
+        tile_IDs = self.proc_gen.tile_IDs
 
-        self.physics_engine = PhysicsEngine(tile_map, tile_id_map)
+        self.physics_engine = PhysicsEngine(tile_map, tile_IDs)
 
         self.camera = Camera()
         
-        self.asset_manager = AssetManager(tile_id_map)
+        self.asset_manager = AssetManager(tile_IDs)
 
         self.sprite_manager = SpriteManager( 
             self.asset_manager, 
             tile_map, 
-            tile_id_map, 
+            tile_IDs, 
             self.physics_engine.collision_map,
         )
 
@@ -55,17 +55,29 @@ class Engine:
             coords = self.proc_gen.get_player_spawn_point(), 
             frames = self.asset_manager.load_subfolders(join('..', 'graphics', 'player')), 
             z = Z_LAYERS['player'],
-            sprite_groups = [self.sprite_manager.all_sprites, self.sprite_manager.human_sprites],
+            sprite_groups = [
+                self.sprite_manager.all_sprites, 
+                self.sprite_manager.human_sprites,
+                self.sprite_manager.animated_sprites
+            ],
             tile_map = tile_map,
-            tile_id_map = tile_id_map,
+            tile_IDs = tile_IDs,
             biome_order = self.proc_gen.biome_order,
             physics_engine = self.physics_engine,
             inventory = self.inv
         )
         
+        # keep this line below the sprite instances
+        self.sprite_manager.init_active_items()
+        
     def update(self, dt: float) -> None:
         self.input_manager.update(self.player, self.camera.offset, self.proc_gen.update_collision_map, dt)
-        self.graphics_engine.update(self.input_manager.mouse_coords, self.input_manager.mouse_moving, self.input_manager.clicks['left'], dt)
+        self.graphics_engine.update(
+            self.input_manager.mouse_coords, 
+            self.input_manager.mouse_moving, 
+            self.input_manager.clicks['left'], 
+            dt
+        )
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
         self.inv.update()
        

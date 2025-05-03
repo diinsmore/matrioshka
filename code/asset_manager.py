@@ -5,7 +5,7 @@ from os.path import join
 from settings import BIOMES, TILES, TOOLS
 
 class AssetManager:
-    def __init__(self, tile_id_map: dict[str, dict[str, any]]):
+    def __init__(self,  tile_IDs: dict[str, dict[str, any]]):
         self.assets = {
             'graphics': {
                 'clouds': self.load_folder(join('..', 'graphics', 'weather', 'clouds')),
@@ -23,9 +23,9 @@ class AssetManager:
                 'inv bg': 'lightsteelblue4'
             }
         }
-        self.tile_id_map = tile_id_map
+        self. tile_IDs =  tile_IDs
         self.load_biome_graphics()
-        self.load_tile_graphics(self.tile_id_map)
+        self.load_tile_graphics(self. tile_IDs)
         self.load_tool_graphics()
 
     @staticmethod
@@ -69,7 +69,7 @@ class AssetManager:
             if biome in ('forest', 'taiga', 'desert'):
                 self.assets['graphics'][biome]['trees'] = self.load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
 
-    def load_tile_graphics(self, tile_id_map) -> None:
+    def load_tile_graphics(self,  tile_IDs) -> None:
         for tile in TILES.keys():
             if tile != 'air':
                 self.assets['graphics'][tile] = self.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))

@@ -9,9 +9,9 @@ import math
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE
 
 class PhysicsEngine:
-    def __init__(self, tile_map: np.ndarray, tile_id_map: dict[str, dict[str, any]]):
+    def __init__(self, tile_map: np.ndarray,  tile_IDs: dict[str, dict[str, any]]):
         self.tile_map = tile_map
-        self.tile_id_map = tile_id_map 
+        self. tile_IDs =  tile_IDs 
         
         self.world_edge_right = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
         self.world_edge_bottom = MAP_SIZE[1] * TILE_SIZE
@@ -52,7 +52,7 @@ class PhysicsEngine:
         '''precompute rects with the coordinates of solid tiles'''
         for x in range(MAP_SIZE[0]):
             for y in range(MAP_SIZE[1]):
-                if self.tile_map[x, y] != self.tile_id_map['air'] : 
+                if self.tile_map[x, y] != self. tile_IDs['air'] : 
                     cell_coords = (x // CELL_SIZE, y // CELL_SIZE)
                     if cell_coords not in self.collision_map:
                         self.collision_map[cell_coords] = []  
@@ -122,7 +122,7 @@ class PhysicsEngine:
             # also check if the tile above the player's head is air
             above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2])
 
-            return all(tile_id == self.tile_id_map['air']  for tile_id in above_tiles)
+            return all(tile_id == self. tile_IDs['air']  for tile_id in above_tiles)
 
         return False
 

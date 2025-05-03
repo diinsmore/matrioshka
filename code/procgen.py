@@ -15,7 +15,7 @@ class ProcGen:
         self.height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
         self.biome_order = self.order_biomes()
         self.current_biome = 'forest'
-        self.tile_id_map = self.get_tile_id_map()
+        self.tile_IDs = self.get_tile_IDs()
        
         self.generate_terrain()
 
@@ -31,7 +31,7 @@ class ProcGen:
         return order
 
     @staticmethod
-    def get_tile_id_map() -> dict[str, int]:
+    def get_tile_IDs() -> dict[str, int]:
         '''give each tile a unique number to store at its locations within the tile map'''
         tile_id_map = {}
         # key = tile type, value = tile index
@@ -69,25 +69,25 @@ class ProcGen:
             surface_level = round(self.height_map[x])
             for y in range(MAP_SIZE[1]):
                 if y < surface_level: 
-                    self.tile_map[x, y] = self.tile_id_map['air'] 
+                    self.tile_map[x, y] = self.tile_IDs['air'] 
 
                 elif y == surface_level: 
-                    self.tile_map[x, y] = self.tile_id_map['dirt'] 
+                    self.tile_map[x, y] = self.tile_IDs['dirt'] 
                     
                 else:
                     # calculate the tile's depth relative to the height of the map
                     rel_depth = (y - surface_level) / MAP_SIZE[1]
                     if rel_depth < 0.1:
-                        self.tile_map[x, y] = self.tile_id_map['dirt'] 
+                        self.tile_map[x, y] = self.tile_IDs['dirt'] 
 
                     elif rel_depth < 0.2:
-                        self.tile_map[x, y] = self.tile_id_map['stone' if random.randint(0, 100) <= 33 else 'dirt'] 
+                        self.tile_map[x, y] = self.tile_IDs['stone' if random.randint(0, 100) <= 33 else 'dirt'] 
 
                     elif rel_depth < 0.4:
                         if random.randint(0, 100) <= 25:
-                            self.tile_map[x, y] = random.choice((self.tile_id_map['sandstone'] , self.tile_id_map['ice'] ))
+                            self.tile_map[x, y] = random.choice((self.tile_IDs['sandstone'] , self.tile_IDs['ice'] ))
                         else:
-                            self.tile_map[x, y] = self.tile_id_map['stone' if random.randint(0, 100) < 60 else 'dirt']  
+                            self.tile_map[x, y] = self.tile_IDs['stone' if random.randint(0, 100) < 60 else 'dirt']  
                     else:
                         self.ore_distribution(x, y, self.current_biome)  
     
@@ -96,9 +96,9 @@ class ProcGen:
         Distribute ore tiles based on the biome's probability of containing such a tile.
         If no ore is selected, fill the space with a tile common to the biome.
         '''
-        ores = [tile for tile in self.tile_id_map if self.tile_id_map['copper']  <= self.tile_id_map[tile]  <= self.tile_id_map['gold'] ]
+        ores = [tile for tile in self.tile_IDs if self.tile_IDs['copper']  <= self.tile_IDs[tile]  <= self.tile_IDs['gold'] ]
         
-        non_ores = [tile for tile in self.tile_id_map if self.tile_id_map['dirt']  <= self.tile_id_map[tile]  <= self.tile_id_map[
+        non_ores = [tile for tile in self.tile_IDs if self.tile_IDs['dirt']  <= self.tile_IDs[tile]  <= self.tile_IDs[
                     'obsidian' if biome != 'underworld' else 'hellstone'] ]
 
         if random.random() < 0.1:
@@ -106,17 +106,17 @@ class ProcGen:
             if not ore_selected:
                 # select a random non-ore tile
                 tile = random.choice(non_ores)
-                self.tile_map[x, y] = self.tile_id_map[tile] 
+                self.tile_map[x, y] = self.tile_IDs[tile] 
         else:
             tile = random.choice(non_ores)
-            self.tile_map[x, y] = self.tile_id_map[tile] 
+            self.tile_map[x, y] = self.tile_IDs[tile] 
                         
     def calc_tile_prob(self, tiles: list[str], x: int, y: int, biome: str) -> bool:
         '''randomly determine which tile (if any) should be placed at the given coordinate'''
         tiles = sorted(tiles, key = lambda tile: BIOMES[biome]['tile probs'][tile], reverse=True)
         for index, tile in enumerate(tiles):
             if random.randint(0, 10) <= BIOMES[biome]['tile probs'][tile]:
-                self.tile_map[x, y] = self.tile_id_map[tile] 
+                self.tile_map[x, y] = self.tile_IDs[tile] 
                 return True
             else:
                 if index < len(tiles) - 1:
@@ -173,7 +173,7 @@ class ProcGen:
         topcenter_tile = self.tile_map[x, y - 1]
         topright_tile = self.tile_map[x + 1, y - 1]
         
-        air = self.tile_id_map['air'] 
+        air = self.tile_IDs['air'] 
         return all(tile != air for tile in (current_tile, left_tile, right_tile)) and \
                all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
 
@@ -188,5 +188,5 @@ class ProcGen:
             if rect in collision_map[cell_coords]:
                 # sprites could occasionally pass through tiles whose graphic was still being rendered
                 # removing the associated rectangle only after the tile id's update is confirmed appears to fix the issue
-                if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_id_map['air'] :
+                if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air'] :
                     collision_map[cell_coords].remove(rect)
