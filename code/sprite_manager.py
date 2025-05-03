@@ -68,7 +68,6 @@ class SpriteManager:
         for sprite in self.all_sprites:
             sprite.update(dt)
 
-
 class Mining:
     def __init__(
         self, 
@@ -79,13 +78,13 @@ class Mining:
         pick_up_item: callable
     ):
         self.tile_map = tile_map
-        self. tile_IDs =  tile_IDs
+        self.tile_IDs =  tile_IDs
         self.collision_map = collision_map
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
-        self.tile_reach_radius = 100
+        self.tile_reach_radius = 4
 
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
         if sprite.item_holding.split()[1] == 'pickaxe': # ignore the item's material if specified

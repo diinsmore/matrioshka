@@ -52,8 +52,9 @@ class GraphicsEngine:
     def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
         if sprite.state not in ('idle', 'jumping'):
             sprite.frame_index += sprite.animation_speed[sprite.state] * dt
-            if self.update_flip(sprite):
+            if self.flip_sprite_x(sprite):
                 sprite.facing_left = not sprite.facing_left
+
             sprite.image = pg.transform.flip(
                 sprite.frames[sprite.state][int(sprite.frame_index % len(sprite.frames[sprite.state]))],
                 not sprite.facing_left,
@@ -61,7 +62,7 @@ class GraphicsEngine:
             )
     
     @staticmethod
-    def update_flip(sprite: pg.sprite.Sprite) -> bool:
+    def flip_sprite_x(sprite: pg.sprite.Sprite) -> bool:
         '''signals when the sprite's facing & movement directions misalign'''
         return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
@@ -71,26 +72,34 @@ class GraphicsEngine:
             if sprite in self.sprite_manager.animated_sprites:
                 self.animate_sprite(sprite, dt)
 
-    def render_item_held(self, align_offset: pg.Vector2 = None) -> None:
+    def render_item_held(self, dt: float) -> None:
         for sprite in self.human_sprites:
-            item = sprite.item_holding
-            if item != self.active_items[sprite]:
-                self.active_items[sprite] = item
-                if ' ' in item:
-                    item = item.split()[1] # ignore the material
-
-                image = pg.transform.flip(self.graphics[f'{item}s'][item], sprite.facing_left, False)
-                coords = sprite.rect.center - self.camera_offset + (align_offset if align_offset else 0)
-                rect = image.get_rect(center = coords)
+            if sprite.item_holding != self.active_items[sprite]:
+                self.active_items[sprite] = sprite.item_holding
+            
+            category = sprite.item_holding.split()[1] if ' ' in sprite.item_holding else None # ignore the material if applicable
+            if not category:
+                pass # will have to add a method to return 'machines' for the assembler, etc.
+            
+            image = pg.transform.flip(self.graphics[f'{category}s'][sprite.item_holding], not sprite.facing_left, False)
+            coords = sprite.rect.center - self.camera_offset + self.get_item_offset(category, sprite.facing_left)
+            rect = image.get_rect(center = coords)
                 
-                self.get_item_animation(sprite, item, image)
-                self.screen.blit(image, rect)
+            image = self.mining_animation.get_pickaxe_rotation(sprite, image, dt)
+            self.screen.blit(image, rect)
                 
-    def get_item_animation(self, sprite: pg.sprite.Sprite, item: str, image: pg.Surface) -> None:
-        match item:
+    def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> None:
+        match category:
             case 'pickaxe':
                 if sprite.state == 'mining':
-                    self.mining_animation.run(sprite, image)
+                    image = self.mining_animation.get_pickaxe_rotation(sprite, image, dt)
+                    return image
+    
+    @staticmethod
+    def get_item_offset(category, facing_left: bool) -> pg.Vector2:
+        match category:
+            case 'pickaxe':
+                return pg.Vector2(6 if facing_left else -6, -1) 
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
         self.sprite_manager.update(dt)
@@ -99,7 +108,7 @@ class GraphicsEngine:
         # update the weather first to keep the sky behind the rest of the world
         self.terrain.update()
         self.render_sprites(dt)
-        self.render_item_held()
+        self.render_item_held(dt)
         self.ui.update(mouse_coords, mouse_moving, left_click)
 
 
@@ -200,9 +209,7 @@ class MiningAnimation:
         self.render_item_held = render_item_held
 
     @staticmethod
-    def rotate_pickaxe(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
+    def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
         angle = 10 * int(sprite.frame_index) * dt
         image = pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise
-
-    def run(self, sprite: pg.sprite.Sprite, image: pg.Surface):
-        self.rotate_pickaxe(sprite, image)
+        return image
