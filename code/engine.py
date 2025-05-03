@@ -82,3 +82,4 @@ class Engine:
         self.inv.update()
        
         self.proc_gen.current_biome = self.player.current_biome
+        print(self.player.frame_index)

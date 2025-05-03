@@ -72,28 +72,28 @@ class GraphicsEngine:
             if sprite in self.sprite_manager.animated_sprites:
                 self.animate_sprite(sprite, dt)
 
-    def render_item_held(self, dt: float) -> None:
+    def render_item_held(self) -> None:
         for sprite in self.human_sprites:
             if sprite.item_holding != self.active_items[sprite]:
                 self.active_items[sprite] = sprite.item_holding
             
-            category = sprite.item_holding.split()[1] if ' ' in sprite.item_holding else None # ignore the material if applicable
+            category = sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None # ignore the material if applicable
             if not category:
                 pass # will have to add a method to return 'machines' for the assembler, etc.
             
             image = pg.transform.flip(self.graphics[f'{category}s'][sprite.item_holding], not sprite.facing_left, False)
+            image_frame = self.get_item_animation(sprite, category, image) # get the item's animation when in use
             coords = sprite.rect.center - self.camera_offset + self.get_item_offset(category, sprite.facing_left)
-            rect = image.get_rect(center = coords)
+            rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
+            self.screen.blit(image_frame if image_frame else image, rect)
                 
-            image = self.mining_animation.get_pickaxe_rotation(sprite, image, dt)
-            self.screen.blit(image, rect)
-                
-    def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> None:
+    def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface) -> pg.Surface:
         match category:
             case 'pickaxe':
                 if sprite.state == 'mining':
-                    image = self.mining_animation.get_pickaxe_rotation(sprite, image, dt)
+                    image = self.mining_animation.get_pickaxe_rotation(sprite, image)
                     return image
+        return image
     
     @staticmethod
     def get_item_offset(category, facing_left: bool) -> pg.Vector2:
@@ -108,7 +108,8 @@ class GraphicsEngine:
         # update the weather first to keep the sky behind the rest of the world
         self.terrain.update()
         self.render_sprites(dt)
-        self.render_item_held(dt)
+        self.render_item_held()
+        
         self.ui.update(mouse_coords, mouse_moving, left_click)
 
 
@@ -209,7 +210,7 @@ class MiningAnimation:
         self.render_item_held = render_item_held
 
     @staticmethod
-    def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
-        angle = 10 * int(sprite.frame_index) * dt
+    def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface) -> pg.Surface:
+        angle = 10 * int(sprite.frame_index)
         image = pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise
         return image
