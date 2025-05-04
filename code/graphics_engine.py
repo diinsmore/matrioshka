@@ -39,13 +39,13 @@ class GraphicsEngine:
         self.tile_IDs = proc_gen. tile_IDs
         self.biome_order = proc_gen.biome_order
 
-        self.all_sprites = sprite_manager.all_sprites
-        self.human_sprites = sprite_manager.human_sprites
-        self.cloud_sprites = sprite_manager.cloud_sprites
-
         self.terrain = Terrain(self.screen, self.graphics, self.camera_offset, self.proc_gen, self.chunk_manager)
         self.mining_animation = MiningAnimation(self.screen, self.render_item_held)
         self.weather = Weather(screen)
+
+        # self.sprite_manager.<sprite group> -> self.<sprite_group>
+        for name, group in self.sprite_manager.all_groups.items():
+            setattr(self, name, group)
 
         self.active_items = self.sprite_manager.active_items
 
@@ -67,31 +67,52 @@ class GraphicsEngine:
         return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
     def render_sprites(self, dt: float) -> None:
-        for sprite in sorted(self.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
+        for sprite in sorted(self.sprite_manager.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
             self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
-            if sprite in self.sprite_manager.animated_sprites:
-                self.animate_sprite(sprite, dt)
+            groups = self.get_sprite_groups(sprite)
+            if groups: # the sprite isn't just a member of all_sprites
+                self.render_group_action(groups, sprite, dt)
 
-    def render_item_held(self) -> None:
-        for sprite in self.human_sprites:
-            if sprite.item_holding != self.active_items[sprite]:
+    def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[str]:
+        '''
+        return every sprite group a given sprite is a member of
+        in order to determine which rendering methods to pass the sprite into
+        '''
+        return set(group for group in self.sprite_manager.all_groups.values() if sprite in group)
+
+    def render_group_action(self, groups: set[pg.sprite.Group], sprite: pg.sprite.Sprite, dt: float) -> None:
+        '''
+        call the rendering methods associated with specific sprite groups
+        e.g only sprites in the animated_sprite group are passed to self.animated_sprite()
+        '''
+        if self.animated_sprites in groups:
+            self.animate_sprite(sprite, dt)
+                
+        # TODO: this may need to be updated if more sprites can also hold objects
+        if self.human_sprites in groups:
+            self.render_item_held(dt)
+
+    def render_item_held(self, dt: float) -> None:
+        for sprite in self.sprite_manager.human_sprites:
+            if sprite.item_holding != self.sprite_manager.active_items[sprite]:
                 self.active_items[sprite] = sprite.item_holding
             
-            category = sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None # ignore the material if applicable
-            if not category:
+            # ignore the material if applicable
+            item_category = sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None 
+            if not item_category:
                 pass # will have to add a method to return 'machines' for the assembler, etc.
             
-            image = pg.transform.flip(self.graphics[f'{category}s'][sprite.item_holding], not sprite.facing_left, False)
-            image_frame = self.get_item_animation(sprite, category, image) # get the item's animation when in use
-            coords = sprite.rect.center - self.camera_offset + self.get_item_offset(category, sprite.facing_left)
+            image = pg.transform.flip(self.graphics[f'{item_category}s'][sprite.item_holding], not sprite.facing_left, False)
+            image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
+            coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
             rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
             self.screen.blit(image_frame if image_frame else image, rect)
                 
-    def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface) -> pg.Surface:
+    def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> pg.Surface:
         match category:
             case 'pickaxe':
                 if sprite.state == 'mining':
-                    image = self.mining_animation.get_pickaxe_rotation(sprite, image)
+                    image = self.mining_animation.get_pickaxe_rotation(sprite, image, dt)
                     return image
         return image
     
@@ -99,7 +120,7 @@ class GraphicsEngine:
     def get_item_offset(category, facing_left: bool) -> pg.Vector2:
         match category:
             case 'pickaxe':
-                return pg.Vector2(6 if facing_left else -6, -1) 
+                return pg.Vector2(3 if facing_left else -3, -1) 
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
         self.sprite_manager.update(dt)
@@ -108,7 +129,6 @@ class GraphicsEngine:
         # update the weather first to keep the sky behind the rest of the world
         self.terrain.update()
         self.render_sprites(dt)
-        self.render_item_held()
         
         self.ui.update(mouse_coords, mouse_moving, left_click)
 
@@ -210,7 +230,8 @@ class MiningAnimation:
         self.render_item_held = render_item_held
 
     @staticmethod
-    def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface) -> pg.Surface:
-        angle = 10 * int(sprite.frame_index)
+    def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
+        sprite.swing_timer = getattr(sprite, "swing_timer", 0.0) + dt
+        angle = 50 * math.sin(sprite.swing_timer * 10)
         image = pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise
         return image

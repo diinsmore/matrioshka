@@ -13,6 +13,7 @@ class Sprite(pg.sprite.Sprite):
         sprite_groups: list[pg.sprite.Group]
     ):
         super().__init__(*sprite_groups)
+        self.sprite_groups = sprite_groups
         self.image = image
         self.rect = self.image.get_rect(topleft = coords)
         self.z = z # layer to render on
@@ -29,14 +30,10 @@ class Cloud(Sprite):
         sprite_groups: list[pg.sprite.Group], 
     ):
         super().__init__(coords, image, z, *sprite_groups)
-        # associated sprite groups
-        self.all_sprites = sprites
-        self.cloud_sprites = cloud_sprites
-
         self.speed = speed
         self.player_x = player_x
 
-    def spawn(self, image: dict[str, dict[str, pg.Surface]], player_x: int, dt: float) -> None:
+    def spawn(self, image: dict[str, dict[str, pg.Surface]], dt: float) -> None:
         if not self.cloud_sprites: 
             for cloud in range(random.randint(5, 10)):
                 x = player_x + RES[0] / 2 + image.get_width() + random.randint(0, 1500) # start outside the screen boundary
@@ -44,12 +41,10 @@ class Cloud(Sprite):
                 Cloud(
                     coords = (x, -y), 
                     image = random.choice(image), 
-                    speed = random.randint(15, 25), 
                     z = Z_LAYERS['clouds'], 
-                    sprites = self.all_sprites,
-                    cloud_sprites = self.cloud_sprites,
-                    groups = [self.all_sprites, self.cloud_sprites],
-                    player_x = player_x
+                    speed = random.randint(15, 25),
+                    player_x = self.player_x,
+                    sprite_groups = self.sprite_groups,
                 )
 
     def move(self, dt: float) -> None:  

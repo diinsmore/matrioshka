@@ -36,10 +36,10 @@ class Player(pg.sprite.Sprite):
         self.image = self.frames[self.state][self.frame_index]
         self.rect = self.image.get_rect(midbottom = coords)
         self.z = z
-        self.animation_speed = {'walking': 6, 'mining': 10}
+        self.animation_speed = {'walking': 6, 'mining': 3}
 
         self.tile_map = tile_map
-        self. tile_IDs =  tile_IDs
+        self.tile_IDs =  tile_IDs
 
         self.biome_order = biome_order
         self.current_biome = 'forest'

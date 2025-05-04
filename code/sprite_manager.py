@@ -29,12 +29,13 @@ class SpriteManager:
         self.mech_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
+        self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
 
         self.active_items = {} # block/tool currently held by a given sprite
          
         self.mining = Mining(
             self.tile_map, 
-            self. tile_IDs, 
+            self.tile_IDs, 
             self.collision_map, 
             self.get_tool_strength, 
             self.pick_up_item
