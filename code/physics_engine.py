@@ -31,7 +31,8 @@ class PhysicsEngine:
                 
             self.tile_collision_detection(sprite, axis = 'x')
         else:
-            if sprite.state != 'mining':
+            # TODO: revisit this line in case more relevant states are added
+            if sprite.state not in ('jumping', 'mining'):
                 sprite.state = 'idle'
                 sprite.frame_index = 0
                 
@@ -47,6 +48,13 @@ class PhysicsEngine:
       
         sprite.rect.y = min(sprite.rect.y, self.world_edge_bottom) # don't add a top limit until the space biome borders are set, if any
         self.tile_collision_detection(sprite, axis = 'y')     
+
+    @staticmethod
+    def jump(sprite: pg.sprite.Sprite) -> None:
+        if sprite.grounded and sprite.state != 'jumping':
+            sprite.direction.y -= sprite.jump_height
+            sprite.state = 'jumping'
+            sprite.frame_index = 0
 
     def generate_collision_map(self) -> None:
         '''precompute rects with the coordinates of solid tiles'''
@@ -95,6 +103,7 @@ class PhysicsEngine:
                         self.tile_collision_y(sprite, tile, direction = 'up' if sprite.direction.y < 0 else 'down')
         else:
             sprite.grounded = False
+            sprite.state = 'jumping' # technically falling but the jumping graphic can still be rendered
 
     def tile_collision_x(self, sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
         if not self.step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):
@@ -102,6 +111,8 @@ class PhysicsEngine:
                 sprite.rect.right = tile.left
             else:
                 sprite.rect.left = tile.right
+
+            sprite.state = 'idle'
         else:
             if sprite.grounded: # prevents some glitchy movement from landing on the side of a tile
                 if direction == 'right':
@@ -137,14 +148,8 @@ class PhysicsEngine:
 
             if not sprite.spawned:
                 sprite.spawned = True 
-
+            
             if sprite.state == 'jumping':
                 sprite.state = 'idle'
 
         sprite.direction.y = 0
-    
-    @staticmethod
-    def jump(sprite: pg.sprite.Sprite) -> None:
-        #if sprite.grounded:
-            sprite.direction.y -= sprite.jump_height
-            sprite.state = 'jumping'

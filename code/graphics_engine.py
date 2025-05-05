@@ -50,7 +50,8 @@ class GraphicsEngine:
         self.active_items = self.sprite_manager.active_items
 
     def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state not in ('idle', 'jumping'):
+        if sprite.state != 'idle':
+            self.flip_again = True
             sprite.frame_index += sprite.animation_speed[sprite.state] * dt
             if self.flip_sprite_x(sprite):
                 sprite.facing_left = not sprite.facing_left
@@ -60,7 +61,11 @@ class GraphicsEngine:
                 not sprite.facing_left,
                 False
             )
-    
+        else:
+            image = sprite.frames['idle'][0]
+            # added 'and sprite.facing_left' to prevent flipping left after lifting the right key
+            sprite.image = image if not self.flip_sprite_x(sprite) and sprite.facing_left else pg.transform.flip(image, True, False)
+        
     @staticmethod
     def flip_sprite_x(sprite: pg.sprite.Sprite) -> bool:
         '''signals when the sprite's facing & movement directions misalign'''

@@ -75,8 +75,7 @@ class InputManager:
             if player.state == 'mining':
                 self.sprite_manager.end_action(player)
                 
-    @staticmethod
-    def get_direction_x(keys: list[bool]) -> int:
+    def get_direction_x(self, keys: list[bool]) -> int:
         direction = {'left': False, 'right': False}
         if keys[pg.K_a]: 
             direction['left'] = True

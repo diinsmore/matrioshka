@@ -48,7 +48,7 @@ class Engine:
             self.ui,
             self.proc_gen,
             self.sprite_manager,
-            self.chunk_manager
+            self.chunk_manager,
         )
         
         self.player = Player( 
@@ -80,5 +80,4 @@ class Engine:
         )
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
         self.inv.update()
-       
         self.proc_gen.current_biome = self.player.current_biome
