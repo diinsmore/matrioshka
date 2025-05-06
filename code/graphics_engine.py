@@ -38,8 +38,15 @@ class GraphicsEngine:
         self.tile_map = proc_gen.tile_map
         self.tile_IDs = proc_gen. tile_IDs
         self.biome_order = proc_gen.biome_order
+        self.terrain = Terrain(
+            self.screen, 
+            self.graphics, 
+            self.camera_offset, 
+            self.proc_gen, 
+            self.chunk_manager, 
+            self.sprite_manager.mining.mining_map
+        )
 
-        self.terrain = Terrain(self.screen, self.graphics, self.camera_offset, self.proc_gen, self.chunk_manager)
         self.mining_animation = MiningAnimation(self.screen, self.render_item_held)
         self.weather = Weather(screen)
 
@@ -145,13 +152,15 @@ class Terrain:
         graphics: dict[str, list[pg.Surface]], 
         camera_offset: pg.Vector2, 
         proc_gen: ProcGen, 
-        chunk_manager: ChunkManager
+        chunk_manager: ChunkManager,
+        mining_map: dict[tuple[int, int], dict[str, int]]
     ):
         self.screen = screen
         self.graphics = graphics
         self.camera_offset = camera_offset
         self.proc_gen = proc_gen
         self.chunk_manager = chunk_manager
+        self.mining_map = mining_map
         
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
@@ -176,6 +185,11 @@ class Terrain:
                     top = elev_data['underground start' if bg_type == 'underground' else 'landscape base']
                     top += image.get_height() * y
                     self.screen.blit(image, (left, top) - self.camera_offset)
+
+    def get_tile_type(self, x: int, y: int) -> str:
+        for tile in self.tile_IDs.keys():
+            if self.tile_IDs[tile] == self.tile_map[x, y]:
+                return tile
 
     def get_terrain_type(self) -> str:
         '''just for getting a specific wall variant but could become more modular'''
@@ -212,15 +226,27 @@ class Terrain:
         for coords in visible_chunks: # all visible tile coordinates
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
-                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] \
-                and self.tile_map[x, y] != self.tile_IDs['air']:
-                    # match the tile to its graphic
-                    for tile in self.tile_IDs.keys():
-                        if self.tile_IDs[tile] == self.tile_map[x, y]:
-                            # convert from tile to pixel coordinates
-                            px_x = (x * TILE_SIZE) - self.camera_offset.x
-                            px_y = (y * TILE_SIZE) - self.camera_offset.y 
-                            self.screen.blit(self.graphics[tile], (px_x, px_y))
+                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
+                    tile = self.get_tile_type(x, y)
+                    
+                    if (x, y) not in self.mining_map.keys():
+                        image = self.graphics[tile]
+                    else:
+                        image = self.get_mined_tile_image(x, y)
+
+                    # convert from tile to pixel coordinates
+                    px_x = (x * TILE_SIZE) - self.camera_offset.x
+                    px_y = (y * TILE_SIZE) - self.camera_offset.y 
+                    
+                    self.screen.blit(image, (px_x, px_y))
+
+    def get_mined_tile_image(self, x: int, y: int) -> None:
+        '''reduce the opacity of a given tile as it's mined away'''
+        if (x, y) in self.mining_map.keys():
+            tile = self.get_tile_type(x, y)
+            tile_image = self.graphics[tile].copy()
+            tile_image.set_alpha(150) 
+            return tile_image
 
     def update(self) -> None:
         for bg in ('landscape', 'terrain wall', 'underground'):
