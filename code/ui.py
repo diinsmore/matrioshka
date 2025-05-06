@@ -25,17 +25,18 @@ class UI:
         self.inv = inv
 
         self.HUD = HUD(self.screen)
-        self.inv_grid = InvGrid(self.inv, self.screen, self.colors, self.fonts, self.HUD.height)
+        self.inv_ui = InvUI(self.inv, self.screen, self.colors, self.fonts, self.HUD.height)
         self.mini_map = MiniMap(self.screen, self.HUD.height)
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
-        self.craft_window = CraftWindow(self.screen)
+        self.craft_window = CraftWindow(self.screen, self.inv, self.inv_ui.grid_outline)
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.HUD.update()
-        self.inv_grid.update()
+        self.inv_ui.update()
         self.mini_map.update()
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
         self.craft_window.update()
+
 
 class HUD:
     def __init__(self, screen: pg.Surface):
@@ -53,7 +54,7 @@ class HUD:
         self.render_bg()
 
 
-class InvGrid:
+class InvUI:
     def __init__(
         self, 
         inv: Inventory, 
@@ -67,17 +68,21 @@ class InvGrid:
         self.colors = colors
         self.fonts = fonts
         self.hud_height = hud_height
-        
-    def render_inv_outline(self) -> None:
-        left = RES[0] - self.inv.ui_width  
-        self.inv_outline = pg.Rect(left, self.hud_height, self.inv.ui_width, self.inv.ui_height)
-        pg.draw.rect(self.screen, 'black', self.inv_outline, 1)
 
+        self.left_border = RES[0] - self.inv.ui_width
+        self.grid_outline = self.make_grid_outline()
+    
+    def make_grid_outline(self) -> pg.Rect: 
+        grid_outline = pg.Rect(self.left_border, self.hud_height, self.inv.ui_width, self.inv.ui_height)
+        return grid_outline
+
+    def render_grid_outline(self) -> None:
+        pg.draw.rect(self.screen, 'black', self.grid_outline, 1)
         # filling in the outline
         bg_image = pg.Surface((self.inv.ui_width, self.inv.ui_height))
         bg_image.fill(self.colors['inv bg'])
         bg_image.set_alpha(225)
-        bg_rect = bg_image.get_rect(topleft = (left, self.hud_height))
+        bg_rect = bg_image.get_rect(topleft = (self.left_border, self.hud_height))
         self.screen.blit(bg_image, bg_rect)
 
         # individual boxes
@@ -85,12 +90,12 @@ class InvGrid:
             for y in range(self.inv.rows):
                 # TODO: the alignment is slightly off
                 box = pg.Rect(
-                    (left - 1, self.hud_height - 1) + pg.Vector2(x * self.inv.box_width, y * self.inv.box_height), 
+                    (self.left_border - 1, self.hud_height - 1) + pg.Vector2(x * self.inv.box_width, y * self.inv.box_height), 
                     (self.inv.box_width - 1, self.inv.box_height - 1) 
                 )
                 pg.draw.rect(self.screen, 'black', box, 1)
 
-    def render_inv_icons(self) -> None:
+    def render_icons(self) -> None:
         icons = {}
         for index, item_data in self.inv.data.items():
             if item_data: # ignore empty slots
@@ -105,8 +110,8 @@ class InvGrid:
                 inv_row = index // self.cols
                 
                 # render at the center of the inventory slot
-                x = self.inv_outline.left + (inv_col * self.inv.box_width) + (icons[item].get_width() // 2)
-                y = self.inv_outline.top + (inv_row * self.inv.box_height) + (icons[item].get_height() // 2)
+                x = self.grid_outline.left + (inv_col * self.inv.box_width) + (icons[item].get_width() // 2)
+                y = self.grid_outline.top + (inv_row * self.inv.box_height) + (icons[item].get_height() // 2)
                 icon_rect = icons[item].get_frect(topleft = (x, y))
                 self.screen.blit(pg.transform.scale(icons[item], (24, 24)), icon_rect)
 
@@ -123,9 +128,9 @@ class InvGrid:
         quant_rect = quant_image.get_frect(bottomleft = bg_image.bottomleft + pg.Vector2(2, 2))
         self.screen.blit(pg.transform.scale(quant_image, bg_image.get_size()), quant_rect)
 
-    def render_inv_label(self) -> None:
+    def render_label(self) -> None:
         image = self.fonts['label'].render('Inventory', False, self.colors['inv label'])
-        rect = image.get_frect(center = self.inv_outline.midtop - pg.Vector2(0, self.inv_outline.top / 2))
+        rect = image.get_frect(center = self.grid_outline.midtop - pg.Vector2(0, self.grid_outline.top / 2))
         self.screen.blit(image, rect)
 
         # decorative lines to the left/right of the text
@@ -134,35 +139,35 @@ class InvGrid:
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
-            (self.inv_outline.left, rect.midleft[1]), 
+            (self.grid_outline.left, rect.midleft[1]), 
             (rect.left - padding, rect.midleft[1])
         )
 
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
-            (self.inv_outline.left, rect.midleft[1]), 
-            (self.inv_outline.left, self.inv_outline.top - padding)
+            (self.grid_outline.left, rect.midleft[1]), 
+            (self.grid_outline.left, self.grid_outline.top - padding)
         )
         
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
             (rect.right + padding, rect.midright[1]), 
-            (self.inv_outline.right - padding, rect.midright[1])
+            (self.grid_outline.right - padding, rect.midright[1])
             )
 
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
-            (self.inv_outline.right - padding, rect.midright[1]), 
-            (self.inv_outline.right - padding, self.inv_outline.top - padding)
+            (self.grid_outline.right - padding, rect.midright[1]), 
+            (self.grid_outline.right - padding, self.grid_outline.top - padding)
         )
 
     def update(self) -> None:
-        self.render_inv_outline()
-        self.render_inv_icons()
-        self.render_inv_label()
+        self.render_grid_outline()
+        self.render_icons()
+        self.render_label()
 
 
 class MiniMap:
@@ -214,14 +219,21 @@ class MouseGrid:
 
 
 class CraftWindow:
-    def __init__(self, screen: pg.Surface):
+    def __init__(
+        self, 
+        screen: pg.Surface, 
+        inv: Inventory, 
+        grid_outline: pg.Rect
+    ):
         self.screen = screen
         self.open = False
+        self.inv = inv
+        self.grid_outline = grid_outline
 
     def render(self) -> None:
         if self.open:
             width, height = self.inv.ui_width, 400
-            outline = pg.Rect(self.inv_outline.left - 1, self.inv_outline.bottom + 1, width, height)
+            outline = pg.Rect(self.grid_outline.left - 1, self.grid_outline.bottom + 1, width, height)
             pg.draw.rect(self.screen, 'black', outline, 1, 2)
 
     def update(self) -> None:

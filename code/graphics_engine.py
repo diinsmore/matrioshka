@@ -50,7 +50,7 @@ class GraphicsEngine:
         self.active_items = self.sprite_manager.active_items
 
     def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state != 'idle':
+        if sprite.state not in ('idle', 'mining'):
             self.flip_again = True
             sprite.frame_index += sprite.animation_speed[sprite.state] * dt
             if self.flip_sprite_x(sprite):
@@ -107,7 +107,7 @@ class GraphicsEngine:
             if not item_category:
                 pass # will have to add a method to return 'machines' for the assembler, etc.
             
-            image = pg.transform.flip(self.graphics[f'{item_category}s'][sprite.item_holding], not sprite.facing_left, False)
+            image = pg.transform.flip(self.graphics[f'{item_category}s'][sprite.item_holding], sprite.facing_left, False)
             image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
             coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
             rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
@@ -236,7 +236,7 @@ class MiningAnimation:
 
     @staticmethod
     def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
-        sprite.swing_timer = getattr(sprite, "swing_timer", 0.0) + dt
-        angle = 50 * math.sin(sprite.swing_timer * 10)
+        sprite.rotate_timer = getattr(sprite, "rotate_timer", 0.0) + dt
+        angle = 50 * math.sin(sprite.rotate_timer * 10)
         image = pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise
         return image
