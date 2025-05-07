@@ -23,9 +23,9 @@ class AssetManager:
                 'inv bg': 'lightsteelblue4'
             }
         }
-        self. tile_IDs =  tile_IDs
+        self.tile_IDs = tile_IDs
         self.load_biome_graphics()
-        self.load_tile_graphics(self. tile_IDs)
+        self.load_tile_graphics()
         self.load_tool_graphics()
 
     @staticmethod
@@ -69,7 +69,7 @@ class AssetManager:
             if biome in ('forest', 'taiga', 'desert'):
                 self.assets['graphics'][biome]['trees'] = self.load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
 
-    def load_tile_graphics(self,  tile_IDs) -> None:
+    def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
             if tile != 'air':
                 self.assets['graphics'][tile] = self.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))

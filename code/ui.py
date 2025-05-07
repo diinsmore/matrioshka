@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from asset_manager import AssetManager
     from inventory import Inventory
+from os.path import join
 
 import pygame as pg
 from settings import RES, TILE_SIZE
@@ -18,14 +19,21 @@ class UI:
         self.screen = screen
         self.camera_offset = camera_offset
 
-        self.assets = asset_manager.assets
-        self.colors = self.assets['colors']
-        self.fonts = self.assets['fonts']
-
+        self.asset_manager = asset_manager
+        self.assets = self.asset_manager.assets
+        
         self.inv = inv
 
         self.HUD = HUD(self.screen)
-        self.inv_ui = InvUI(self.inv, self.screen, self.colors, self.fonts, self.HUD.height)
+        self.inv_ui = InvUI(
+            self.inv, 
+            self.screen,
+            self.asset_manager,
+            self.assets['graphics'], 
+            self.assets['colors'], 
+            self.assets['fonts'], 
+            self.HUD.height
+        )
         self.mini_map = MiniMap(self.screen, self.HUD.height)
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
         self.craft_window = CraftWindow(self.screen, self.inv, self.inv_ui.grid_outline)
@@ -58,19 +66,25 @@ class InvUI:
     def __init__(
         self, 
         inv: Inventory, 
-        screen: pg.Surface, 
+        screen: pg.Surface,
+        asset_manager: AssetManager,
+        graphics: dict[str, dict[int|str, pg.Surface]],
         colors: dict[str, str], 
         fonts: dict[str, pg.font.Font], 
-        hud_height: int
+        hud_height: int,
     ):
         self.inv = inv
+        self.asset_manager = asset_manager
         self.screen = screen
+        self.graphics = graphics
         self.colors = colors
         self.fonts = fonts
         self.hud_height = hud_height
 
         self.left_border = RES[0] - self.inv.ui_width
         self.grid_outline = self.make_grid_outline()
+
+        self.icons = {}
     
     def make_grid_outline(self) -> pg.Rect: 
         grid_outline = pg.Rect(self.left_border, self.hud_height, self.inv.ui_width, self.inv.ui_height)
@@ -81,7 +95,7 @@ class InvUI:
         # filling in the outline
         bg_image = pg.Surface((self.inv.ui_width, self.inv.ui_height))
         bg_image.fill(self.colors['inv bg'])
-        bg_image.set_alpha(225)
+        bg_image.set_alpha(125)
         bg_rect = bg_image.get_rect(topleft = (self.left_border, self.hud_height))
         self.screen.blit(bg_image, bg_rect)
 
@@ -97,35 +111,32 @@ class InvUI:
 
     def render_icons(self) -> None:
         icons = {}
-        for index, item_data in self.inv.data.items():
-            if item_data: # ignore empty slots
-                item = list(item_data.keys())[0]
-                quantity = list(item_data.values())[0]
-                if item not in icons:
-                    # will have to update this path depending on the particular item type
-                    icons[item] = self.asset_manager.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{item}.png'))
-                
-                # determine the inventory slot an item corresponds to
-                inv_col = index % self.cols
-                inv_row = index // self.cols
-                
-                # render at the center of the inventory slot
-                x = self.grid_outline.left + (inv_col * self.inv.box_width) + (icons[item].get_width() // 2)
-                y = self.grid_outline.top + (inv_row * self.inv.box_height) + (icons[item].get_height() // 2)
-                icon_rect = icons[item].get_frect(topleft = (x, y))
-                self.screen.blit(pg.transform.scale(icons[item], (24, 24)), icon_rect)
+        for name, data in self.inv.contents.items():
+            if name not in icons:
+                # will have to update this path depending on the particular item type
+                icons[name] = self.asset_manager.load_image(join('..', 'graphics', 'terrain', 'tiles', f'{name}.png'))
+            
+            # determine the inventory slot an item corresponds to
+            inv_col = data['index'] % self.inv.cols
+            inv_row = data['index'] // self.inv.cols
+            
+            # render at the center of the inventory slot
+            x = self.grid_outline.left + (inv_col * self.inv.box_width) + (icons[name].get_width() // 2)
+            y = self.grid_outline.top + (inv_row * self.inv.box_height) + (icons[name].get_height() // 2)
+            icon_rect = icons[name].get_frect(topleft = (x, y))
+            self.screen.blit(pg.transform.scale(icons[name], (24, 24)), icon_rect)
 
-                self.render_item_quantity(quantity, x, y)
-
-    def render_item_quantity(self, x, y) -> None:
+            self.render_item_amount(data['amount'], x, y)
+                   
+    def render_item_amount(self, amount: int, x: int, y: int) -> None:
         bg_image = pg.Surface((16, 16))
         bg_image.fill(self.colors['inv bg'])
         bg_image.set_alpha(200)
         bg_rect = bg_image.get_rect(topleft = (x, y) - pg.Vector2(4, 5))
         self.screen.blit(bg_image, bg_rect)
 
-        quant_image = self.assets['fonts']['label'].render(str(quantity), False, 'gray')
-        quant_rect = quant_image.get_frect(bottomleft = bg_image.bottomleft + pg.Vector2(2, 2))
+        quant_image = self.fonts['label'].render(str(amount), False, 'gray')
+        quant_rect = quant_image.get_frect(bottomleft = bg_rect.bottomleft + pg.Vector2(2, 2))
         self.screen.blit(pg.transform.scale(quant_image, bg_image.get_size()), quant_rect)
 
     def render_label(self) -> None:
@@ -133,9 +144,8 @@ class InvUI:
         rect = image.get_frect(center = self.grid_outline.midtop - pg.Vector2(0, self.grid_outline.top / 2))
         self.screen.blit(image, rect)
 
-        # decorative lines to the left/right of the text
         padding = 3
-
+        # decorative lines to the left/right of the text
         pg.draw.line(
             self.screen, 
             self.colors['inv label'], 
@@ -230,11 +240,13 @@ class CraftWindow:
         self.inv = inv
         self.grid_outline = grid_outline
 
-    def render(self) -> None:
+    def render_outline(self) -> None:
         if self.open:
-            width, height = self.inv.ui_width, 400
-            outline = pg.Rect(self.grid_outline.left - 1, self.grid_outline.bottom + 1, width, height)
+            width = self.inv.ui_width
+            height = 400
+            bottom = self.inv.box_height * self.inv.rows # move down when the inventory expands
+            outline = pg.Rect(self.grid_outline.left, bottom + 30, width - 1, height)
             pg.draw.rect(self.screen, 'black', outline, 1, 2)
 
     def update(self) -> None:
-        self.render()
+        self.render_outline()

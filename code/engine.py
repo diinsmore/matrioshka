@@ -64,7 +64,7 @@ class Engine:
             tile_IDs = tile_IDs,
             biome_order = self.proc_gen.biome_order,
             physics_engine = self.physics_engine,
-            inventory = self.inv
+            inv = self.inv
         )
         
         # keep this line below the sprite instances

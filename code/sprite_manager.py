@@ -104,16 +104,18 @@ class Mining:
     def init_tile(self, tile_coords: tuple[int, int]) -> None:
         '''initialize a new key/value pair in the mining map'''
         tile_index = self.tile_map[tile_coords]
-        # get the tile variant to access its default hardness value
-        for index, tile in enumerate(TILES):
+        self.mining_map[tile_coords] = {'hardness': TILES[self.get_tile_name(tile_index)]['hardness'], 'hits': 0}
+
+    @staticmethod
+    def get_tile_name(tile_index: int) -> str:
+        for index, name in enumerate(TILES):
             if index == tile_index:
-                self.mining_map[tile_coords] = {'hardness': TILES[tile]['hardness'], 'hits': 0}
-                return
+                return name
 
     def valid_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
         tile_distance = sprite_coords.distance_to(tile_coords)
-        return tile_distance <= self.tile_reach_radius and self.tile_map[tile_coords] != self. tile_IDs['air']
+        return tile_distance <= self.tile_reach_radius and self.tile_map[tile_coords] != self.tile_IDs['air']
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
     def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
@@ -123,5 +125,6 @@ class Mining:
         data['hardness'] -= tool_strength * data['hits'] 
         
         if self.mining_map[tile_coords]['hardness'] <= 0:
-            self.tile_map[tile_coords] = self. tile_IDs['air']
+            sprite.inv.add_item(self.get_tile_name(self.tile_map[tile_coords]))
+            self.tile_map[tile_coords] = self.tile_IDs['air']
             del self.mining_map[tile_coords]

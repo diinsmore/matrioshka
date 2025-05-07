@@ -22,12 +22,12 @@ class Player(pg.sprite.Sprite):
         sprite_groups: list[pg.sprite.Group], 
 
         tile_map: np.ndarray,
-         tile_IDs: dict[str, dict[str, any]],
+        tile_IDs: dict[str, dict[str, any]],
         biome_order: dict[str, int],
 
         physics_engine: PhysicsEngine,
 
-        inventory: Inventory
+        inv: Inventory
     ):
         super().__init__(*sprite_groups)
         self.frames = frames
@@ -36,6 +36,7 @@ class Player(pg.sprite.Sprite):
         self.image = self.frames[self.state][self.frame_index]
         self.rect = self.image.get_rect(midbottom = coords)
         self.z = z
+        # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
         self.animation_speed = {'walking': 6, 'mining': 4, 'jumping': 0}
 
         self.tile_map = tile_map
@@ -46,7 +47,7 @@ class Player(pg.sprite.Sprite):
 
         self.physics_engine = physics_engine
 
-        self.inventory = inventory
+        self.inv = inv
         self.item_holding = 'iron pickaxe' # just for testing purposes, normally self.inventory[self.inv_index]
         
         self.direction = pg.Vector2()
@@ -61,7 +62,7 @@ class Player(pg.sprite.Sprite):
         self.grounded = True
 
     def place_block(self) -> None:
-        self.tile_map[self.tile_coords] = self. tile_IDs[self.item_holding][tile_id]
+        self.tile_map[self.tile_coords] = self.tile_IDs[self.item_holding][tile_id]
                
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH

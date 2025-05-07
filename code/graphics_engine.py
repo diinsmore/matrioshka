@@ -50,11 +50,14 @@ class GraphicsEngine:
         self.mining_animation = MiningAnimation(self.screen, self.render_item_held)
         self.weather = Weather(screen)
 
+        # only render an equipped item while the sprite is in a given state
+        self.item_render_states = {
+            'pickaxe': {'mining', 'fighting'},
+        }
+
         # self.sprite_manager.<sprite group> -> self.<sprite_group>
         for name, group in self.sprite_manager.all_groups.items():
             setattr(self, name, group)
-
-        self.active_items = self.sprite_manager.active_items
 
     def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
         if sprite.state not in ('idle', 'mining'):
@@ -106,20 +109,27 @@ class GraphicsEngine:
 
     def render_item_held(self, dt: float) -> None:
         for sprite in self.sprite_manager.human_sprites:
-            if sprite.item_holding != self.sprite_manager.active_items[sprite]:
-                self.active_items[sprite] = sprite.item_holding
-            
-            # ignore the material if applicable
-            item_category = sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None 
+            self.update_active_item(sprite)
+            item_category = self.get_item_category(sprite)
             if not item_category:
                 pass # will have to add a method to return 'machines' for the assembler, etc.
             
-            image = pg.transform.flip(self.graphics[f'{item_category}s'][sprite.item_holding], sprite.facing_left, False)
-            image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
-            coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
-            rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
-            self.screen.blit(image_frame if image_frame else image, rect)
-                
+            if sprite.state in self.item_render_states[item_category]:
+                image = pg.transform.flip(self.graphics[f'{item_category}s'][sprite.item_holding], sprite.facing_left, False)
+                image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
+                coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
+                rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
+                self.screen.blit(image_frame if image_frame else image, rect)
+
+    def update_active_item(self, sprite: pg.sprite.Sprite) -> str:
+        if sprite.item_holding != self.sprite_manager.active_items[sprite]:
+            self.sprite_manager.active_items[sprite] = sprite.item_holding
+    
+    @staticmethod
+    def get_item_category(sprite: pg.sprite.Sprite) -> str:
+        '''removes the material name from the item_holding variable if applicable'''
+        return sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None 
+
     def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> pg.Surface:
         match category:
             case 'pickaxe':
@@ -130,9 +140,10 @@ class GraphicsEngine:
     
     @staticmethod
     def get_item_offset(category, facing_left: bool) -> pg.Vector2:
+        '''align the item with the sprite's arm'''
         match category:
             case 'pickaxe':
-                return pg.Vector2(3 if facing_left else -3, -1) 
+                return pg.Vector2(3 if facing_left else -3, 6) 
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
         self.sprite_manager.update(dt)
