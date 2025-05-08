@@ -81,6 +81,7 @@ class HUD:
         self.height = TILE_SIZE * 3
         self.width = RES[0] // 2
         self.shift_right = False
+        self.render = True
 
     def render_bg(self) -> None:
         self.image = pg.Surface((self.width, self.height))
@@ -88,6 +89,7 @@ class HUD:
         self.image.fill('black')
         self.image.set_alpha(150)
         self.screen.blit(self.image, self.rect)
+        self.add_bg_outlines()
 
     def get_left_point(self) -> int:
         default = (RES[0] // 2) - (self.width // 2)
@@ -121,8 +123,8 @@ class HUD:
         pg.draw.rect(self.screen, 'black', outline_rect, width, radius)
 
     def update(self) -> None:
-        self.render_bg()
-        self.add_bg_outlines()
+        if self.render:
+            self.render_bg()
         
 
 class MiniMap:
@@ -163,6 +165,7 @@ class InvUI:
         self.box_width, self.box_height = TILE_SIZE * 2, TILE_SIZE * 2
         self.total_width = self.box_width * self.cols
         self.total_height = self.box_height * self.rows
+        self.render = True
         self.expand = False
         self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
     
@@ -221,10 +224,11 @@ class InvUI:
                 self.screen.blit(font, font_rect)
 
     def update(self) -> None:
-        self.update_dimensions()
-        self.render_bg()
-        self.render_slots()
-        self.render_icons()
+        if self.render:
+            self.update_dimensions()
+            self.render_bg()
+            self.render_slots()
+            self.render_icons()
 
 
 class CraftWindow:

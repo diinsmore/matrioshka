@@ -73,9 +73,9 @@ class Engine:
     def update(self, dt: float) -> None:
         self.input_manager.update(self.player, self.camera.offset, self.proc_gen.update_collision_map, dt)
         self.graphics_engine.update(
-            self.input_manager.mouse_coords, 
-            self.input_manager.mouse_moving, 
-            self.input_manager.clicks['left'], 
+            self.input_manager.mouse.coords, 
+            self.input_manager.mouse.moving, 
+            self.input_manager.mouse.clicks['left'], 
             dt
         )
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
