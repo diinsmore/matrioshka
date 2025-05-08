@@ -51,6 +51,7 @@ class InputManager:
         if keys[pg.K_c]:
             self.ui.craft_window.open = not self.ui.craft_window.open
             self.ui.inv_ui.expand = True
+            self.ui.HUD.shift_right = not self.ui.HUD.shift_right
 
         if keys[pg.K_m]:
             self.ui.mini_map.render = not self.ui.mini_map.render

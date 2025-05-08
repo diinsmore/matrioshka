@@ -22,10 +22,11 @@ class UI:
         self.assets = self.asset_manager.assets
         self.inv = inv
 
-        self.HUD = HUD(self.screen)
+        
         self.mini_map = MiniMap(self.screen)
         self.inv_ui = InvUI(self.inv, self.screen, self.asset_manager, self.mini_map.height + self.mini_map.padding)
         self.craft_window = CraftWindow(self.screen, self.inv_ui, self.get_craft_window_height())
+        self.HUD = HUD(self.screen, self.craft_window.outline.right)
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
 
     def get_craft_window_height(self) -> int:
@@ -73,17 +74,29 @@ class MouseGrid:
 
 
 class HUD:
-    def __init__(self, screen: pg.Surface):
+    def __init__(self, screen: pg.Surface, craft_window_right: int):
         self.screen = screen
+        self.craft_window_right = craft_window_right
+
         self.height = TILE_SIZE * 3
         self.width = RES[0] // 2
-        self.image = pg.Surface((self.width, self.height))
-        self.rect = self.image.get_rect(topleft = ((RES[0] // 2) - (self.width // 2), 0))
-    
+        self.shift_right = False
+
     def render_bg(self) -> None:
+        self.image = pg.Surface((self.width, self.height))
+        self.rect = self.image.get_rect(topleft = (self.get_left_point(), 0))
         self.image.fill('black')
         self.image.set_alpha(150)
         self.screen.blit(self.image, self.rect)
+
+    def get_left_point(self) -> int:
+        default = (RES[0] // 2) - (self.width // 2)
+        if not self.shift_right:
+            return default
+        else:
+            # center between the craft window's right border and the screen's right border
+            padding = (RES[0] - self.craft_window_right) - self.width
+            return self.craft_window_right + (padding // 2)
         
     def add_bg_outlines(self) -> None:
         '''layering 2 rects around the HUD outline for a pseudo-3d effect'''
@@ -222,12 +235,12 @@ class CraftWindow:
 
         self.width = self.inv_ui.total_width * 2
         self.padding = 5
+        self.outline = pg.Rect(self.inv_ui.outline.right + self.padding, self.padding, self.width, self.height)
         self.open = False
 
     def render_outline(self) -> None:
         if self.open:
-            outline = pg.Rect(self.inv_ui.outline.right + self.padding, self.padding, self.width, self.height)
-            pg.draw.rect(self.screen, 'black', outline, 1, 2)
+            pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
 
     def update(self) -> None:
         self.render_outline()
