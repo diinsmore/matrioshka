@@ -38,18 +38,22 @@ class InputManager:
     def get_key_pressed(self, player: Player) -> None:
         '''
         tracks keys being pressed
-        the key must be lifted before the associated function is called again
+        the key must be lifted before the associated function called again
         '''
         keys = pg.key.get_just_pressed()
 
         if keys[pg.K_SPACE]:
             self.physics_engine.jump(player)
         
-        if keys[pg.K_RSHIFT]:
-            player.inventory.expand = not player.inventory.expand
+        if keys[pg.K_RSHIFT] and not self.ui.craft_window.open:
+            self.ui.inv_ui.expand = not self.ui.inv_ui.expand
 
         if keys[pg.K_c]:
             self.ui.craft_window.open = not self.ui.craft_window.open
+            self.ui.inv_ui.expand = self.ui.craft_window.open # open/close the inventory along with the craft window
+
+        if keys[pg.K_m]:
+            self.ui.mini_map.render = not self.ui.mini_map.render
 
         # select an inventory item by index number 
         # only applies to the top row (first 10)

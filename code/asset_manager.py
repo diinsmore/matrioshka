@@ -13,14 +13,13 @@ class AssetManager:
             },
         
             'fonts': {
-                'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
-                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf'), size = 15),
-                'number': pg.font.Font(join('..', 'graphics', 'fonts', 'MinecraftStandardBold.otf'), size = 10)
+                'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Code.ttf')),
+                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 10),
+                'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 5)
             },
         
             'colors': {
                 'inv label': 'mistyrose4',
-                'inv bg': 'lightsteelblue4'
             }
         }
         self.tile_IDs = tile_IDs
