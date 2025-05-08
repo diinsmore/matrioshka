@@ -13,9 +13,9 @@ class AssetManager:
             },
         
             'fonts': {
-                'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Code.ttf')),
-                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 10),
-                'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 5)
+                'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
+                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'monaco.ttf'), size = 20),
+                'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 8)
             },
         
             'colors': {

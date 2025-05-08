@@ -50,7 +50,7 @@ class InputManager:
 
         if keys[pg.K_c]:
             self.ui.craft_window.open = not self.ui.craft_window.open
-            self.ui.inv_ui.expand = self.ui.craft_window.open # open/close the inventory along with the craft window
+            self.ui.inv_ui.expand = True
 
         if keys[pg.K_m]:
             self.ui.mini_map.render = not self.ui.mini_map.render

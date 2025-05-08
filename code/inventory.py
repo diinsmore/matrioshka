@@ -14,7 +14,7 @@ class Inventory:
         if item not in self.contents.keys():
             num_slots_taken = len([k for k in self.contents.keys()])
             if num_slots_taken < self.slots:
-                self.contents[item] = {'amount': 1, 'index': num_slots_taken + 1 if num_slots_taken > 0 else 0}
+                self.contents[item] = {'amount': 1, 'index': num_slots_taken}
         else:
             if self.contents[item]['amount'] + 1 <= self.slot_capacity[item]:
                self.contents[item]['amount'] += 1

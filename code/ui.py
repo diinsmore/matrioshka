@@ -75,19 +75,20 @@ class MouseGrid:
 class HUD:
     def __init__(self, screen: pg.Surface):
         self.screen = screen
-        self.height = TILE_SIZE * 2
+        self.height = TILE_SIZE * 3
         self.width = RES[0] // 2
         self.image = pg.Surface((self.width, self.height))
-        self.rect = self.image.get_rect(topleft = (RES[0] - self.width, 0))
+        self.rect = self.image.get_rect(topleft = ((RES[0] // 2) - (self.width // 2), 0))
     
     def render_bg(self) -> None:
         self.image.fill('black')
-        self.image.set_alpha(240)
+        self.image.set_alpha(150)
         self.screen.blit(self.image, self.rect)
         
-    def add_bg_outline(self) -> None:
-        width = 4
-        radius = 3
+    def add_bg_outlines(self) -> None:
+        '''layering 2 rects around the HUD outline for a pseudo-3d effect'''
+        width = 2
+        radius = 4
         outline_rect = pg.Rect(
             self.rect.left - width, 
             self.rect.top - width, 
@@ -96,19 +97,19 @@ class HUD:
         )
         
         width2 = width // 2
-        outline_rect2 = pg.Rect(
+        outline_rect2 = pg.FRect(
             outline_rect.left - width2, 
             outline_rect.top - width2, 
             outline_rect.width + (width2 * 2), 
             outline_rect.height + (width2 * 2)
         )
-        # note that the smallest outline is being drawn first to be rendered furthest back
-        pg.draw.rect(self.screen, 'gray20', outline_rect2, width, radius)
-        pg.draw.rect(self.screen, 'gray10', outline_rect, width, radius)
+   
+        pg.draw.rect(self.screen, 'gray6', outline_rect2, width2, radius + 3)
+        pg.draw.rect(self.screen, 'black', outline_rect, width, radius)
 
     def update(self) -> None:
         self.render_bg()
-        self.add_bg_outline()
+        self.add_bg_outlines()
         
 
 class MiniMap:
@@ -174,25 +175,37 @@ class InvUI:
                 pg.draw.rect(self.screen, 'black', box, 1)
 
     def render_icons(self) -> None:
-        for name, data in self.inv.contents.items():
-            # will have to update this path depending on the particular item type
-            icon_image = self.assets['graphics'][name]
-            
-            # determine the slot an item corresponds to
-            col = data['index'] % self.cols
-            row = data['index'] // self.rows
-            
-            # render at the center of the inventory slot
-            x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
-            y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
-            icon_rect = icon_image.get_rect(topleft = (x, y))
-            self.screen.blit(icon_image, icon_rect)
-            self.render_item_amount(data['amount'], (x, y))
-                   
+        contents = self.inv.contents.items()
+        if contents:
+            for name, data in contents:
+                # will have to update this path depending on the particular item type
+                icon_image = self.assets['graphics'][name]
+                
+                # determine the slot an item corresponds to
+                col = data['index'] % self.cols
+                row = data['index'] // self.rows
+                
+                # render at the center of the inventory slot
+                x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
+                y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
+                icon_rect = icon_image.get_rect(topleft = (x, y))
+                self.screen.blit(icon_image, icon_rect)
+
+                self.render_item_amount(data['amount'], (x, y))
+                self.render_item_name(icon_rect, name)
+
     def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
-        amount_image = self.assets['fonts']['label'].render(str(amount), False, 'gray')
-        amount_rect = amount_image.get_rect(center = coords)
+        amount_image = self.assets['fonts']['number'].render(str(amount), False, 'gray')
+        amount_rect = amount_image.get_rect(center = coords - pg.Vector2(0, 2))
         self.screen.blit(amount_image, amount_rect)
+
+    def render_item_name(self, icon_rect: pg.Rect, name: str) -> None:
+        if pg.mouse.get_rel():
+            # render when the mouse hovers over the icon
+            if icon_rect.collidepoint(pg.mouse.get_pos()):
+                font = self.assets['fonts']['label'].render(name, True, 'azure4')
+                font_rect = font.get_rect(topleft = icon_rect.bottomright)
+                self.screen.blit(font, font_rect)
 
     def update(self) -> None:
         self.update_dimensions()
