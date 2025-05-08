@@ -22,6 +22,7 @@ class UI:
         self.assets = self.asset_manager.assets
         self.inv = inv
 
+        self.HUD = HUD(self.screen)
         self.mini_map = MiniMap(self.screen)
         self.inv_ui = InvUI(self.inv, self.screen, self.asset_manager, self.mini_map.height + self.mini_map.padding)
         self.craft_window = CraftWindow(self.screen, self.inv_ui, self.get_craft_window_height())
@@ -33,6 +34,7 @@ class UI:
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
+        self.HUD.update()
         self.mini_map.update()
         self.inv_ui.update()
         self.craft_window.update()
@@ -69,6 +71,45 @@ class MouseGrid:
     def update(self, mouse_coords: tuple[int, int], mouse_moving, left_click: bool) -> None:
         self.render_grid(mouse_coords, mouse_moving, left_click)
 
+
+class HUD:
+    def __init__(self, screen: pg.Surface):
+        self.screen = screen
+        self.height = TILE_SIZE * 2
+        self.width = RES[0] // 2
+        self.image = pg.Surface((self.width, self.height))
+        self.rect = self.image.get_rect(topleft = (RES[0] - self.width, 0))
+    
+    def render_bg(self) -> None:
+        self.image.fill('black')
+        self.image.set_alpha(240)
+        self.screen.blit(self.image, self.rect)
+        
+    def add_bg_outline(self) -> None:
+        width = 4
+        radius = 3
+        outline_rect = pg.Rect(
+            self.rect.left - width, 
+            self.rect.top - width, 
+            self.rect.width + (width * 2), 
+            self.rect.height + (width * 2)
+        )
+        
+        width2 = width // 2
+        outline_rect2 = pg.Rect(
+            outline_rect.left - width2, 
+            outline_rect.top - width2, 
+            outline_rect.width + (width2 * 2), 
+            outline_rect.height + (width2 * 2)
+        )
+        # note that the smallest outline is being drawn first to be rendered furthest back
+        pg.draw.rect(self.screen, 'gray20', outline_rect2, width, radius)
+        pg.draw.rect(self.screen, 'gray10', outline_rect, width, radius)
+
+    def update(self) -> None:
+        self.render_bg()
+        self.add_bg_outline()
+        
 
 class MiniMap:
     def __init__(self, screen: pg.Surface):
