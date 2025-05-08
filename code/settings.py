@@ -17,7 +17,7 @@ Z_LAYERS = {
 
 TILES = {
     'air': {'hardness': 0},
-    'dirt': {'hardness': 0},
+    'dirt': {'hardness': 100},
     'stone': {'hardness': 400},
     'sandstone': {'hardness': 300}, 
     'ice': {'hardness': 200},
