@@ -48,7 +48,7 @@ class Player(pg.sprite.Sprite):
         self.physics_engine = physics_engine
 
         self.inv = inv
-        self.item_holding = 'iron pickaxe' # just for testing purposes, normally self.inventory[self.inv_index]
+        self.item_holding = 'iron pickaxe' # just for testing purposes, normally self.inv[self.inv_index]
         
         self.direction = pg.Vector2()
         self.speed = 200

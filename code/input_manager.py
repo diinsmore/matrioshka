@@ -20,24 +20,26 @@ class InputManager:
         self.sprite_manager = sprite_manager
         self.ui = ui
         
-        self.keyboard = Keyboard(self.physics_engine, self.sprite_manager, self.ui)
         self.mouse = Mouse(self.physics_engine, self.sprite_manager, self.ui)
+        self.keyboard = Keyboard(self.physics_engine, self.sprite_manager, self.ui, self.mouse.tile_coords)
 
     def update(self, player: Player, camera_offset: pg.Vector2, update_collision_map: callable, dt: float) -> None:
-        self.keyboard.update(player, update_collision_map, dt)
         self.mouse.update(camera_offset)
-
+        self.keyboard.update(player, update_collision_map, self.mouse.tile_coords, dt)
+        
 
 class Keyboard:
     def __init__(
         self,
         physics_engine: PhysicsEngine, 
         sprite_manager: SpriteManager, 
-        ui: UI
+        ui: UI,
+        tile_coords: tuple[int, int]
     ):
         self.physics_engine = physics_engine
         self.sprite_manager = sprite_manager
         self.ui = ui
+        self.tile_coords = tile_coords # mining depends on the mouse location but is triggered by the 's' key
 
         self.num_keys = {pg.K_0 + num for num in range(10)}
         # map the key's ascii value to the key number pressed 
@@ -63,11 +65,7 @@ class Keyboard:
                 self.update_inv_index(player, key)
 
         self.update_render_state(keys)
-    
-    def update_inv_index(self, player: Player, key: pg.key) -> None:
-        '''select an inventory item by index number (only applies to keys <= 10)'''
-        player.inv.index = self.key_map[key]
-                
+          
     def get_key_held(self, player: Player, update_collision_map: callable, dt: float) -> None:
         '''
         tracks keys being held down
@@ -84,6 +82,10 @@ class Keyboard:
             if player.state == 'mining':
                 self.sprite_manager.end_action(player)
     
+    def update_inv_index(self, player: Player, key: pg.key) -> None:
+        '''select an inventory item by index number (only applies to keys <= 10)'''
+        player.inv.index = self.key_map[key]
+
     def update_render_state(self, keys: list[bool]) -> None:
         '''switch between rendering/not rendering a given ui component'''
         if keys[pg.K_c]:
@@ -114,8 +116,16 @@ class Keyboard:
 
         return direction['right'] - direction['left']
 
-    def update(self, player: Player, update_collision_map: callable, dt: float) -> None:
+    def update(
+        self, 
+        player: Player, 
+        update_collision_map: callable, 
+        updated_tile_coords: tuple[int, int], 
+        dt: float
+    ) -> None:
+
         self.get_input(player, update_collision_map, dt)
+        self.tile_coords = updated_tile_coords # updated in the mouse class
 
 
 class Mouse:
@@ -143,7 +153,7 @@ class Mouse:
         if pg.mouse.get_rel():
             self.moving = True
             self.coords = self.get_mouse_coords(camera_offset)
-            self.tile_coords = self.get_tile_coords()
+            self.tile_coords = (self.coords[0] // TILE_SIZE, self.coords[1] // TILE_SIZE)
 
     def get_mouse_click(self) -> None:
         click = pg.mouse.get_pressed()
@@ -161,9 +171,6 @@ class Mouse:
         
         # convert from screen-space to world-space
         return (int(screen_space[0] + camera_offset.x), int(screen_space[1] + camera_offset.y))
-
-    def get_tile_coords(self) -> tuple[int, int]:
-        return (self.coords[0] // TILE_SIZE, self.coords[1] // TILE_SIZE)
 
     def update(self, camera_offset: pg.Vector2) -> None:
         self.get_input(camera_offset)
