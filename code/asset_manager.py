@@ -19,7 +19,7 @@ class AssetManager:
             },
         
             'colors': {
-                'inv label': 'mistyrose4',
+                'outline bg': 'gray18',
             }
         }
         self.tile_IDs = tile_IDs

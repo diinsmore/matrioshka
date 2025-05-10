@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from asset_manager import AssetManager
     from inventory import Inventory
+
 from os.path import join
 
 import pygame as pg
@@ -22,16 +23,45 @@ class UI:
         self.assets = self.asset_manager.assets
         self.inv = inv
 
-        
-        self.mini_map = MiniMap(self.screen)
-        self.inv_ui = InvUI(self.inv, self.screen, self.asset_manager, self.mini_map.height + self.mini_map.padding)
-        self.craft_window = CraftWindow(self.screen, self.inv_ui, self.get_craft_window_height())
-        self.HUD = HUD(self.screen, self.craft_window.outline.right)
+        self.mini_map = MiniMap(self.screen, self.assets, self.get_outline)
+        self.inv_ui = InvUI(
+            self.inv, 
+            self.screen, 
+            self.asset_manager, 
+            self.mini_map.height + self.mini_map.padding, 
+            self.get_outline
+        )
+        self.craft_window = CraftWindow(self.screen, self.inv_ui, self.get_craft_window_height(), self.get_outline)
+        self.HUD = HUD(self.screen, self.assets, self.craft_window.outline.right, self.get_outline)
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
 
     def get_craft_window_height(self) -> int:
         inv_grid_max_height = self.inv_ui.box_height * (self.inv.slots // self.inv_ui.cols)
         return inv_grid_max_height + self.mini_map.height + self.mini_map.padding
+
+    def get_outline(
+        self,
+        rect: pg.Rect,
+        color: str = None,
+        width: int = 1, 
+        radius: int = 0,
+        draw: bool = True, # if multiple rects are used, this gives more flexibility for their layering
+        return_outline: bool = False
+    ) -> None|pg.Rect:
+
+        # avoids evaluating 'self' prematurely when set as a default parameter
+        if color is None:
+            color = self.assets['colors']['outline bg']
+
+        outline = pg.Rect(
+                    rect.topleft - pg.Vector2(width, width), 
+                    (rect.width + (width * 2), rect.height + (width * 2))
+                )
+        if draw:
+            pg.draw.rect(self.screen, color, outline, width, radius)
+
+        if return_outline: # use the new rect to create a second outline around it
+            return outline
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
@@ -55,7 +85,7 @@ class MouseGrid:
                 for y in range(tiles_y):
                     cell_surf = pg.Surface((TILE_SIZE, TILE_SIZE), pg.SRCALPHA)
                     cell_surf.fill((0, 0, 0, 0))
-                    pg.draw.rect(cell_surf, (255, 255, 255, 20), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf
+                    pg.draw.rect(cell_surf, (255, 255, 255, 10), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf
                     cell_rect = cell_surf.get_rect(topleft = (topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)))
                     self.screen.blit(cell_surf, cell_rect)
         
@@ -74,10 +104,20 @@ class MouseGrid:
 
 
 class HUD:
-    def __init__(self, screen: pg.Surface, craft_window_right: int):
+    def __init__(
+        self, 
+        screen: pg.Surface, 
+        assets: dict[str, dict[str, any]], 
+        craft_window_right: int,
+        get_outline: callable,
+    ):
         self.screen = screen
+        self.assets = assets
         self.craft_window_right = craft_window_right
+        self.get_outline = get_outline
 
+        self.colors = self.assets['colors']
+        self.fonts = self.assets['fonts']
         self.height = TILE_SIZE * 3
         self.width = RES[0] // 2
         self.shift_right = False
@@ -89,7 +129,10 @@ class HUD:
         self.image.fill('black')
         self.image.set_alpha(150)
         self.screen.blit(self.image, self.rect)
-        self.add_bg_outlines()
+        
+        outline1 = self.get_outline(self.rect, draw = False, return_outline = True)
+        outline2 = self.get_outline(outline1, draw = True)
+        pg.draw.rect(self.screen, 'black', outline1, 1)
 
     def get_left_point(self) -> int:
         default = (RES[0] // 2) - (self.width // 2)
@@ -100,46 +143,30 @@ class HUD:
             padding = (RES[0] - self.craft_window_right) - self.width
             return self.craft_window_right + (padding // 2)
         
-    def add_bg_outlines(self) -> None:
-        '''layering 2 rects around the HUD outline for a pseudo-3d effect'''
-        width = 2
-        radius = 4
-        outline_rect = pg.Rect(
-            self.rect.left - width, 
-            self.rect.top - width, 
-            self.rect.width + (width * 2), 
-            self.rect.height + (width * 2)
-        )
-        
-        width2 = width // 2
-        outline_rect2 = pg.FRect(
-            outline_rect.left - width2, 
-            outline_rect.top - width2, 
-            outline_rect.width + (width2 * 2), 
-            outline_rect.height + (width2 * 2)
-        )
-   
-        pg.draw.rect(self.screen, 'gray6', outline_rect2, width2, radius + 3)
-        pg.draw.rect(self.screen, 'black', outline_rect, width, radius)
-
     def update(self) -> None:
         if self.render:
             self.render_bg()
         
 
 class MiniMap:
-    def __init__(self, screen: pg.Surface):
+    def __init__(self, screen: pg.Surface, assets: dict[str, dict[str, any]], get_outline: callable):
         self.screen = screen
+        self.assets = assets
+        self.get_outline = get_outline
 
+        self.colors = self.assets['colors']
+        self.fonts = self.assets['fonts']
         self.width, self.height = TILE_SIZE * 10, TILE_SIZE * 10
         self.padding = 5
         self.render = True
 
     def render_outline(self) -> None:
         if self.render:
-            outline = pg.Rect((self.padding, self.padding), (self.width, self.height))
-            pg.draw.rect(self.screen, 'black', outline, 1, 2)
- 
+            base_rect = pg.Rect(self.padding, self.padding, self.width, self.height)
+            outline1 = self.get_outline(base_rect, draw = False, return_outline = True)
+            outline2 = self.get_outline(outline1, draw = True)
+            pg.draw.rect(self.screen, 'black', outline1, 1)
+
     def update(self) -> None:
         self.render_outline()
 
@@ -150,13 +177,15 @@ class InvUI:
         inv: Inventory, 
         screen: pg.Surface, 
         asset_manager: AssetManager, 
-        top: int
+        top: int,
+        get_outline: callable
     ):
         self.inv = inv
         self.screen = screen
         self.asset_manager = asset_manager
         self.padding = 5
         self.top = top + self.padding
+        self.get_outline = get_outline
 
         self.assets = self.asset_manager.assets
         self.slots = self.inv.slots
@@ -179,6 +208,7 @@ class InvUI:
         image.fill('black')
         image.set_alpha(100)
         rect = image.get_rect(topleft = (self.padding, self.top))
+        outline = self.get_outline(rect)
         self.screen.blit(image, rect)
 
     def render_slots(self) -> None:
@@ -232,19 +262,22 @@ class InvUI:
 
 
 class CraftWindow:
-    def __init__(self, screen: pg.Surface, inv_ui: InvUI, height: int):
+    def __init__(self, screen: pg.Surface, inv_ui: InvUI, height: int, get_outline: callable):
         self.screen = screen
         self.inv_ui = inv_ui
         self.height = height
+        self.get_outline = get_outline
 
         self.width = self.inv_ui.total_width * 2
         self.padding = 5
+        # defining the outline as a class attribute to allow the HUD and potentially other ui elements to access its location
         self.outline = pg.Rect(self.inv_ui.outline.right + self.padding, self.padding, self.width, self.height)
         self.open = False
 
     def render_outline(self) -> None:
         if self.open:
             pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
+            bg = self.get_outline(self.outline)
 
     def update(self) -> None:
         self.render_outline()
