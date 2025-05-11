@@ -273,11 +273,60 @@ class CraftWindow:
         # defining the outline as a class attribute to allow the HUD and potentially other ui elements to access its location
         self.outline = pg.Rect(self.inv_ui.outline.right + self.padding, self.padding, self.width, self.height)
         self.open = False
+        self.categories = {
+            'tools': {
+                'material gathering': ['pickaxe', 'axe', 'chainsaw'], 
+                'defense': ['sword', 'bow', 'arrow', 'pistol', 'shotgun'], 
+                'explosives': ['bomb', 'dynamite']
+            },
+
+            'machinery': {
+                'smelting': ['coal furnace', 'electric furnace'],
+                'automation': ['drill', 'assembler', 'printing press'],
+                'power': ['electric pole', 'electric grid', 'steam engine', 'solar panel'],
+            },
+
+            'storage': {
+                'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
+                'energy': ['battery', 'accumulator']
+            },
+
+            'research': ['lab', 'research cores'],
+
+            'decor': {
+                'walls': {'materials': ['wood', 'stone', 'iron', 'copper', 'silver', 'gold']},
+                'doors': {'materials': ['wood', 'glass', 'stone', 'iron']},
+                'tables': {'materials': ['wood', 'glass', 'sandstone', 'ice']},
+                'chairs': {'materials': ['wood', 'glass', 'ice']},
+            },
+        }
 
     def render_outline(self) -> None:
+        pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
+        bg = self.get_outline(self.outline)
+
+    def add_columns_and_rows(self) -> None:
+        num_categories = len(self.categories.keys())
+        total_cols = 3
+        total_rows = num_categories // total_cols
+        col_width = self.outline.width // total_cols
+        row_height = (self.outline.height // 3) // total_rows
+
+        # TODO: there's some line overlap in the center
+        for col in range(total_cols):
+            # by default the right border of the final column ends short of the outline's right border
+            offset = 2 if col == total_cols - 1 else 0 
+            col_rect = pg.Rect(self.outline.left + (col_width * col), self.outline.top, col_width + offset, self.outline.height)
+            pg.draw.rect(self.screen, 'black', col_rect, 1)
+
+        for row in range(total_rows):
+            row_rect = pg.Rect(self.outline.left, self.outline.top + (self.outline.top * row), self.outline.width, row_height)
+            pg.draw.rect(self.screen, 'black', row_rect, 1)
+
+    def render(self) -> None:
         if self.open:
-            pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
-            bg = self.get_outline(self.outline)
+            self.render_outline()
+            self.add_columns_and_rows()
 
     def update(self) -> None:
-        self.render_outline()
+        self.render()
