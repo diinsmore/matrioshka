@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 from os.path import join
+import math
 
 import pygame as pg
 from settings import RES, TILE_SIZE
@@ -241,7 +242,7 @@ class InvUI:
                 self.render_item_name(icon_rect, name)
 
     def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
-        amount_image = self.assets['fonts']['number'].render(str(amount), False, 'gray')
+        amount_image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])
         amount_rect = amount_image.get_rect(center = coords - pg.Vector2(0, 2))
         self.screen.blit(amount_image, amount_rect)
 
@@ -249,7 +250,7 @@ class InvUI:
         if pg.mouse.get_rel():
             # render when the mouse hovers over the icon
             if icon_rect.collidepoint(pg.mouse.get_pos()):
-                font = self.assets['fonts']['label'].render(name, True, 'azure4')
+                font = self.assets['fonts']['label'].render(name, True, self.assets['colors']['text'])
                 font_rect = font.get_rect(topleft = icon_rect.bottomright)
                 self.screen.blit(font, font_rect)
 
@@ -286,6 +287,8 @@ class CraftWindow:
                 'power': ['electric pole', 'electric grid', 'steam engine', 'solar panel'],
             },
 
+            'logistics': ['belt', 'pipes'],
+
             'storage': {
                 'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
                 'energy': ['battery', 'accumulator']
@@ -308,7 +311,7 @@ class CraftWindow:
     def add_columns_and_rows(self) -> None:
         num_categories = len(self.categories.keys())
         total_cols = 3
-        total_rows = num_categories // total_cols
+        total_rows = math.ceil(num_categories / total_cols)
         col_width = self.outline.width // total_cols
         row_height = (self.outline.height // 3) // total_rows
 
@@ -320,7 +323,7 @@ class CraftWindow:
             pg.draw.rect(self.screen, 'black', col_rect, 1)
 
         for row in range(total_rows):
-            row_rect = pg.Rect(self.outline.left, self.outline.top + (self.outline.top * row), self.outline.width, row_height)
+            row_rect = pg.Rect(self.outline.left, self.outline.top + (row_height * row), self.outline.width, row_height)
             pg.draw.rect(self.screen, 'black', row_rect, 1)
 
     def render(self) -> None:

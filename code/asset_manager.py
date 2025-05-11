@@ -14,12 +14,13 @@ class AssetManager:
         
             'fonts': {
                 'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
-                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'monaco.ttf'), size = 20),
+                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'runescape_uf.ttf'), size = 15),
                 'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 8)
             },
         
             'colors': {
                 'outline bg': 'gray18',
+                'text': 'azure4'
             }
         }
         self.tile_IDs = tile_IDs
