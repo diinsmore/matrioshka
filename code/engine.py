@@ -35,7 +35,7 @@ class Engine:
 
         self.inv = Inventory()
 
-        self.ui = UI(screen, self.camera.offset, self.asset_manager, self.inv)
+        self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inv)
 
         self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
         

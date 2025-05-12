@@ -90,7 +90,7 @@ class Keyboard:
         '''switch between rendering/not rendering a given ui component'''
         if keys[pg.K_c]:
             self.ui.craft_window.open = not self.ui.craft_window.open
-            self.ui.inv_ui.expand = True
+            self.ui.inv_ui.expand = self.ui.craft_window.open
             self.ui.HUD.shift_right = not self.ui.HUD.shift_right
 
         if keys[pg.K_LSHIFT]:
