@@ -69,6 +69,22 @@ class SpriteManager:
         for sprite in self.all_sprites:
             sprite.update(dt)
 
+
+class SpriteBase(pg.sprite.Sprite):
+    def __init__(
+        self, 
+        coords: pg.Vector2,
+        image: dict[str, dict[str, pg.Surface]], 
+        z: dict[str, int],  
+        sprite_groups: list[pg.sprite.Group]
+    ):
+        super().__init__(*sprite_groups)
+        self.sprite_groups = sprite_groups
+        self.image = image
+        self.rect = self.image.get_rect(topleft = coords)
+        self.z = z # layer to render on
+
+
 class Mining:
     def __init__(
         self, 

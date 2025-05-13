@@ -19,9 +19,9 @@ TILES = {
     'air': {'hardness': 0},
     'dirt': {'hardness': 100},
     'stone': {'hardness': 400},
-    'sandstone': {'hardness': 300}, 
+    'sandstone': {'hardness': 500}, 
     'ice': {'hardness': 200},
-    'coal': {'hardness': 500}, 
+    'coal': {'hardness': 450}, 
     'obsidian': {'hardness': 1000},
     'hellstone': {'hardness': 900},
     'copper': {'ore': True, 'hardness': 350},
@@ -98,4 +98,11 @@ TOOLS = {
         'iron': {'recipe': {'iron bar': 9}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
         'copper': {'recipe': {'copper bar': 9}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
     },
+}
+
+MACHINES = {
+    'smelting': ['coal furnace', 'electric furnace'],
+    'automation': ['belt', 'drill', 'assembler', 'printing press'],
+    'power': ['electric pole', 'electric grid', 'steam engine', 'solar panel'],
+    'logistics': ['belt', 'pipes'], # TODO: add trains or maybe minecarts with similar functionality?
 }
