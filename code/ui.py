@@ -341,29 +341,33 @@ class CraftWindow:
         self.open = False
         self.open_subcategory = False
         self.categories = {
+            # TODO: maybe add food/drink items in the future
             'tools': {
                 'material gathering': ['pickaxe', 'axe', 'chainsaw'], 
                 'defense': ['sword', 'bow', 'arrow', 'pistol', 'shotgun'], 
                 'explosives': ['bomb', 'dynamite']
             },
 
-            'machinery': {**MACHINES},
+            'machines': {**MACHINES},
 
-            'infrastructure': {
-                'research': ['lab', 'research cores'],
+            'products': [
+                'copper bar', 'iron bar', 'silver bar', 'gold bar', 
+                'iron gear', 'circuit', 'glass', 
+            ],
 
-                'storage': {
-                    'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
-                    'energy': ['battery', 'accumulator']
-                },
+            'storage': {
+                'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
+                'energy': ['battery', 'accumulator']
+            },
 
-                'decor': {
+            'research': ['lab', 'research cores'],
+
+            'decor': {
                     'walls': {'materials': ['wood', 'stone', 'iron', 'copper', 'silver', 'gold']},
                     'doors': {'materials': ['wood', 'glass', 'stone', 'iron']},
                     'tables': {'materials': ['wood', 'glass', 'sandstone', 'ice']},
                     'chairs': {'materials': ['wood', 'glass', 'ice']},
-                },
-            }, 
+            },
         }
 
     def render_outline(self) -> None:
@@ -377,7 +381,7 @@ class CraftWindow:
         num_cols = 3
         num_rows = num_categories // num_cols
         col_width = self.outline.width // num_cols
-        row_height = (self.outline.height // 4) // num_rows
+        row_height = (self.outline.height // 3) // num_rows
 
         # TODO: there's some line overlap in the center
         for col in range(num_cols):
@@ -411,10 +415,21 @@ class CraftWindow:
         match label:
             case 'tools':
                 image = self.graphics['pickaxe']['stone pickaxe']
-            case 'machinery':
+
+            case 'machines':
                 image = self.graphics['machines']['assembler'][0]
-            case 'infrastructure':
+
+            case 'products':
+                image = self.graphics['minerals']['bars']['iron bar']
+
+            case 'storage':
+                image = self.graphics['storage']['wood chest']
+
+            case 'research':
                 image = self.graphics['research']['lab']
+
+            case 'decor':
+                image = self.graphics['decor']['creation']
         
         padding_x = col_width - image.get_width()
         padding_y = row_height - image.get_height()

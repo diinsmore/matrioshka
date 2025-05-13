@@ -181,7 +181,7 @@ class Terrain:
         if bg_type != 'terrain wall':
             image = self.graphics[self.proc_gen.current_biome][bg_type]
         else:
-            image = self.graphics['walls'][' '.join([self.get_terrain_type(), 'wall'])]
+            image = self.graphics['decor']['walls'][' '.join([self.get_terrain_type(), 'wall'])]
 
         elev_data = self.get_elevation_data()
 

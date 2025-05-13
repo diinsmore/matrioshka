@@ -24,7 +24,7 @@ class Engine:
 
         self.camera = Camera()
         
-        self.asset_manager = AssetManager(tile_IDs)
+        self.asset_manager = AssetManager()
 
         self.sprite_manager = SpriteManager( 
             self.asset_manager, 

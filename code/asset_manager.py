@@ -5,11 +5,14 @@ from os.path import join
 from settings import BIOMES, TILES, TOOLS, MACHINES
 
 class AssetManager:
-    def __init__(self,  tile_IDs: dict[str, dict[str, any]]):
+    def __init__(self):
         self.assets = {
             'graphics': {
                 'clouds': self.load_folder(join('..', 'graphics', 'weather', 'clouds')),
-                'walls': self.load_folder(join('..', 'graphics',  'backgrounds', 'walls')),
+                'minerals': self.load_subfolders(join('..', 'graphics', 'minerals')),
+                'decor': self.load_folder(join('..', 'graphics', 'decor')),
+                'research': self.load_folder(join('..', 'graphics', 'research')),
+                'storage': self.load_folder(join('..', 'graphics', 'storage'))
             },
         
             'fonts': {
@@ -21,17 +24,10 @@ class AssetManager:
             'colors': {
                 'outline bg': 'gray18',
                 'text': 'azure4'
-            },
-            
+            }, 
         }
-        self.tile_IDs = tile_IDs
-        self.load_biome_graphics()
-        self.load_tile_graphics()
-        self.load_tool_graphics()
-        self.load_machine_graphics()
-        self.load_storage_graphics()
-        self.load_research_graphics()
-        self.load_decor_graphics()
+        
+        self.load_remaining_graphics()
 
     @staticmethod
     def load_image(dir_path: str) -> pg.Surface:
@@ -81,7 +77,7 @@ class AssetManager:
 
     def load_tool_graphics(self) -> None:
         for tool in TOOLS.keys():
-            self.assets['graphics'][tool] = self.load_folder(join('..', 'graphics', 'tools', f'{tool}s'))
+            self.assets['graphics'][f'{tool}s'] = self.load_folder(join('..', 'graphics', 'tools', f'{tool}s'))
 
     def load_machine_graphics(self) -> None:
         self.assets['graphics'].setdefault('machines', {})
@@ -91,12 +87,14 @@ class AssetManager:
             for machine in category:
                 if machine in animated: # the only graphics currently available
                     self.assets['graphics']['machines'][machine] = self.load_folder(join('..', 'graphics', 'machinery', machine))
-    
-    def load_research_graphics(self) -> None:
-        self.assets['graphics']['research'] = self.load_folder(join('..', 'graphics', 'research'))
 
-    def load_storage_graphics(self) -> None:
-        self.assets['graphics']['storage'] = self.load_folder(join('..', 'graphics', 'storage'))
+    def load_wall_graphics(self) -> None:
+        self.assets['graphics']['decor'].setdefault('walls', {})
+        self.assets['graphics']['decor']['walls'] = self.load_folder(join('..', 'graphics', 'decor', 'walls'))
 
-    def load_decor_graphics(self) -> None:
-        self.assets['graphics']['decor'] = self.load_folder(join('..', 'graphics', 'decor'))
+    def load_remaining_graphics(self) -> None:
+        self.load_biome_graphics()
+        self.load_tile_graphics()
+        self.load_tool_graphics()
+        self.load_machine_graphics()
+        self.load_wall_graphics()
