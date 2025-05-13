@@ -71,7 +71,7 @@ class UI:
 
         outline = pg.Rect(
                     rect.topleft - pg.Vector2(padding, padding), 
-                    (rect.width + (width * 2), rect.height + (width * 2))
+                    (rect.width + (padding * 2), rect.height + (padding * 2))
                 )
         if draw:
             pg.draw.rect(self.screen, color, outline, width, radius)
@@ -377,7 +377,6 @@ class CraftWindow:
     def split_into_sections(self) -> None:
         category_names = list(self.categories.keys())
         num_categories = len(category_names)
-
         num_cols = 3
         num_rows = num_categories // num_cols
         col_width = self.outline.width // num_cols
@@ -386,7 +385,7 @@ class CraftWindow:
         # TODO: there's some line overlap in the center
         for col in range(num_cols):
             left = self.outline.left + (col_width * col)
-            col_rect = pg.Rect(left, self.outline.top, col_width, self.outline.height)
+            col_rect = pg.Rect(left, self.outline.top, col_width, row_height * num_rows)
             col_outline = self.make_outline(col_rect)
             pg.draw.rect(self.screen, 'black', col_rect, 1)
 
@@ -395,29 +394,54 @@ class CraftWindow:
                 row_rect = pg.Rect(self.outline.left, top, self.outline.width, row_height)
                 pg.draw.rect(self.screen, 'black', row_rect, 1)
                 
-                category_index = min(col + (row * num_cols), num_categories - 1)
+                category_index = col + (row * num_cols)
                 label = category_names[category_index]
-                self.add_labels((left, top), label)
-                self.add_preview_images(label, col, row, col_width, row_height)
+                self.render_labels((left, top), label)
+                self.render_preview_images(label, col, row, col_width, row_height)
 
-    def add_labels(self, topleft: tuple[int, int], label: str) -> None:
+    def render_labels(self, topleft: tuple[int, int], label: str) -> None:
         padding = 2
         text = self.fonts['label'].render(label, True, self.colors['text'])
         border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
-
+        self.make_transparent_bg(border)
         text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
         self.screen.blit(text, text_rect)
 
         border_outline = self.make_outline(border)
 
-    def add_preview_images(self, label: str, col: int, row: int, col_width: int, row_height: int) -> None:
+    def render_preview_images(self, label: str, col: int, row: int, col_width: int, row_height: int) -> None:
         '''render an item relating to a given crafting category'''
+        image = self.get_label_image(label)
+        
+        # get the space between the border of the image and the cell containing it
+        padding_x = col_width - image.get_width()
+        padding_y = row_height - image.get_height()
+
+        # center the image within a given cell (with a slight y-offset to account for the category label at the top)
+        offset = pg.Vector2(
+            (col * col_width) + (padding_x // 2), 
+            (row * row_height) + (padding_y // 2) + 10
+        ) 
+        
+        image_rect = image.get_rect(topleft = self.outline.topleft + offset)
+        # add a slightly transparent black background
+        bg_padding = 5
+        bg_rect = pg.Rect(
+            image_rect.topleft - pg.Vector2(bg_padding, bg_padding), 
+            image_rect.size + pg.Vector2(bg_padding * 2, bg_padding * 2)
+        )
+        self.make_transparent_bg(bg_rect)
+        self.make_outline(bg_rect)
+
+        self.screen.blit(image, image_rect)
+
+    def get_label_image(self, label: str) -> pg.Surface:
         match label:
             case 'tools':
-                image = self.graphics['pickaxe']['stone pickaxe']
+                image = self.graphics['pickaxes']['stone pickaxe']
 
             case 'machines':
-                image = self.graphics['machines']['assembler'][0]
+                image = self.graphics['machines']['inserter'][0]
 
             case 'products':
                 image = self.graphics['minerals']['bars']['iron bar']
@@ -430,12 +454,10 @@ class CraftWindow:
 
             case 'decor':
                 image = self.graphics['decor']['creation']
-        
-        padding_x = col_width - image.get_width()
-        padding_y = row_height - image.get_height()
-        offset = pg.Vector2((col * col_width) + padding_x // 2, (row * row_height) + padding_y // 2) 
-        rect = image.get_rect(topleft = self.outline.topleft + offset)
-        self.screen.blit(image, rect)
+                
+        scale = 1.2 if label not in {'research', 'decor'} else 0.8
+        image = pg.transform.scale(image, (image.width * scale, image.height * scale))
+        return image
 
     def select_category(self, mouse_coords: tuple[int, int]) -> None:
         if self.mouse_within_borders(mouse_coords):

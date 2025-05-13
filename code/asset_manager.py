@@ -17,13 +17,13 @@ class AssetManager:
         
             'fonts': {
                 'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
-                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'runescape_uf.ttf'), size = 15),
+                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size = 15),
                 'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 8)
             },
         
             'colors': {
                 'outline bg': 'gray18',
-                'text': 'azure4'
+                'text': 'ivory4'
             }, 
         }
         
@@ -81,7 +81,7 @@ class AssetManager:
 
     def load_machine_graphics(self) -> None:
         self.assets['graphics'].setdefault('machines', {})
-        animated = {'assembler', 'belt'}
+        animated = {'assembler', 'belt', 'inserter'}
         
         for category in MACHINES.values():
             for machine in category:

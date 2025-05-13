@@ -102,7 +102,7 @@ TOOLS = {
 
 MACHINES = {
     'smelting': ['coal furnace', 'electric furnace'],
-    'automation': ['belt', 'drill', 'assembler', 'printing press'],
+    'automation': ['belt', 'drill', 'inserter', 'assembler', 'printing press'],
     'power': ['electric pole', 'electric grid', 'steam engine', 'pump', 'solar panel'],
     'logistics': ['belt', 'pipes'], # TODO: add trains or maybe minecarts with similar functionality?
 }
