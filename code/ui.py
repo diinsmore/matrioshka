@@ -379,6 +379,20 @@ class CraftWindow:
         self.col_width = self.outline.width // self.num_cols
         self.row_height = (self.outline.height // 3) // self.num_rows
 
+        self.cell_borders = {'x': [], 'y': []}
+        self.precompute_cell_borders()
+
+    def precompute_cell_borders(self) -> None:
+        '''
+        store the coordinates of each column/row comprising the grid to 
+        reference when searching for the current cell being hovered over
+        '''
+        for col in range(self.num_cols):
+            self.cell_borders['x'].append((self.outline.left, self.outline.left + (self.col_width * (col + 1))))
+        
+        for row in range(self.num_rows):
+            self.cell_borders['y'].append((self.outline.top, self.outline.top + (self.row_height * (row + 1))))
+
     def render_outline(self) -> None:
         pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
         self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
@@ -473,34 +487,17 @@ class CraftWindow:
     def get_category_overlap(self, mouse_coords: pg.Vector2) -> int:
         '''determine which category within the grid is being hovered over by the mouse'''
         cell_coords = []
-        # get the left/right borders of each column
-        x_ranges = []
-        for col in range(self.num_cols):
-            x_range = (
-                self.outline.left + (self.col_width * col), 
-                self.outline.left + (self.col_width * (col + 1))
-            )
-            x_ranges.append(x_range)
-        
-        for index, x_range in enumerate(x_ranges):
+        # column index
+        for index, x_range in enumerate(self.cell_borders['x']):
             if mouse_coords.x in range(x_range[0], x_range[1]):
                 cell_coords.append(index)
                 break
-        
-        # get the top/bottom borders of each row
-        y_ranges = []
-        for row in range(self.num_rows):
-            y_range = (
-                self.outline.top + (self.row_height * row),
-                self.outline.top + (self.row_height * (row + 1)),
-            )
-            y_ranges.append(y_range)
-
-        for index, y_range in enumerate(y_ranges):
+        # row index
+        for index, y_range in enumerate(self.cell_borders['y']):
             if mouse_coords.y in range(y_range[0], y_range[1]):
                 cell_coords.append(index)
                 return cell_coords
-
+                
     def render(self) -> None:
         if self.open:
             self.render_outline()
