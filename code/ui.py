@@ -472,24 +472,31 @@ class CraftWindow:
     
     def get_category_overlap(self, mouse_coords: pg.Vector2) -> int:
         '''determine which category within the grid is being hovered over by the mouse'''
-        # TODO: this isn't modular for a change in the number of cols/rows
         cell_coords = []
-
         # get the left/right borders of each column
-        x_range0 = (self.outline.left, self.outline.left + self.col_width)
-        x_range1 = (x_range0[1], x_range0[1] + self.col_width)
-        x_range2 = (x_range1[1], self.outline.right)
+        x_ranges = []
+        for col in range(self.num_cols):
+            x_range = (
+                self.outline.left + (self.col_width * col), 
+                self.outline.left + (self.col_width * (col + 1))
+            )
+            x_ranges.append(x_range)
         
-        for index, x_range in enumerate((x_range0, x_range1, x_range2)):
+        for index, x_range in enumerate(x_ranges):
             if mouse_coords.x in range(x_range[0], x_range[1]):
                 cell_coords.append(index)
                 break
-
+        
         # get the top/bottom borders of each row
-        y_range0 = (self.outline.top, self.outline.top + self.row_height)
-        y_range1 = (y_range0[1], y_range0[1] + self.row_height)
+        y_ranges = []
+        for row in range(self.num_rows):
+            y_range = (
+                self.outline.top + (self.row_height * row),
+                self.outline.top + (self.row_height * (row + 1)),
+            )
+            y_ranges.append(y_range)
 
-        for index, y_range in enumerate((y_range0, y_range1)):
+        for index, y_range in enumerate(y_ranges):
             if mouse_coords.y in range(y_range[0], y_range[1]):
                 cell_coords.append(index)
                 return cell_coords
