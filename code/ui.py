@@ -36,6 +36,7 @@ class UI:
             self.assets, 
             self.inv_ui, 
             self.get_craft_window_height(), 
+            self.camera_offset,
             self.make_outline,
             self.make_transparent_bg
         )
@@ -96,7 +97,7 @@ class UI:
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
         self.HUD.update()
         self.mini_map.update()
-        self.craft_window.update() # keep above the inventory ui otherwise item names may be rendered behind the window
+        self.craft_window.update(mouse_coords) # keep above the inventory ui otherwise item names may be rendered behind the window
         self.inv_ui.update()
         
 
@@ -320,6 +321,7 @@ class CraftWindow:
         assets: dict[str, dict[str, any]], 
         inv_ui: InvUI, 
         height: int, 
+        camera_offset: pg.Vector2,
         make_outline: callable,
         make_transparent_bg: callable
     ):
@@ -327,6 +329,7 @@ class CraftWindow:
         self.assets = assets
         self.inv_ui = inv_ui
         self.height = height
+        self.camera_offset = camera_offset
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
 
@@ -369,35 +372,33 @@ class CraftWindow:
                     'chairs': {'materials': ['wood', 'glass', 'ice']},
             },
         }
+        self.category_keys = list(self.categories.keys()) # just here to avoid calling .keys() every time they need to be referenced
+        self.num_categories = len(self.category_keys)
+        self.num_cols = 3
+        self.num_rows = self.num_categories // self.num_cols
+        self.col_width = self.outline.width // self.num_cols
+        self.row_height = (self.outline.height // 3) // self.num_rows
 
     def render_outline(self) -> None:
         pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
         self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
 
     def split_into_sections(self) -> None:
-        category_names = list(self.categories.keys())
-        num_categories = len(category_names)
-        num_cols = 3
-        num_rows = num_categories // num_cols
-        col_width = self.outline.width // num_cols
-        row_height = (self.outline.height // 3) // num_rows
-
-        # TODO: there's some line overlap in the center
-        for col in range(num_cols):
-            left = self.outline.left + (col_width * col)
-            col_rect = pg.Rect(left, self.outline.top, col_width, row_height * num_rows)
+        for col in range(self.num_cols):
+            left = self.outline.left + (self.col_width * col)
+            col_rect = pg.Rect(left, self.outline.top, self.col_width, self.row_height * self.num_rows)
             col_outline = self.make_outline(col_rect)
             pg.draw.rect(self.screen, 'black', col_rect, 1)
 
-            for row in range(num_rows):
-                top = self.outline.top + (row_height * row)
-                row_rect = pg.Rect(self.outline.left, top, self.outline.width, row_height)
+            for row in range(self.num_rows):
+                top = self.outline.top + (self.row_height * row)
+                row_rect = pg.Rect(self.outline.left, top, self.outline.width, self.row_height)
                 pg.draw.rect(self.screen, 'black', row_rect, 1)
                 
-                category_index = col + (row * num_cols)
-                label = category_names[category_index]
+                category_index = col + (row * self.num_cols)
+                label = self.category_keys[category_index]
                 self.render_labels((left, top), label)
-                self.render_preview_images(label, col, row, col_width, row_height)
+                self.render_preview_images(label, col, row)
 
     def render_labels(self, topleft: tuple[int, int], label: str) -> None:
         padding = 2
@@ -409,18 +410,18 @@ class CraftWindow:
 
         border_outline = self.make_outline(border)
 
-    def render_preview_images(self, label: str, col: int, row: int, col_width: int, row_height: int) -> None:
+    def render_preview_images(self, label: str, col: int, row: int) -> None:
         '''render an item relating to a given crafting category'''
         image = self.get_label_image(label)
         
         # get the space between the border of the image and the cell containing it
-        padding_x = col_width - image.get_width()
-        padding_y = row_height - image.get_height()
+        padding_x = self.col_width - image.get_width()
+        padding_y = self.row_height - image.get_height()
 
         # center the image within a given cell (with a slight y-offset to account for the category label at the top)
         offset = pg.Vector2(
-            (col * col_width) + (padding_x // 2), 
-            (row * row_height) + (padding_y // 2) + 10
+            (col * self.col_width) + (padding_x // 2), 
+            (row * self.row_height) + (padding_y // 2) + 10
         ) 
         
         image_rect = image.get_rect(topleft = self.outline.topleft + offset)
@@ -460,17 +461,44 @@ class CraftWindow:
         return image
 
     def select_category(self, mouse_coords: tuple[int, int]) -> None:
-        if self.mouse_within_borders(mouse_coords):
-            pass
+        mouse_coords -= self.camera_offset # convert from world-space to screen-space
+        if self.open and self.mouse_within_borders(mouse_coords):
+            o = self.get_category_overlap(mouse_coords)
+            print(o)
 
     def mouse_within_borders(self, mouse_coords: pg.Vector2) -> bool:
         return self.outline.left < mouse_coords[0] < self.outline.right and \
-                self.outline.top < mouse_coords[1] < self.outline.bottom
+                self.outline.top < mouse_coords[1] < self.outline.top + (self.num_rows * self.row_height)
     
+    def get_category_overlap(self, mouse_coords: pg.Vector2) -> int:
+        '''determine which category within the grid is being hovered over by the mouse'''
+        # TODO: this isn't modular for a change in the number of cols/rows
+        cell_coords = []
+
+        # get the left/right borders of each column
+        x_range0 = (self.outline.left, self.outline.left + self.col_width)
+        x_range1 = (x_range0[1], x_range0[1] + self.col_width)
+        x_range2 = (x_range1[1], self.outline.right)
+        
+        for index, x_range in enumerate((x_range0, x_range1, x_range2)):
+            if mouse_coords.x in range(x_range[0], x_range[1]):
+                cell_coords.append(index)
+                break
+
+        # get the top/bottom borders of each row
+        y_range0 = (self.outline.top, self.outline.top + self.row_height)
+        y_range1 = (y_range0[1], y_range0[1] + self.row_height)
+
+        for index, y_range in enumerate((y_range0, y_range1)):
+            if mouse_coords.y in range(y_range[0], y_range[1]):
+                cell_coords.append(index)
+                return cell_coords
+
     def render(self) -> None:
         if self.open:
             self.render_outline()
             self.split_into_sections()
 
-    def update(self) -> None:
+    def update(self, mouse_coords: pg.Vector2) -> None:
         self.render()
+        self.select_category(mouse_coords)
