@@ -12,12 +12,14 @@ class AssetManager:
                 'minerals': self.load_subfolders(join('..', 'graphics', 'minerals')),
                 'decor': self.load_folder(join('..', 'graphics', 'decor')),
                 'research': self.load_folder(join('..', 'graphics', 'research')),
-                'storage': self.load_folder(join('..', 'graphics', 'storage'))
+                'storage': self.load_folder(join('..', 'graphics', 'storage')),
+                'consumables': self.load_subfolders(join('..', 'graphics', 'consumables'))
             },
         
             'fonts': {
                 'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
-                'label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size = 15),
+                'craft menu label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size = 14),
+                'item label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size = 16),
                 'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 8)
             },
         
@@ -28,7 +30,7 @@ class AssetManager:
         }
         
         self.load_remaining_graphics()
-
+      
     @staticmethod
     def load_image(dir_path: str) -> pg.Surface:
         return pg.image.load(dir_path).convert_alpha()
@@ -69,6 +71,10 @@ class AssetManager:
             
             if biome in ('forest', 'taiga', 'desert'):
                 self.assets['graphics'][biome]['trees'] = self.load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
+    
+    def load_wall_graphics(self) -> None:
+            self.assets['graphics']['decor'].setdefault('walls', {})
+            self.assets['graphics']['decor']['walls'] = self.load_folder(join('..', 'graphics', 'decor', 'walls'))
 
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
@@ -85,12 +91,11 @@ class AssetManager:
         
         for category in MACHINES.values():
             for machine in category:
-                if machine in animated: # the only graphics currently available
+                if machine in animated: 
                     self.assets['graphics']['machines'][machine] = self.load_folder(join('..', 'graphics', 'machinery', machine))
-
-    def load_wall_graphics(self) -> None:
-        self.assets['graphics']['decor'].setdefault('walls', {})
-        self.assets['graphics']['decor']['walls'] = self.load_folder(join('..', 'graphics', 'decor', 'walls'))
+                else:
+                    if machine in {'steam engine', 'furnace'}: # don't have the others yet
+                        self.assets['graphics']['machines'][machine] = self.load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
 
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()

@@ -106,3 +106,18 @@ MACHINES = {
     'power': ['electric pole', 'electric grid', 'steam engine', 'pump', 'solar panel'],
     'logistics': ['belt', 'pipes'], # TODO: add trains or maybe minecarts with similar functionality?
 }
+
+# TODO: everything below is unfinished
+FOOD = {
+    'fruits': [
+        'apple', 'orange', 'banana', 'cherry', 'grapes', 'coconut', 'grapefruit', 'lemon', 
+        'mango', 'peach', 'plum', 'pineapple', 'pomegranate', 'starfruit', 'fruit salad'
+    ],
+    'fish': ['salmon', 'tuna', 'trout'],
+    'roasts': ['roasted bird', 'roasted duck'],  
+    'desserts': ['apple pie', 'pumpkin pie', 'banana split', 'cookie', 'ice cream'],
+}
+
+DRINKS = ['apple juice', 'grape juice', 'soda', 'beer', 'milkshake']
+
+POTIONS = ['invisibility', 'night vision', 'health regeneration', 'gravity reversal']
