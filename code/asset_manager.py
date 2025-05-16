@@ -83,19 +83,18 @@ class AssetManager:
 
     def load_tool_graphics(self) -> None:
         for tool in TOOLS.keys():
-            self.assets['graphics'][f'{tool}s'] = self.load_folder(join('..', 'graphics', 'tools', f'{tool}s'))
+            self.assets['graphics'][tool] = self.load_folder(join('..', 'graphics', 'tools', f'{tool}s'))
 
     def load_machine_graphics(self) -> None:
         self.assets['graphics'].setdefault('machines', {})
         animated = {'assembler', 'belt', 'inserter'}
         
-        for category in MACHINES.values():
-            for machine in category:
-                if machine in animated: 
-                    self.assets['graphics']['machines'][machine] = self.load_folder(join('..', 'graphics', 'machinery', machine))
-                else:
-                    if machine in {'steam engine', 'furnace'}: # don't have the others yet
-                        self.assets['graphics']['machines'][machine] = self.load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
+        for machine in MACHINES:
+            if machine in animated: 
+                self.assets['graphics'][machine] = self.load_folder(join('..', 'graphics', 'machinery', machine))
+            else:
+                if machine in {'steam engine', 'furnace'}: # don't have the others yet
+                    self.assets['graphics'][machine] = self.load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
 
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()

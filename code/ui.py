@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import math
 
-from settings import TILE_SIZE, RES, MACHINES, POTIONS
+from settings import TILE_SIZE, RES, TOOLS, MACHINES, MATERIALS, STORAGE, RESEARCH, DECOR, FOOD, DRINKS
 
 class UI:
     def __init__(
@@ -344,85 +344,62 @@ class CraftWindow:
         self.outline = pg.Rect(self.inv_ui.outline.right + self.padding, self.padding, self.width, self.height)
 
         self.categories = {
-            'tools': {
-                'material gathering': ['pickaxe', 'axe', 'chainsaw'], 
-                'defense': ['sword', 'bow', 'arrow', 'pistol', 'shotgun'], 
-                'explosives': ['bomb', 'dynamite']
-            },
-
-            'materials': [
-                {'bars': ['copper bar', 'iron bar', 'silver bar', 'gold bar']}, 
-                'iron gear', 'circuit', 'glass', 
-            ],
-
-            'infrastructure': {
-                'machines': {**MACHINES},
-                'research': ['lab', 'research cores'],
-                'decor': {
-                    'walls': {'materials': ['wood', 'stone', 'iron', 'copper', 'silver', 'gold']},
-                    'doors': {'materials': ['wood', 'glass', 'stone', 'iron']},
-                    'tables': {'materials': ['wood', 'glass', 'sandstone', 'ice']},
-                    'chairs': {'materials': ['wood', 'glass', 'ice']},
-                },
-                'storage': {
-                    'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
-                    'energy': ['battery', 'accumulator']
-                },
-            },
-    
-            'consumables': {
-                # TODO: add more potions and potentially 'craftable' food/drink items?
-                'potions': POTIONS,
-            },
+            'tools': [*TOOLS.keys()],
+            'materials': [*MATERIALS],
+            'infrastructure': [*MACHINES, *STORAGE.keys(), *DECOR.keys()],
+            'research': [*RESEARCH.keys()],
         }
+
         self.open = False
         self.selected_category = None
         self.open_subcategory = False
+
         self.category_keys = list(self.categories.keys()) # just here to avoid calling .keys() every time they need to be referenced
         self.num_categories = len(self.category_keys)
+        self.category_cols = 2
+        self.category_rows = self.num_categories // self.category_cols
+        self.col_width = self.outline.width // self.category_cols
+        self.row_height = (self.outline.height // 3) // self.category_rows
 
-        self.num_cols = 2
-        self.num_rows = self.num_categories // self.num_cols
-        self.col_width = self.outline.width // self.num_cols
-        self.row_height = (self.outline.height // 3) // self.num_rows
+        self.category_grid_borders = {'x': [], 'y': []}
+        self.precompute_category_grid_borders()
 
-        self.cell_borders = {'x': [], 'y': []}
-        self.precompute_cell_borders()
-
-    def precompute_cell_borders(self) -> None:
+        self.cell_height, self.cell_width = TILE_SIZE * 2, TILE_SIZE * 2 # for the grid of items comprising a given category
+        
+    def precompute_category_grid_borders(self) -> None:
         '''
         store the coordinates of each column/row comprising the grid to 
         reference when searching for the current cell being hovered over
         '''
-        for col in range(self.num_cols):
+        for col in range(1, self.category_cols + 1):
             padding = 2 # without this offset, an error is thrown when you move within the menu's borders from the topleft side, presumably due to the outline
-            self.cell_borders['x'].append((self.outline.left, self.outline.left + (self.col_width * (col + 1)) + padding))
+            self.category_grid_borders['x'].append((self.outline.left, self.outline.left + (self.col_width * col) + padding))
         
-        for row in range(self.num_rows):
-            self.cell_borders['y'].append((self.outline.top, self.outline.top + (self.row_height * (row + 1))))
+        for row in range(1, self.category_rows + 1):
+            self.category_grid_borders['y'].append((self.outline.top, self.outline.top + (self.row_height * row) + padding))
 
     def render_outline(self) -> None:
         pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
         self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
 
     def split_into_sections(self) -> None:
-        for col in range(self.num_cols):
+        for col in range(self.category_cols):
             left = self.outline.left + (self.col_width * col)
-            col_rect = pg.Rect(left, self.outline.top, self.col_width, self.row_height * self.num_rows)
+            col_rect = pg.Rect(left, self.outline.top, self.col_width, self.row_height * self.category_rows)
             col_outline = self.make_outline(col_rect)
             pg.draw.rect(self.screen, 'black', col_rect, 1)
 
-            for row in range(self.num_rows):
+            for row in range(self.category_rows):
                 top = self.outline.top + (self.row_height * row)
                 row_rect = pg.Rect(self.outline.left, top, self.outline.width - 2, self.row_height)
                 pg.draw.rect(self.screen, 'black', row_rect, 1)
                 
-                category_index = col + (row * self.num_cols)
+                category_index = col + (row * self.category_cols)
                 label = self.category_keys[category_index]
-                self.render_labels((left, top), label)
-                self.render_preview_images(label, col, row)
+                self.render_label_text((left, top), label)
+                self.render_label_images(label, col, row)
                 
-    def render_labels(self, topleft: tuple[int, int], label: str) -> None:
+    def render_label_text(self, topleft: tuple[int, int], label: str) -> None:
         padding = 2
         text = self.fonts['craft menu label'].render(label, True, self.colors['text'])
         border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
@@ -432,7 +409,7 @@ class CraftWindow:
 
         border_outline = self.make_outline(border, color = 'black')
 
-    def render_preview_images(self, label: str, col: int, row: int) -> None:
+    def render_label_images(self, label: str, col: int, row: int) -> None:
         '''render an item relating to a given crafting category'''
         image = self.get_label_image(label)
         if label != self.selected_category:
@@ -461,21 +438,22 @@ class CraftWindow:
         self.screen.blit(image, image_rect)
 
     def get_label_image(self, label: str) -> pg.Surface:
-        scale = 1.2
         match label:
             case 'tools':
-                image = self.graphics['pickaxes']['stone pickaxe']
+                image = self.graphics['pickaxe']['stone pickaxe']
+                scale = 1.2
 
             case 'materials':
                 image = self.graphics['minerals']['bars']['iron bar']
                 scale = 1.3
                 
             case 'infrastructure':
-                image = self.graphics['machines']['steam engine']
+                image = self.graphics['steam engine']
                 scale = 0.8
 
-            case 'consumables':
-                image = self.graphics['consumables']['potions']['reduced fall speed']
+            case 'research':
+                image = self.graphics['research']['lab']
+                scale = 0.8
 
         image = pg.transform.scale(image, (image.width * scale, image.height * scale))
         return image
@@ -485,64 +463,62 @@ class CraftWindow:
         if self.open and self.mouse_within_borders(mouse_coords):
             cell_index = self.get_category_overlap(mouse_coords)
             col, row = cell_index[0], cell_index[1]
-            self.selected_category = self.category_keys[col + (row * self.num_cols)]
-            self.render_items()
+            self.selected_category = self.category_keys[col + (row * self.category_cols)]
+            self.render_item_slots()
         else:
             self.selected_category = None
 
     def mouse_within_borders(self, mouse_coords: pg.Vector2) -> bool:
         return self.outline.left < mouse_coords[0] < self.outline.right and \
-                self.outline.top < mouse_coords[1] < self.outline.top + (self.num_rows * self.row_height)
+                self.outline.top < mouse_coords[1] < self.outline.top + (self.category_rows * self.row_height)
     
     def get_category_overlap(self, mouse_coords: pg.Vector2) -> int:
         '''determine which category within the grid is being hovered over by the mouse'''
         cell_coords = []
         # column index
-        for index, x_range in enumerate(self.cell_borders['x']):
+        for index, x_range in enumerate(self.category_grid_borders['x']):
             if mouse_coords.x in range(x_range[0], x_range[1]):
                 cell_coords.append(index)
                 break
         # row index
-        for index, y_range in enumerate(self.cell_borders['y']):
+        for index, y_range in enumerate(self.category_grid_borders['y']):
             if mouse_coords.y in range(y_range[0], y_range[1]):
                 cell_coords.append(index)
                 return cell_coords
     
-    def render_items(self) -> None:
-        num_slots = self.count_category_slots(self.categories[self.selected_category])
-        
-        top = self.outline.top + (self.row_height * self.num_rows)
-        cell_width, cell_height = int(TILE_SIZE * 2.5), int(TILE_SIZE * 2.5)
-        x_cells = self.outline.width // cell_width
+    def render_item_slots(self) -> None:
+        num_slots = len(self.categories[self.selected_category])
+        top = self.outline.top + (self.row_height * self.category_rows)
+        x_cells = self.outline.width // self.cell_width
         y_cells = math.ceil(num_slots / x_cells)
-
-        num_boxes = 0 # keeping this counter to prevent drawing a full row if only a partial row is needed
         for x in range(x_cells):
             for y in range(y_cells):
-                num_boxes += 1
-                if num_boxes <= num_slots:
+                index = x + (y * x_cells)
+                if index < num_slots:
                     cell = pg.Rect(
-                        self.outline.left + (cell_width * x), 
-                        top + (cell_height * y), 
-                        cell_width, 
-                        cell_height
+                        self.outline.left + (self.cell_width * x), 
+                        top + (self.cell_height * y), 
+                        self.cell_width, 
+                        self.cell_height
                     )
                     pg.draw.rect(self.screen, 'black', cell, 1)
-    
-    @staticmethod
-    def count_category_slots(item_data: dict[list|str, dict]) -> int:
-        '''
-        if the items in a given category aren't divided into subcategories, 
-        then each item can be given its own slot in the crafting window. 
-        otherwise just devote a slot to each subcategory and display the
-        items within the subcategory only when it's selected
-        '''
-        if isinstance(item_data, list):
-            return len(item_data)
+                    self.render_item_images(top, x, y, index)
 
-        elif isinstance(item_data, dict):
-
-            return len(item_data.keys())
+    def render_item_images(self, top: int, x: int, y: int, index: int) -> None:
+        item_name = self.categories[self.selected_category][index]
+        try:
+            if not isinstance(self.graphics[item_name], dict): # animated items like conveyor belts
+                image = pg.transform.scale(
+                    self.graphics[item_name], 
+                    (self.cell_width, self.cell_height) - pg.Vector2(self.padding * 2, self.padding * 2)
+                )
+                rect = image.get_rect(center = (
+                    self.outline.left + (self.cell_width * x) + (self.cell_width // 2), 
+                    top + (self.cell_height * y) + (self.cell_height // 2)
+                ))
+                self.screen.blit(image, rect)
+        except KeyError:
+            print(f'missing {item_name}')
 
     def update(self, mouse_coords: pg.Vector2) -> None:
         if self.open:

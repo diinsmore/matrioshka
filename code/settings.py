@@ -86,25 +86,54 @@ TOOLS = {
         'silver': {'recipe': {'wood': 2, 'silver bar': 4}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
         'gold': {'recipe': {'wood': 2, 'gold bar': 4}, 'strength': 35, 'producers': {'player', 'workbench', 'anvil'}},
     },
-
     'axe': {
         'stone': {'recipe': {'wood': 3, 'stone': 4}, 'strength': 10, 'producers': {'player', 'workbench', 'anvil'}},
         'iron': {'recipe': {'wood': 3, 'iron bar': 2}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
         'copper': {'recipe': {'wood': 3, 'stone': 2}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
     },
-
     'sword': {
         'stone': {'recipe': {'stone': 12}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
         'iron': {'recipe': {'iron bar': 9}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
         'copper': {'recipe': {'copper bar': 9}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
     },
+    'chainsaw': {},
+    'bow': {},
+    'arrow': {},
+    'pistol': {},
+    'shotgun': {},
+    'bomb': {},
+    'dynamite': {}
 }
 
-MACHINES = {
-    'smelting': ['coal furnace', 'electric furnace'],
-    'automation': ['belt', 'drill', 'inserter', 'assembler', 'printing press'],
-    'power': ['electric pole', 'electric grid', 'steam engine', 'pump', 'solar panel'],
-    'logistics': ['belt', 'pipes'], # TODO: add trains or maybe minecarts with similar functionality?
+MACHINES = [
+    'coal furnace', 'electric furnace',
+    'belt', 'drill', 'inserter', 'assembler', 'printing press',
+    'electric pole', 'electric grid', 'boiler', 'steam engine', 'pump', 'solar panel',
+    'belt', 'pipes' # TODO: add trains or maybe minecarts with similar functionality?
+]
+
+MATERIALS = [
+    'iron gear', 'circuit', 'copper cable',
+    'steel plate', 'iron rod', 'glass', 
+    'copper bar', 'iron bar', 'silver bar', 'gold bar'
+]
+
+STORAGE = {
+    'chest': {'materials': {'wood': {'capacity': 500}, 'iron': {'capacity': 1500}}},
+    'accumulator': {},
+}
+
+RESEARCH = {
+    'lab': {},
+    'core': {}
+}
+
+DECOR = {
+    'walls': {'materials': ['wood', 'stone', 'iron', 'copper', 'silver', 'gold']},
+    'doors': {'materials': ['wood', 'glass', 'stone', 'iron']},
+    'tables': {'materials': ['wood', 'glass', 'sandstone', 'ice']},
+    'chairs': {'materials': ['wood', 'glass', 'ice']},
+    'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
 }
 
 # TODO: everything below is unfinished
