@@ -10,7 +10,7 @@ class AssetManager:
             'graphics': {
                 'clouds': self.load_folder(join('..', 'graphics', 'weather', 'clouds')),
                 'minerals': self.load_subfolders(join('..', 'graphics', 'minerals')),
-                'decor': self.load_folder(join('..', 'graphics', 'decor')),
+                'decor': self.load_subfolders(join('..', 'graphics', 'decor')),
                 'research': self.load_folder(join('..', 'graphics', 'research')),
                 'storage': self.load_folder(join('..', 'graphics', 'storage')),
                 'consumables': self.load_subfolders(join('..', 'graphics', 'consumables'))
@@ -71,10 +71,6 @@ class AssetManager:
             
             if biome in ('forest', 'taiga', 'desert'):
                 self.assets['graphics'][biome]['trees'] = self.load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
-    
-    def load_wall_graphics(self) -> None:
-            self.assets['graphics']['decor'].setdefault('walls', {})
-            self.assets['graphics']['decor']['walls'] = self.load_folder(join('..', 'graphics', 'decor', 'walls'))
 
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
@@ -86,14 +82,12 @@ class AssetManager:
             self.assets['graphics'][tool] = self.load_folder(join('..', 'graphics', 'tools', f'{tool}s'))
 
     def load_machine_graphics(self) -> None:
-        self.assets['graphics'].setdefault('machines', {})
         animated = {'assembler', 'belt', 'inserter'}
-        
         for machine in MACHINES:
             if machine in animated: 
                 self.assets['graphics'][machine] = self.load_folder(join('..', 'graphics', 'machinery', machine))
             else:
-                if machine in {'steam engine', 'furnace'}: # don't have the others yet
+                if machine in {'steam engine', 'burner furnace', 'burner drill', 'electric drill', 'inserter'}: # don't have the others yet
                     self.assets['graphics'][machine] = self.load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
 
     def load_remaining_graphics(self) -> None:
@@ -101,4 +95,3 @@ class AssetManager:
         self.load_tile_graphics()
         self.load_tool_graphics()
         self.load_machine_graphics()
-        self.load_wall_graphics()

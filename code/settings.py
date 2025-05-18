@@ -106,15 +106,15 @@ TOOLS = {
 }
 
 MACHINES = [
-    'coal furnace', 'electric furnace',
-    'belt', 'drill', 'inserter', 'assembler', 'printing press',
+    'burner furnace', 'electric furnace',
+    'belt', 'burner drill', 'electric drill', 'inserter', 'assembler', 'printing press',
     'electric pole', 'electric grid', 'boiler', 'steam engine', 'pump', 'solar panel',
     'belt', 'pipes' # TODO: add trains or maybe minecarts with similar functionality?
 ]
 
 MATERIALS = [
-    'iron gear', 'circuit', 'copper cable',
-    'steel plate', 'iron rod', 'glass', 
+    'iron gear', 'circuit', 'copper cable', 
+    'copper plate', 'steel plate', 'iron rod', 'glass', 
     'copper bar', 'iron bar', 'silver bar', 'gold bar'
 ]
 

@@ -460,11 +460,14 @@ class CraftWindow:
 
     def select_category(self, mouse_coords: tuple[int, int]) -> None:
         mouse_coords -= self.camera_offset # convert from world-space to screen-space
-        if self.open and self.mouse_within_borders(mouse_coords):
-            cell_index = self.get_category_overlap(mouse_coords)
-            col, row = cell_index[0], cell_index[1]
-            self.selected_category = self.category_keys[col + (row * self.category_cols)]
-            self.render_item_slots()
+        if self.open:
+            if self.mouse_within_borders(mouse_coords):
+                cell_index = self.get_category_overlap(mouse_coords)
+                col, row = cell_index[0], cell_index[1]
+                self.selected_category = self.category_keys[col + (row * self.category_cols)]
+            
+            if self.selected_category:
+                self.render_item_slots()
         else:
             self.selected_category = None
 
@@ -488,37 +491,44 @@ class CraftWindow:
     
     def render_item_slots(self) -> None:
         num_slots = len(self.categories[self.selected_category])
-        top = self.outline.top + (self.row_height * self.category_rows)
+        top = self.outline.top + (self.row_height * self.category_rows) + self.padding
         x_cells = self.outline.width // self.cell_width
         y_cells = math.ceil(num_slots / x_cells)
+        left_padding = (self.outline.width - (x_cells * self.cell_width)) // 2
+        left = self.outline.left + left_padding
         for x in range(x_cells):
             for y in range(y_cells):
                 index = x + (y * x_cells)
                 if index < num_slots:
                     cell = pg.Rect(
-                        self.outline.left + (self.cell_width * x), 
+                        left + (self.cell_width * x), 
                         top + (self.cell_height * y), 
-                        self.cell_width, 
-                        self.cell_height
+                        self.cell_width - 1, 
+                        self.cell_height - 1
                     )
                     pg.draw.rect(self.screen, 'black', cell, 1)
-                    self.render_item_images(top, x, y, index)
+                    self.render_item_images(left, top, x, y, index)
 
-    def render_item_images(self, top: int, x: int, y: int, index: int) -> None:
+    def render_item_images(self, left: int, top: int, x: int, y: int, index: int) -> None:
         item_name = self.categories[self.selected_category][index]
         try:
-            if not isinstance(self.graphics[item_name], dict): # animated items like conveyor belts
-                image = pg.transform.scale(
-                    self.graphics[item_name], 
-                    (self.cell_width, self.cell_height) - pg.Vector2(self.padding * 2, self.padding * 2)
+            if not isinstance(self.graphics[item_name], dict):
+                image = self.graphics[item_name]
+                padding = 2
+                bounding_box = (self.cell_width - (padding * 2), self.cell_height - (padding * 2))
+                aspect_ratio = min(image.width / bounding_box[0], image.height / bounding_box[1]) # avoid stretching an image too wide/tall
+                scale = (
+                    min(bounding_box[0], image.width * aspect_ratio),
+                    min(bounding_box[1], image.height * aspect_ratio)
                 )
-                rect = image.get_rect(center = (
-                    self.outline.left + (self.cell_width * x) + (self.cell_width // 2), 
+                scaled_image = pg.transform.scale(self.graphics[item_name], scale)
+                rect = scaled_image.get_frect(center = (
+                    left + (self.cell_width * x) + (self.cell_width // 2), 
                     top + (self.cell_height * y) + (self.cell_height // 2)
                 ))
-                self.screen.blit(image, rect)
+                self.screen.blit(scaled_image, rect)
         except KeyError:
-            print(f'missing {item_name}')
+            pass
 
     def update(self, mouse_coords: pg.Vector2) -> None:
         if self.open:

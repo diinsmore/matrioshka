@@ -115,7 +115,7 @@ class GraphicsEngine:
                 pass # will have to add a method to return 'machines' for the assembler, etc.
             
             if sprite.state in self.item_render_states[item_category]:
-                image = pg.transform.flip(self.graphics[f'{item_category}s'][sprite.item_holding], sprite.facing_left, False)
+                image = pg.transform.flip(self.graphics[item_category][sprite.item_holding], sprite.facing_left, False)
                 image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
                 coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
                 rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
@@ -256,7 +256,7 @@ class Terrain:
         if (x, y) in self.mining_map.keys():
             tile = self.get_tile_type(x, y)
             tile_image = self.graphics[tile].copy()
-            tile_image.set_alpha(150) 
+            tile_image.set_alpha(170) 
             return tile_image
 
     def update(self) -> None:
