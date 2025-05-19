@@ -130,7 +130,7 @@ class ProcGen:
             left_tile = self.tile_map[coords[0] - 1, coords[1]]
             right_tile = self.tile_map[coords[0] + 1, coords[1]]
             # only spawn at coordinates where the x-axis is consistent for 3+ tiles (equal to the tree's width of 36px)
-            if center_tile == 0 and left_tile == 0 and right_tile == 0: # dirt1 tiles
+            if center_tile == 0 and left_tile == 0 and right_tile == 0: # dirt tiles
                 Tree(
                     coords = (coords[0] * TILE_SIZE, coords[1] * TILE_SIZE - image.get_height()), 
                     image = image, 

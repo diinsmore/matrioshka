@@ -69,4 +69,3 @@ class Drill(BaseSprite):
         super().__init__(coords, image, z, *sprite_groups)
         self.target_ore = None
         self.reach_radius = ((image.width // TILE_SIZE) + 2, RES[1] // 5)
-        

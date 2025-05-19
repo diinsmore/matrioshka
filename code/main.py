@@ -8,7 +8,7 @@ class Main:
     def __init__(self):
         pg.init()
         pg.display.set_caption('matrioshka')
-        self.running = True 
+        self.running = True
         self.screen = pg.display.set_mode(RES)
         self.clock = pg.time.Clock()
 

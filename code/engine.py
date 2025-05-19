@@ -33,9 +33,9 @@ class Engine:
             self.physics_engine.collision_map,
         )
 
-        self.inv = Inventory()
+        self.inventory = Inventory()
 
-        self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inv)
+        self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory)
 
         self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
         
@@ -64,7 +64,7 @@ class Engine:
             tile_IDs = tile_IDs,
             biome_order = self.proc_gen.biome_order,
             physics_engine = self.physics_engine,
-            inv = self.inv
+            inventory = self.inventory
         )
         
         # keep this line below the sprite instances

@@ -4,9 +4,9 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 import pygame as pg
-import math
 
-from settings import TILE_SIZE, RES, TOOLS, MACHINES, MATERIALS, STORAGE, RESEARCH, DECOR, FOOD, DRINKS
+from settings import TILE_SIZE, RES
+from craft_window import CraftWindow
 
 class UI:
     def __init__(
@@ -14,32 +14,34 @@ class UI:
         screen: pg.Surface,
         camera_offset: pg.Vector2,
         assets: dict[str, dict[str, any]],
-        inv: Inventory
+        inventory: inventory
     ):
         self.screen = screen
         self.camera_offset = camera_offset
         self.assets = assets
-        self.inv = inv
+        self.inventory = inventory
 
         self.mini_map = MiniMap(self.screen, self.assets, self.make_outline)
 
-        self.inv_ui = InvUI(
-            self.inv, 
+        self.inventory_ui = InventoryUI(
+            self.inventory, 
             self.screen, 
             self.assets,
             self.mini_map.height + self.mini_map.padding, 
             self.make_outline,
-            self.make_transparent_bg
+            self.make_transparent_bg,
+            self.render_item_name
         )
 
         self.craft_window = CraftWindow(
-            self.screen, 
-            self.assets, 
-            self.inv_ui, 
-            self.get_craft_window_height(), 
+            self.screen,
             self.camera_offset,
+            self.assets, 
+            self.inventory_ui, 
+            self.get_craft_window_height(),
             self.make_outline,
-            self.make_transparent_bg
+            self.make_transparent_bg,
+            self.render_item_name
         )
 
         self.HUD = HUD(
@@ -53,7 +55,7 @@ class UI:
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
 
     def get_craft_window_height(self) -> int:
-        inv_grid_max_height = self.inv_ui.box_height * (self.inv.slots // self.inv_ui.cols)
+        inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.slots // self.inventory_ui.cols)
         return inv_grid_max_height + self.mini_map.height + self.mini_map.padding
 
     def make_outline(
@@ -94,12 +96,19 @@ class UI:
         bg_rect = bg_image.get_rect(topleft = rect.topleft)
         self.screen.blit(bg_image, bg_rect)
 
+    def render_item_name(self, rect: pg.Rect, name: str) -> None:
+        if pg.mouse.get_rel():
+            if rect.collidepoint(pg.mouse.get_pos()):
+                font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
+                font_rect = font.get_rect(topleft = rect.bottomright)
+                self.screen.blit(font, font_rect)
+
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
         self.HUD.update()
         self.mini_map.update()
         self.craft_window.update(mouse_coords) # keep above the inventory ui otherwise item names may be rendered behind the window
-        self.inv_ui.update()
+        self.inventory_ui.update()
         
 
 class MouseGrid:
@@ -132,6 +141,127 @@ class MouseGrid:
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving, left_click: bool) -> None:
         self.render_grid(mouse_coords, mouse_moving, left_click)
+
+
+class MiniMap:
+    def __init__(
+        self, 
+        screen: pg.Surface, 
+        assets: dict[str, dict[str, any]], 
+        make_outline: callable
+    ):
+        self.screen = screen
+        self.assets = assets
+        self.make_outline = make_outline
+
+        self.colors = self.assets['colors']
+        self.fonts = self.assets['fonts']
+
+        self.width, self.height = TILE_SIZE * 10, TILE_SIZE * 10
+        self.padding = 5
+        self.render = True
+
+    def render_outline(self) -> None:
+        if self.render:
+            base_rect = pg.Rect(self.padding, self.padding, self.width, self.height)
+            outline1 = self.make_outline(base_rect, draw = False, return_outline = True)
+            outline2 = self.make_outline(outline1, draw = True)
+            pg.draw.rect(self.screen, 'black', outline1, 1)
+
+    def update(self) -> None:
+        self.render_outline()
+
+
+class InventoryUI:
+    def __init__(
+        self, 
+        inventory: Inventory, 
+        screen: pg.Surface, 
+        assets: dict[str, dict[str, any]], 
+        top: int,
+        make_outline: callable,
+        make_transparent_bg: callable,
+        render_item_name: callable
+    ):
+        self.inventory = inventory
+        self.screen = screen
+        self.assets = assets
+        self.padding = 5
+        self.top = top + self.padding
+        self.make_outline = make_outline
+        self.make_transparent_bg = make_transparent_bg
+        self.render_item_name = render_item_name
+
+        self.graphics = self.assets['graphics']
+        self.fonts = self.assets['fonts']
+        self.colors = self.assets['colors']
+
+        self.slots = self.inventory.slots
+        self.cols = 5
+        self.rows = 2
+        self.box_width, self.box_height = TILE_SIZE * 2, TILE_SIZE * 2
+        self.total_width = self.box_width * self.cols
+        self.total_height = self.box_height * self.rows
+        self.render = True
+        self.expand = False
+        self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
+    
+    def update_dimensions(self) -> None:
+        # the number of columns is static
+        self.rows = 2 if not self.expand else self.slots // self.cols
+        self.total_height = self.box_height * self.rows
+
+    def render_bg(self) -> None:
+        rect = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
+        outline = self.make_outline(rect)
+        self.make_transparent_bg(rect)
+        
+    def render_slots(self) -> None:
+        for x in range(self.cols):
+            for y in range(self.rows):
+                box = pg.Rect(
+                    (self.padding, self.top) + pg.Vector2(x * self.box_width, y * self.box_height), 
+                    (self.box_width - 1, self.box_height - 1) # -1 for a slight gap between boxes
+                )
+                pg.draw.rect(self.screen, 'black', box, 1)
+
+    def render_icons(self) -> None:
+        contents = self.inventory.contents.items()
+        if contents:
+            for name, data in contents:
+                # will have to update this path depending on the particular item type
+                icon_image = self.graphics[name]
+                
+                # determine the slot an item corresponds to
+                col = data['index'] % self.cols
+                row = data['index'] // (self.rows if self.expand else self.slots // self.cols)
+                
+                # render at the center of the inventory slot
+                x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
+                y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
+                icon_rect = icon_image.get_rect(topleft = (x, y))
+                self.screen.blit(icon_image, icon_rect)
+
+                self.render_item_amount(data['amount'], (x, y))
+                self.render_item_name(icon_rect, name)
+
+    def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
+        amount_image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])
+        
+        # move the text 5 pixels further to the right for each digit > 2
+        num_digits = len(str(amount))
+        x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0
+
+        amount_rect = amount_image.get_rect(center = coords + pg.Vector2(x_offset, -2))
+        self.make_transparent_bg(amount_rect)
+        self.screen.blit(amount_image, amount_rect)
+
+    def update(self) -> None:
+        if self.render:
+            self.update_dimensions()
+            self.render_bg()
+            self.render_slots()
+            self.render_icons()
 
 
 class HUD:
@@ -178,360 +308,3 @@ class HUD:
     def update(self) -> None:
         if self.render:
             self.render_bg()
-
-
-class MiniMap:
-    def __init__(
-        self, 
-        screen: pg.Surface, 
-        assets: dict[str, dict[str, any]], 
-        make_outline: callable
-    ):
-        self.screen = screen
-        self.assets = assets
-        self.make_outline = make_outline
-
-        self.colors = self.assets['colors']
-        self.fonts = self.assets['fonts']
-
-        self.width, self.height = TILE_SIZE * 10, TILE_SIZE * 10
-        self.padding = 5
-        self.render = True
-
-    def render_outline(self) -> None:
-        if self.render:
-            base_rect = pg.Rect(self.padding, self.padding, self.width, self.height)
-            outline1 = self.make_outline(base_rect, draw = False, return_outline = True)
-            outline2 = self.make_outline(outline1, draw = True)
-            pg.draw.rect(self.screen, 'black', outline1, 1)
-
-    def update(self) -> None:
-        self.render_outline()
-
-
-class InvUI:
-    def __init__(
-        self, 
-        inv: Inventory, 
-        screen: pg.Surface, 
-        assets: dict[str, dict[str, any]], 
-        top: int,
-        make_outline: callable,
-        make_transparent_bg: callable
-    ):
-        self.inv = inv
-        self.screen = screen
-        self.assets = assets
-        self.padding = 5
-        self.top = top + self.padding
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
-
-        self.graphics = self.assets['graphics']
-        self.fonts = self.assets['fonts']
-        self.colors = self.assets['colors']
-
-        self.slots = self.inv.slots
-        self.cols = 5
-        self.rows = 2
-        self.box_width, self.box_height = TILE_SIZE * 2, TILE_SIZE * 2
-        self.total_width = self.box_width * self.cols
-        self.total_height = self.box_height * self.rows
-        self.render = True
-        self.expand = False
-        self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
-    
-    def update_dimensions(self) -> None:
-        # the number of columns is static
-        self.rows = 2 if not self.expand else self.slots // self.cols
-        self.total_height = self.box_height * self.rows
-
-    def render_bg(self) -> None:
-        rect = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
-        outline = self.make_outline(rect)
-        self.make_transparent_bg(rect)
-        
-    def render_slots(self) -> None:
-        for x in range(self.cols):
-            for y in range(self.rows):
-                box = pg.Rect(
-                    (self.padding, self.top) + pg.Vector2(x * self.box_width, y * self.box_height), 
-                    (self.box_width - 1, self.box_height - 1) # -1 for a slight gap between boxes
-                )
-                pg.draw.rect(self.screen, 'black', box, 1)
-
-    def render_icons(self) -> None:
-        contents = self.inv.contents.items()
-        if contents:
-            for name, data in contents:
-                # will have to update this path depending on the particular item type
-                icon_image = self.graphics[name]
-                
-                # determine the slot an item corresponds to
-                col = data['index'] % self.cols
-                row = data['index'] // (self.rows if self.expand else self.slots // self.cols)
-                
-                # render at the center of the inventory slot
-                x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
-                y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
-                icon_rect = icon_image.get_rect(topleft = (x, y))
-                self.screen.blit(icon_image, icon_rect)
-
-                self.render_item_amount(data['amount'], (x, y))
-                self.render_item_name(icon_rect, name)
-
-    def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
-        amount_image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])
-        
-        # move the text 5 pixels further to the right for each digit > 2
-        num_digits = len(str(amount))
-        x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0
-
-        amount_rect = amount_image.get_rect(center = coords + pg.Vector2(x_offset, -2))
-        self.render_amount_bg(amount_rect)
-        self.screen.blit(amount_image, amount_rect)
-
-    def render_amount_bg(self, rect: pg.Rect) -> None:
-        '''adds a slightly transparent surface behind the text to aid in readability'''
-        bg_image = pg.Surface(rect.size)
-        bg_image.fill('black')
-        bg_image.set_alpha(100)
-        bg_rect = bg_image.get_rect(topleft = rect.topleft)
-        self.screen.blit(bg_image, bg_rect)
-
-    def render_item_name(self, icon_rect: pg.Rect, name: str) -> None:
-        if pg.mouse.get_rel():
-            # render when the mouse hovers over the icon
-            if icon_rect.collidepoint(pg.mouse.get_pos()):
-                font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
-                font_rect = font.get_rect(topleft = icon_rect.bottomright)
-                self.screen.blit(font, font_rect)
-
-    def update(self) -> None:
-        if self.render:
-            self.update_dimensions()
-            self.render_bg()
-            self.render_slots()
-            self.render_icons()
-
-
-class CraftWindow:
-    def __init__(
-        self, 
-        screen: pg.Surface, 
-        assets: dict[str, dict[str, any]], 
-        inv_ui: InvUI, 
-        height: int, 
-        camera_offset: pg.Vector2,
-        make_outline: callable,
-        make_transparent_bg: callable
-    ):
-        self.screen = screen
-        self.assets = assets
-        self.inv_ui = inv_ui
-        self.height = height
-        self.camera_offset = camera_offset
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
-
-        self.graphics = self.assets['graphics']
-        self.fonts = self.assets['fonts']
-        self.colors = self.assets['colors']
-
-        self.width = int(self.inv_ui.outline.width * 1.3)
-        self.padding = 5
-        # defining the outline as a class attribute to allow the HUD and potentially other ui elements to access its location
-        self.outline = pg.Rect(self.inv_ui.outline.right + self.padding, self.padding, self.width, self.height)
-
-        self.categories = {
-            'tools': [*TOOLS.keys()],
-            'materials': [*MATERIALS],
-            'infrastructure': [*MACHINES, *STORAGE.keys(), *DECOR.keys()],
-            'research': [*RESEARCH.keys()],
-        }
-
-        self.open = False
-        self.selected_category = None
-        self.open_subcategory = False
-
-        self.category_keys = list(self.categories.keys()) # just here to avoid calling .keys() every time they need to be referenced
-        self.num_categories = len(self.category_keys)
-        self.category_cols = 2
-        self.category_rows = self.num_categories // self.category_cols
-        self.col_width = self.outline.width // self.category_cols
-        self.row_height = (self.outline.height // 3) // self.category_rows
-
-        self.category_grid_borders = {'x': [], 'y': []}
-        self.precompute_category_grid_borders()
-
-        self.cell_height, self.cell_width = TILE_SIZE * 2, TILE_SIZE * 2 # for the grid of items comprising a given category
-        
-    def precompute_category_grid_borders(self) -> None:
-        '''
-        store the coordinates of each column/row comprising the grid to 
-        reference when searching for the current cell being hovered over
-        '''
-        for col in range(1, self.category_cols + 1):
-            padding = 2 # without this offset, an error is thrown when you move within the menu's borders from the topleft side, presumably due to the outline
-            self.category_grid_borders['x'].append((self.outline.left, self.outline.left + (self.col_width * col) + padding))
-        
-        for row in range(1, self.category_rows + 1):
-            self.category_grid_borders['y'].append((self.outline.top, self.outline.top + (self.row_height * row) + padding))
-
-    def render_outline(self) -> None:
-        pg.draw.rect(self.screen, 'black', self.outline, 1, 2)
-        self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
-
-    def split_into_sections(self) -> None:
-        for col in range(self.category_cols):
-            left = self.outline.left + (self.col_width * col)
-            col_rect = pg.Rect(left, self.outline.top, self.col_width, self.row_height * self.category_rows)
-            col_outline = self.make_outline(col_rect)
-            pg.draw.rect(self.screen, 'black', col_rect, 1)
-
-            for row in range(self.category_rows):
-                top = self.outline.top + (self.row_height * row)
-                row_rect = pg.Rect(self.outline.left, top, self.outline.width - 2, self.row_height)
-                pg.draw.rect(self.screen, 'black', row_rect, 1)
-                
-                category_index = col + (row * self.category_cols)
-                label = self.category_keys[category_index]
-                self.render_label_text((left, top), label)
-                self.render_label_images(label, col, row)
-                
-    def render_label_text(self, topleft: tuple[int, int], label: str) -> None:
-        padding = 2
-        text = self.fonts['craft menu label'].render(label, True, self.colors['text'])
-        border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
-        self.make_transparent_bg(border)
-        text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
-        self.screen.blit(text, text_rect)
-
-        border_outline = self.make_outline(border, color = 'black')
-
-    def render_label_images(self, label: str, col: int, row: int) -> None:
-        '''render an item relating to a given crafting category'''
-        image = self.get_label_image(label)
-        if label != self.selected_category:
-            image.set_alpha(200)
-        
-        # get the space between the border of the image and the cell containing it
-        padding_x = self.col_width - image.get_width()
-        padding_y = self.row_height - image.get_height()
-
-        # center the image within a given cell
-        label_padding = 10  # account for the category label at the top 
-        offset = pg.Vector2(
-            (col * self.col_width) + (padding_x // 2), 
-            (row * self.row_height) + (padding_y // 2) + label_padding
-        ) 
-        
-        image_rect = image.get_rect(topleft = self.outline.topleft + offset)
-        # add a slightly transparent black background
-        bg_rect = pg.Rect(
-            image_rect.topleft - pg.Vector2(self.padding, self.padding), 
-            image_rect.size + pg.Vector2(self.padding * 2, self.padding * 2)
-        )
-        self.make_transparent_bg(bg_rect, alpha = 100 if label != self.selected_category else 255)
-        self.make_outline(bg_rect)
-
-        self.screen.blit(image, image_rect)
-
-    def get_label_image(self, label: str) -> pg.Surface:
-        match label:
-            case 'tools':
-                image = self.graphics['pickaxe']['stone pickaxe']
-                scale = 1.2
-
-            case 'materials':
-                image = self.graphics['minerals']['bars']['iron bar']
-                scale = 1.3
-                
-            case 'infrastructure':
-                image = self.graphics['steam engine']
-                scale = 0.8
-
-            case 'research':
-                image = self.graphics['research']['lab']
-                scale = 0.8
-
-        image = pg.transform.scale(image, (image.width * scale, image.height * scale))
-        return image
-
-    def select_category(self, mouse_coords: tuple[int, int]) -> None:
-        mouse_coords -= self.camera_offset # convert from world-space to screen-space
-        if self.open:
-            if self.mouse_within_borders(mouse_coords):
-                cell_index = self.get_category_overlap(mouse_coords)
-                col, row = cell_index[0], cell_index[1]
-                self.selected_category = self.category_keys[col + (row * self.category_cols)]
-            
-            if self.selected_category:
-                self.render_item_slots()
-        else:
-            self.selected_category = None
-
-    def mouse_within_borders(self, mouse_coords: pg.Vector2) -> bool:
-        return self.outline.left < mouse_coords[0] < self.outline.right and \
-                self.outline.top < mouse_coords[1] < self.outline.top + (self.category_rows * self.row_height)
-    
-    def get_category_overlap(self, mouse_coords: pg.Vector2) -> int:
-        '''determine which category within the grid is being hovered over by the mouse'''
-        cell_coords = []
-        # column index
-        for index, x_range in enumerate(self.category_grid_borders['x']):
-            if mouse_coords.x in range(x_range[0], x_range[1]):
-                cell_coords.append(index)
-                break
-        # row index
-        for index, y_range in enumerate(self.category_grid_borders['y']):
-            if mouse_coords.y in range(y_range[0], y_range[1]):
-                cell_coords.append(index)
-                return cell_coords
-    
-    def render_item_slots(self) -> None:
-        num_slots = len(self.categories[self.selected_category])
-        top = self.outline.top + (self.row_height * self.category_rows) + self.padding
-        x_cells = self.outline.width // self.cell_width
-        y_cells = math.ceil(num_slots / x_cells)
-        left_padding = (self.outline.width - (x_cells * self.cell_width)) // 2
-        left = self.outline.left + left_padding
-        for x in range(x_cells):
-            for y in range(y_cells):
-                index = x + (y * x_cells)
-                if index < num_slots:
-                    cell = pg.Rect(
-                        left + (self.cell_width * x), 
-                        top + (self.cell_height * y), 
-                        self.cell_width - 1, 
-                        self.cell_height - 1
-                    )
-                    pg.draw.rect(self.screen, 'black', cell, 1)
-                    self.render_item_images(left, top, x, y, index)
-
-    def render_item_images(self, left: int, top: int, x: int, y: int, index: int) -> None:
-        item_name = self.categories[self.selected_category][index]
-        try:
-            if not isinstance(self.graphics[item_name], dict):
-                image = self.graphics[item_name]
-                padding = 2
-                bounding_box = (self.cell_width - (padding * 2), self.cell_height - (padding * 2))
-                aspect_ratio = min(image.width / bounding_box[0], image.height / bounding_box[1]) # avoid stretching an image too wide/tall
-                scale = (
-                    min(bounding_box[0], image.width * aspect_ratio),
-                    min(bounding_box[1], image.height * aspect_ratio)
-                )
-                scaled_image = pg.transform.scale(self.graphics[item_name], scale)
-                rect = scaled_image.get_frect(center = (
-                    left + (self.cell_width * x) + (self.cell_width // 2), 
-                    top + (self.cell_height * y) + (self.cell_height // 2)
-                ))
-                self.screen.blit(scaled_image, rect)
-        except KeyError:
-            pass
-
-    def update(self, mouse_coords: pg.Vector2) -> None:
-        if self.open:
-            self.render_outline()
-            self.split_into_sections()
-            self.select_category(mouse_coords)

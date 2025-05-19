@@ -18,16 +18,12 @@ class Player(pg.sprite.Sprite):
         coords: tuple[int, int], 
         frames: dict[str, pg.Surface],
         z: dict[str, int],
-
         sprite_groups: list[pg.sprite.Group], 
-
         tile_map: np.ndarray,
         tile_IDs: dict[str, dict[str, any]],
         biome_order: dict[str, int],
-
         physics_engine: PhysicsEngine,
-
-        inv: Inventory
+        inventory: Inventory
     ):
         super().__init__(*sprite_groups)
         self.frames = frames
@@ -47,7 +43,7 @@ class Player(pg.sprite.Sprite):
 
         self.physics_engine = physics_engine
 
-        self.inv = inv
+        self.inventory = inventory
         self.item_holding = 'iron pickaxe' # just for testing purposes, normally self.inv[self.inv_index]
         
         self.direction = pg.Vector2()

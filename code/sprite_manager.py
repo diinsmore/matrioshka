@@ -141,6 +141,6 @@ class Mining:
         data['hardness'] -= tool_strength * data['hits'] 
         
         if self.mining_map[tile_coords]['hardness'] <= 0:
-            sprite.inv.add_item(self.get_tile_name(self.tile_map[tile_coords]))
+            sprite.inventory.add_item(self.get_tile_name(self.tile_map[tile_coords]))
             self.tile_map[tile_coords] = self.tile_IDs['air']
             del self.mining_map[tile_coords]
