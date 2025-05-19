@@ -15,7 +15,7 @@ class CraftWindow:
         camera_offset: pg.Vector2,
         assets: dict[str, dict[str, any]], 
         inventory_ui: InventoryUI, 
-        height: int, 
+        height: int,
         make_outline: callable,
         make_transparent_bg: callable,
         render_item_name: callable
@@ -46,13 +46,14 @@ class CraftWindow:
             self.screen,
             self.camera_offset,
             self.outline, 
-            self.make_outline, 
-            self.make_transparent_bg, 
             self.graphics,
             self.fonts, 
             self.colors,
             self.padding,
-            self.opened
+            self.opened,
+
+            self.make_outline, 
+            self.make_transparent_bg, 
         )
 
         self.item_grid = ItemGrid(
@@ -63,19 +64,19 @@ class CraftWindow:
             self.category_grid.categories, 
             self.category_grid.selected_category,
             self.make_outline, 
-            self.render_item_name
+            self.render_item_name,
         )
 
     def render_outline(self) -> None:
         self.make_outline(self.outline, color = 'black')
         self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
-    
-    def update(self, mouse_coords: pg.Vector2) -> None:
+
+    def update(self, mouse_coords: pg.Vector2, right_click: bool) -> None:
         if self.opened:
             self.render_outline()
-            
+
             self.category_grid.opened = self.opened
-            self.category_grid.update(mouse_coords)
+            self.category_grid.update(mouse_coords, right_click)
             
             self.item_grid.selected_category = self.category_grid.selected_category
             self.item_grid.update()
@@ -87,30 +88,32 @@ class CategoryGrid:
         screen: pg.Surface, 
         camera_offset: pg.Vector2,
         window_outline: pg.Rect, 
-        make_outline: callable, 
-        make_transparent_bg: callable,
         graphics: dict[str, dict[str, any]],
         fonts: dict[str, pg.font.Font],
         colors: dict[str, str],
         padding: int,
-        opened: bool
+        opened: bool,
+        make_outline: callable, 
+        make_transparent_bg: callable
     ):
         self.screen = screen
         self.camera_offset = camera_offset
         self.window_outline = window_outline
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
         self.graphics = graphics
         self.fonts = fonts
         self.colors = colors
         self.padding = padding
         self.opened = opened
+        self.make_outline = make_outline
+        self.make_transparent_bg = make_transparent_bg
 
         self.categories = {
-            'tools': [*TOOLS.keys()],
-            'materials': [*MATERIALS],
-            'infrastructure': [*MACHINES, *STORAGE.keys(), *DECOR.keys()],
-            'research': [*RESEARCH.keys()],
+            'tools': {**TOOLS},
+            'materials': {**MATERIALS},
+            'machines': {**MACHINES},
+            'research': {**RESEARCH},
+            'decor': {**DECOR},
+            'storage': {**STORAGE}
         }
 
         self.selected_category = None
@@ -123,7 +126,7 @@ class CategoryGrid:
         self.num_rows = self.num_categories // self.num_cols
 
         self.col_width = self.window_outline.width // self.num_cols
-        self.row_height = (self.window_outline.height // 3) // self.num_rows
+        self.row_height = (self.window_outline.height // 2) // self.num_rows
 
         self.borders = {'x': [], 'y': []}
         self.precompute_borders()
@@ -151,17 +154,8 @@ class CategoryGrid:
                 
                 category_index = col + (row * self.num_cols)
                 category = self.category_keys[category_index]
-                self.render_category_names((left, top), category)
                 self.render_category_images(category, col, row)
-
-    def render_category_names(self, topleft: tuple[int, int], category: str) -> None:
-        padding = 2
-        text = self.fonts['craft menu category'].render(category, True, self.colors['text'])
-        border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
-        self.make_transparent_bg(border)
-        self.make_outline(border, color = 'black')
-        text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
-        self.screen.blit(text, text_rect)
+                self.render_category_names((left, top), category)
 
     def render_category_images(self, category: str, col: int, row: int) -> None:
         '''render a graphic relating to a given crafting category'''
@@ -189,6 +183,15 @@ class CategoryGrid:
         self.make_outline(bg_rect)
         self.screen.blit(image, image_rect)
 
+    def render_category_names(self, topleft: tuple[int, int], category: str) -> None:
+        padding = 2
+        text = self.fonts['craft menu category'].render(category, True, self.colors['text'])
+        border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
+        self.make_transparent_bg(border)
+        self.make_outline(border, color = 'black')
+        text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
+        self.screen.blit(text, text_rect)
+
     def get_category_image(self, category: str) -> pg.Surface:
         scale = 0.8
         match category:
@@ -200,32 +203,37 @@ class CategoryGrid:
                 image = self.graphics['minerals']['bars']['iron bar']
                 scale = 1.3
                 
-            case 'infrastructure':
+            case 'machines':
                 image = self.graphics['steam engine']
 
             case 'research':
                 image = self.graphics['research']['lab']
 
+            case 'decor':
+                image = self.graphics['decor']['paintings']['creation']
+
+            case 'storage':
+                image = self.graphics['storage']['wood chest']
+                scale = 1.2
+
         image = pg.transform.scale(image, (image.width * scale, image.height * scale))
         return image
 
-    def select_category(self, mouse_coords: tuple[int, int]) -> None:
+    def select_category(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
+        print(left_click)
         if self.opened:
             mouse_coords -= self.camera_offset # convert from world-space to screen-space
-            if self.mouse_on_grid(mouse_coords):
+            if self.mouse_on_grid(mouse_coords) and left_click:
                 cell_index = self.get_category_overlap(mouse_coords)
                 col, row = cell_index[0], cell_index[1]
                 self.selected_category = self.category_keys[col + (row * self.num_cols)]
-            
-            if self.selected_category:
-                self.render_category_images(self.selected_category, col, row)
         else:
             self.selected_category = None
-
+    
     def mouse_on_grid(self, mouse_coords: pg.Vector2) -> bool:
         return self.window_outline.left < mouse_coords[0] < self.window_outline.right and \
                 self.window_outline.top < mouse_coords[1] < self.window_outline.top + (self.num_rows * self.row_height)
-    
+
     def get_category_overlap(self, mouse_coords: pg.Vector2) -> int:
         '''determine which category is being hovered over by the mouse'''
         cell_coords = []
@@ -240,9 +248,9 @@ class CategoryGrid:
                 cell_coords.append(index)
                 return cell_coords
 
-    def update(self, mouse_coords: tuple[int, int]) -> None:
+    def update(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
         self.make_grid()
-        self.select_category(mouse_coords)
+        self.select_category(mouse_coords, left_click)
 
 
 class ItemGrid:
@@ -255,7 +263,7 @@ class ItemGrid:
         categories: dict[str, list[str]],
         selected_category: str,
         make_outline: callable,
-        render_item_name: callable
+        render_item_name: callable,
     ):
         self.screen = screen
         self.graphics = graphics
@@ -267,28 +275,29 @@ class ItemGrid:
         self.render_item_name = render_item_name
         
         self.cell_width, self.cell_height = TILE_SIZE * 2, TILE_SIZE * 2
+        self.x_cells = self.window_outline.width // self.cell_width
+        self.left_padding = (self.window_outline.width - (self.x_cells * self.cell_width)) // 2
+        self.left = self.window_outline.left + self.left_padding
 
     def render_item_slots(self) -> None:
-        num_slots = len(self.categories[self.selected_category])
-        x_cells = self.window_outline.width // self.cell_width
-        y_cells = math.ceil(num_slots / x_cells)
-        left_padding = (self.window_outline.width - (x_cells * self.cell_width)) // 2
-        left = self.window_outline.left + left_padding
-        for x in range(x_cells):
-            for y in range(y_cells):
-                index = x + (y * x_cells)
-                if index < num_slots:
+        # not defining these in __init__ since they rely on the selected category
+        self.num_slots = len(self.categories[self.selected_category])
+        self.y_cells = math.ceil(self.num_slots / self.x_cells)
+        for x in range(self.x_cells):
+            for y in range(self.y_cells):
+                index = x + (y * self.x_cells)
+                if index < self.num_slots:
                     cell = pg.Rect(
-                        left + (self.cell_width * x), 
+                        self.left + (self.cell_width * x), 
                         self.top + (self.cell_height * y), 
                         self.cell_width - 1, 
                         self.cell_height - 1
                     )
-                    pg.draw.rect(self.screen, 'black', cell, 1)
-                    self.render_item_images(index, left, x, y)
+                    rect = pg.draw.rect(self.screen, 'black', cell, 1)
+                    self.render_item_images(index, x, y)
 
-    def render_item_images(self, index: int, left: int, x: int, y: int) -> None:
-        item_name = self.categories[self.selected_category][index]
+    def render_item_images(self, index: int, x: int, y: int) -> None:
+        item_name = list(self.categories[self.selected_category].keys())[index]
         try:
             if not isinstance(self.graphics[item_name], dict):
                 image = self.graphics[item_name]
@@ -301,13 +310,18 @@ class ItemGrid:
                 )
                 scaled_image = pg.transform.scale(self.graphics[item_name], scale)
                 rect = scaled_image.get_frect(center = (
-                    left + (self.cell_width * x) + (self.cell_width // 2), 
+                    self.left + (self.cell_width * x) + (self.cell_width // 2), 
                     self.top + (self.cell_height * y) + (self.cell_height // 2)
                 ))
                 self.screen.blit(scaled_image, rect)
                 self.render_item_name(rect, item_name)
+                self.get_selected_item(rect, item_name)
         except KeyError:
             pass
+    
+    def get_selected_item(self, rect: pg.Rect, item_name: str) -> None:
+        if rect.collidepoint(pg.mouse.get_pos()):
+            item_data = self.categories[self.selected_category][item_name]
 
     def update(self) -> None:
         if self.selected_category:

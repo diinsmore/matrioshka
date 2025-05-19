@@ -105,18 +105,18 @@ TOOLS = {
     'dynamite': {}
 }
 
-MACHINES = [
-    'burner furnace', 'electric furnace',
-    'belt', 'burner drill', 'electric drill', 'inserter', 'assembler', 'printing press',
-    'electric pole', 'electric grid', 'boiler', 'steam engine', 'pump', 'solar panel',
-    'belt', 'pipes' # TODO: add trains or maybe minecarts with similar functionality?
-]
+MACHINES = {
+    'burner furnace': {}, 'electric furnace': {},
+    'burner drill': {}, 'electric drill': {}, 'inserter': {}, 'assembler': {}, 'printing press': {},
+    'electric pole': {}, 'electric grid': {}, 'boiler': {}, 'steam engine': {}, 'pump': {}, 'solar panel': {},
+    'belt': {}, 'pipes': {},  # TODO: add trains or maybe minecarts with similar functionality?
+}
 
-MATERIALS = [
-    'iron gear', 'circuit', 'copper cable', 
-    'copper plate', 'steel plate', 'iron rod', 'glass', 
-    'copper bar', 'iron bar', 'silver bar', 'gold bar'
-]
+MATERIALS = {
+    'iron gear': {}, 'circuit': {}, 'copper cable': {},
+    'copper plate': {}, 'steel plate': {}, 'iron rod': {}, 'glass': {},
+    'copper bar': {}, 'iron bar': {}, 'silver bar': {}, 'gold bar': {},
+}
 
 STORAGE = {
     'chest': {'materials': {'wood': {'capacity': 500}, 'iron': {'capacity': 1500}}},
@@ -133,7 +133,6 @@ DECOR = {
     'doors': {'materials': ['wood', 'glass', 'stone', 'iron']},
     'tables': {'materials': ['wood', 'glass', 'sandstone', 'ice']},
     'chairs': {'materials': ['wood', 'glass', 'ice']},
-    'chest': {'materials': ['wood', 'glass', 'stone', 'iron']},
 }
 
 # TODO: everything below is unfinished

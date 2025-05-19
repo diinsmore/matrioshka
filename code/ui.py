@@ -27,7 +27,7 @@ class UI:
             self.inventory, 
             self.screen, 
             self.assets,
-            self.mini_map.height + self.mini_map.padding, 
+            self.mini_map.height + self.mini_map.padding,
             self.make_outline,
             self.make_transparent_bg,
             self.render_item_name
@@ -97,17 +97,16 @@ class UI:
         self.screen.blit(bg_image, bg_rect)
 
     def render_item_name(self, rect: pg.Rect, name: str) -> None:
-        if pg.mouse.get_rel():
-            if rect.collidepoint(pg.mouse.get_pos()):
-                font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
-                font_rect = font.get_rect(topleft = rect.bottomright)
-                self.screen.blit(font, font_rect)
+        if rect.collidepoint(pg.mouse.get_pos()):
+            font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
+            font_rect = font.get_rect(topleft = rect.bottomright)
+            self.screen.blit(font, font_rect)
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
         self.HUD.update()
         self.mini_map.update()
-        self.craft_window.update(mouse_coords) # keep above the inventory ui otherwise item names may be rendered behind the window
+        self.craft_window.update(mouse_coords, left_click) # keep above the inventory ui otherwise item names may be rendered behind the window
         self.inventory_ui.update()
         
 

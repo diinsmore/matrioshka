@@ -156,6 +156,7 @@ class Mouse:
             self.tile_coords = (self.coords[0] // TILE_SIZE, self.coords[1] // TILE_SIZE)
 
     def get_mouse_click(self) -> None:
+        self.clicks['left'], self.clicks['right'] = False, False
         click = pg.mouse.get_pressed()
         if click[0]:
             self.clicks['left'] = True

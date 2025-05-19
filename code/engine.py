@@ -36,9 +36,9 @@ class Engine:
         self.inventory = Inventory()
 
         self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory)
-
-        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
         
+        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
+
         self.chunk_manager = ChunkManager(self.camera.offset)
         
         self.graphics_engine = GraphicsEngine(
@@ -79,4 +79,5 @@ class Engine:
             dt
         )
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
+
         self.proc_gen.current_biome = self.player.current_biome
