@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory_ui import InventoryUI
+    from sprite_manager import SpriteManager
+    from player import Player
 
 import pygame as pg
 import math
@@ -14,7 +16,9 @@ class CraftWindow:
         screen: pg.Surface, 
         camera_offset: pg.Vector2,
         assets: dict[str, dict[str, any]], 
-        inventory_ui: InventoryUI, 
+        inventory_ui: InventoryUI,
+        sprite_manager: SpriteManager,
+        player: Player,
         height: int,
         make_outline: callable,
         make_transparent_bg: callable,
@@ -24,6 +28,8 @@ class CraftWindow:
         self.camera_offset = camera_offset
         self.assets = assets
         self.inventory_ui = inventory_ui
+        self.sprite_manager = sprite_manager
+        self.player = player
         self.height = height
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
@@ -51,7 +57,6 @@ class CraftWindow:
             self.colors,
             self.padding,
             self.opened,
-
             self.make_outline, 
             self.make_transparent_bg, 
         )
@@ -63,6 +68,8 @@ class CraftWindow:
             self.outline.top + (self.category_grid.row_height * self.category_grid.num_rows) + self.padding,
             self.category_grid.categories, 
             self.category_grid.selected_category,
+            self.sprite_manager,
+            self.player,
             self.make_outline, 
             self.render_item_name,
         )
@@ -71,15 +78,15 @@ class CraftWindow:
         self.make_outline(self.outline, color = 'black')
         self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
 
-    def update(self, mouse_coords: pg.Vector2, right_click: bool) -> None:
+    def update(self, mouse_coords: pg.Vector2, left_click: bool) -> None:
         if self.opened:
             self.render_outline()
 
             self.category_grid.opened = self.opened
-            self.category_grid.update(mouse_coords, right_click)
+            self.category_grid.update(mouse_coords, left_click)
             
             self.item_grid.selected_category = self.category_grid.selected_category
-            self.item_grid.update()
+            self.item_grid.update(left_click)
 
 
 class CategoryGrid:
@@ -220,7 +227,6 @@ class CategoryGrid:
         return image
 
     def select_category(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
-        print(left_click)
         if self.opened:
             mouse_coords -= self.camera_offset # convert from world-space to screen-space
             if self.mouse_on_grid(mouse_coords) and left_click:
@@ -262,6 +268,8 @@ class ItemGrid:
         top: int, 
         categories: dict[str, list[str]],
         selected_category: str,
+        sprite_manager: SpriteManager,
+        player: Player,
         make_outline: callable,
         render_item_name: callable,
     ):
@@ -271,6 +279,8 @@ class ItemGrid:
         self.top = top
         self.categories = categories
         self.selected_category = selected_category
+        self.sprite_manager = sprite_manager
+        self.player = player
         self.make_outline = make_outline
         self.render_item_name = render_item_name
         
@@ -279,7 +289,7 @@ class ItemGrid:
         self.left_padding = (self.window_outline.width - (self.x_cells * self.cell_width)) // 2
         self.left = self.window_outline.left + self.left_padding
 
-    def render_item_slots(self) -> None:
+    def render_item_slots(self, left_click: bool) -> None:
         # not defining these in __init__ since they rely on the selected category
         self.num_slots = len(self.categories[self.selected_category])
         self.y_cells = math.ceil(self.num_slots / self.x_cells)
@@ -294,9 +304,9 @@ class ItemGrid:
                         self.cell_height - 1
                     )
                     rect = pg.draw.rect(self.screen, 'black', cell, 1)
-                    self.render_item_images(index, x, y)
+                    self.render_item_images(index, x, y, left_click)
 
-    def render_item_images(self, index: int, x: int, y: int) -> None:
+    def render_item_images(self, index: int, x: int, y: int, left_click: bool) -> None:
         item_name = list(self.categories[self.selected_category].keys())[index]
         try:
             if not isinstance(self.graphics[item_name], dict):
@@ -309,20 +319,22 @@ class ItemGrid:
                     min(bounding_box[1], image.height * aspect_ratio)
                 )
                 scaled_image = pg.transform.scale(self.graphics[item_name], scale)
-                rect = scaled_image.get_frect(center = (
+                rect = scaled_image.get_rect(center = (
                     self.left + (self.cell_width * x) + (self.cell_width // 2), 
                     self.top + (self.cell_height * y) + (self.cell_height // 2)
                 ))
                 self.screen.blit(scaled_image, rect)
+
                 self.render_item_name(rect, item_name)
-                self.get_selected_item(rect, item_name)
+                self.get_selected_item(rect, item_name, left_click)
         except KeyError:
             pass
     
-    def get_selected_item(self, rect: pg.Rect, item_name: str) -> None:
-        if rect.collidepoint(pg.mouse.get_pos()):
+    def get_selected_item(self, rect: pg.Rect, item_name: str, left_click: bool) -> None:
+        if rect.collidepoint(pg.mouse.get_pos()) and left_click:
             item_data = self.categories[self.selected_category][item_name]
+            self.sprite_manager.crafting.craft_item(item_name, item_data['recipe'], self.player)
 
-    def update(self) -> None:
+    def update(self, left_click: bool) -> None:
         if self.selected_category:
-            self.render_item_slots()
+            self.render_item_slots(left_click)

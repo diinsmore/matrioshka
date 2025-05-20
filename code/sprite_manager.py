@@ -41,6 +41,12 @@ class SpriteManager:
             self.pick_up_item
         )
 
+        self.crafting = Crafting(
+            self.tile_map,
+            self.tile_IDs,
+            self.collision_map
+        )
+
     # not doing a list comprehension in __init__ since sprites aren't 
     # assigned their groups until after SpriteManager is initialized
     def init_active_items(self) -> None:
@@ -144,3 +150,24 @@ class Mining:
             sprite.inventory.add_item(self.get_tile_name(self.tile_map[tile_coords]))
             self.tile_map[tile_coords] = self.tile_IDs['air']
             del self.mining_map[tile_coords]
+
+
+class Crafting:
+    def __init__(
+        self, 
+        tile_map: np.ndarray,
+        tile_IDs: dict[str, int],
+        collision_map: dict[tuple[int, int], pg.Rect]
+    ):
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
+        self.collision_map = collision_map
+
+    def craft_item(self, name: str, recipe: dict[str, int], sprite: pg.sprite.Sprite) -> None:
+        if self.can_craft_item(sprite.inventory.contents, recipe):
+            print('True')
+    
+    @staticmethod
+    def can_craft_item(inventory_contents: dict[str, dict[str, int]], recipe: dict[str, int]) -> bool:
+        # first check if the recipe items are available, then check if the quantity of them item are enough
+        return all(inventory_contents.get(item, {}).get('amount', 0) >= amount_needed for item, amount_needed in recipe.items())

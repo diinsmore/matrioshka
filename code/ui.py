@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory import Inventory
+    from sprite_manager import SpriteManager
+    from player import Player
 
 import pygame as pg
 
@@ -14,12 +16,16 @@ class UI:
         screen: pg.Surface,
         camera_offset: pg.Vector2,
         assets: dict[str, dict[str, any]],
-        inventory: inventory
+        inventory: Inventory,
+        sprite_manager: SpriteManager,
+        player: Player
     ):
         self.screen = screen
         self.camera_offset = camera_offset
         self.assets = assets
         self.inventory = inventory
+        self.sprite_manager = sprite_manager
+        self.player = player
 
         self.mini_map = MiniMap(self.screen, self.assets, self.make_outline)
 
@@ -38,6 +44,8 @@ class UI:
             self.camera_offset,
             self.assets, 
             self.inventory_ui, 
+            self.sprite_manager,
+            self.player,
             self.get_craft_window_height(),
             self.make_outline,
             self.make_transparent_bg,
@@ -228,21 +236,24 @@ class InventoryUI:
         contents = self.inventory.contents.items()
         if contents:
             for name, data in contents:
-                # will have to update this path depending on the particular item type
-                icon_image = self.graphics[name]
-                
-                # determine the slot an item corresponds to
-                col = data['index'] % self.cols
-                row = data['index'] // (self.rows if self.expand else self.slots // self.cols)
-                
-                # render at the center of the inventory slot
-                x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
-                y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
-                icon_rect = icon_image.get_rect(topleft = (x, y))
-                self.screen.blit(icon_image, icon_rect)
+                try:
+                    # will have to update this path depending on the particular item type
+                    icon_image = self.graphics[name]
+                    
+                    # determine the slot an item corresponds to
+                    col = data['index'] % self.cols
+                    row = data['index'] // (self.rows if self.expand else self.slots // self.cols)
+                    
+                    # render at the center of the inventory slot
+                    x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
+                    y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
+                    icon_rect = icon_image.get_rect(topleft = (x, y))
+                    self.screen.blit(icon_image, icon_rect)
 
-                self.render_item_amount(data['amount'], (x, y))
-                self.render_item_name(icon_rect, name)
+                    self.render_item_amount(data['amount'], (x, y))
+                    self.render_item_name(icon_rect, name)
+                except KeyError:
+                    pass
 
     def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
         amount_image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])

@@ -157,7 +157,7 @@ class Mouse:
 
     def get_mouse_click(self) -> None:
         self.clicks['left'], self.clicks['right'] = False, False
-        click = pg.mouse.get_pressed()
+        click = pg.mouse.get_just_pressed()
         if click[0]:
             self.clicks['left'] = True
         

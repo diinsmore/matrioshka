@@ -1,6 +1,6 @@
 import pygame as pg
 
-from settings import TILE_SIZE
+from settings import TILE_SIZE, MACHINES
 from sprite_manager import BaseSprite
 
 # machinery
@@ -42,7 +42,7 @@ class BurnerFurnace(Furnace):
         sprite_groups: list[pg.sprite.Group]
     ):
         super().__init__(coords, image, z, *sprite_groups)
-        self.recipe = {'stone': 7, 'wood': 2, 'torch': 1}
+        self.recipe = MACHINES['burner furnace']['recipe']
         self.valid_inputs['fuel'] = {'wood', 'coal'}
 
 

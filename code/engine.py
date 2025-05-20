@@ -34,22 +34,6 @@ class Engine:
         )
 
         self.inventory = Inventory()
-
-        self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory)
-        
-        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
-
-        self.chunk_manager = ChunkManager(self.camera.offset)
-        
-        self.graphics_engine = GraphicsEngine(
-            screen,
-            self.camera,
-            self.asset_manager.assets['graphics'],
-            self.ui,
-            self.proc_gen,
-            self.sprite_manager,
-            self.chunk_manager,
-        )
         
         self.player = Player( 
             coords = self.proc_gen.get_player_spawn_point(), 
@@ -65,6 +49,22 @@ class Engine:
             biome_order = self.proc_gen.biome_order,
             physics_engine = self.physics_engine,
             inventory = self.inventory
+        )
+
+        self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory, self.sprite_manager, self.player)
+        
+        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
+
+        self.chunk_manager = ChunkManager(self.camera.offset)
+        
+        self.graphics_engine = GraphicsEngine(
+            screen,
+            self.camera,
+            self.asset_manager.assets['graphics'],
+            self.ui,
+            self.proc_gen,
+            self.sprite_manager,
+            self.chunk_manager,
         )
         
         # keep this line below the sprite instances
