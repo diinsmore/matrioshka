@@ -36,7 +36,8 @@ class UI:
             self.mini_map.height + self.mini_map.padding,
             self.make_outline,
             self.make_transparent_bg,
-            self.render_item_name
+            self.render_item_name,
+            self.get_scaled_image
         )
 
         self.craft_window = CraftWindow(
@@ -49,7 +50,8 @@ class UI:
             self.get_craft_window_height(),
             self.make_outline,
             self.make_transparent_bg,
-            self.render_item_name
+            self.render_item_name,
+            self.get_scaled_image
         )
 
         self.HUD = HUD(
@@ -109,6 +111,14 @@ class UI:
             font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
             font_rect = font.get_rect(topleft = rect.bottomright)
             self.screen.blit(font, font_rect)
+
+    def get_scaled_image(self, image: pg.Surface, item_name: str, width: int, height: int, padding: int = 0) -> pg.Surface:
+        '''returns an image scaled to a given size while accounting for its aspect ratio'''
+        bounding_box = (width - (padding * 2), height - (padding * 2))
+        aspect_ratio = min(image.width / bounding_box[0], image.height / bounding_box[1]) # avoid stretching an image too wide/tall
+        scale = (min(bounding_box[0], image.width * aspect_ratio), min(bounding_box[1], image.height * aspect_ratio))
+        scaled_image = pg.transform.scale(self.assets['graphics'][item_name], scale)
+        return scaled_image
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
@@ -188,7 +198,8 @@ class InventoryUI:
         top: int,
         make_outline: callable,
         make_transparent_bg: callable,
-        render_item_name: callable
+        render_item_name: callable,
+        get_scaled_image: callable
     ):
         self.inventory = inventory
         self.screen = screen
@@ -198,6 +209,7 @@ class InventoryUI:
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
         self.render_item_name = render_item_name
+        self.get_scaled_image = get_scaled_image
 
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
@@ -237,8 +249,10 @@ class InventoryUI:
         if contents:
             for name, data in contents:
                 try:
-                    # will have to update this path depending on the particular item type
                     icon_image = self.graphics[name]
+                    target_size = (TILE_SIZE, TILE_SIZE)
+                    if icon_image.get_size() != target_size:
+                        icon_image = self.get_scaled_image(icon_image, name, *target_size)
                     
                     # determine the slot an item corresponds to
                     col = data['index'] % self.cols
@@ -247,6 +261,7 @@ class InventoryUI:
                     # render at the center of the inventory slot
                     x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
                     y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
+
                     icon_rect = icon_image.get_rect(topleft = (x, y))
                     self.screen.blit(icon_image, icon_rect)
 

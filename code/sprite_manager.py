@@ -165,8 +165,10 @@ class Crafting:
 
     def craft_item(self, name: str, recipe: dict[str, int], sprite: pg.sprite.Sprite) -> None:
         if self.can_craft_item(sprite.inventory.contents, recipe):
-            print('True')
-    
+            for item, amount in recipe.items():
+                sprite.inventory.remove_item(item, amount)
+            sprite.inventory.add_item(name)
+
     @staticmethod
     def can_craft_item(inventory_contents: dict[str, dict[str, int]], recipe: dict[str, int]) -> bool:
         # first check if the recipe items are available, then check if the quantity of them item are enough

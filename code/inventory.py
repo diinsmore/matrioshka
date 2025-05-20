@@ -18,6 +18,9 @@ class Inventory:
         else:
             if self.contents[item]['amount'] + 1 <= self.slot_capacity[item]:
                self.contents[item]['amount'] += 1
+
+    def remove_item(self, item: str, amount: int) -> None:
+        self.contents[item]['amount'] -= amount 
             
     def set_slot_capacity(self) -> None:
         for tile in TILES.keys():

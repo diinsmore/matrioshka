@@ -22,7 +22,8 @@ class CraftWindow:
         height: int,
         make_outline: callable,
         make_transparent_bg: callable,
-        render_item_name: callable
+        render_item_name: callable,
+        get_scaled_image: callable
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -34,6 +35,7 @@ class CraftWindow:
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
         self.render_item_name = render_item_name
+        self.get_scaled_image = get_scaled_image
 
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
@@ -72,6 +74,7 @@ class CraftWindow:
             self.player,
             self.make_outline, 
             self.render_item_name,
+            self.get_scaled_image
         )
 
     def render_outline(self) -> None:
@@ -272,6 +275,7 @@ class ItemGrid:
         player: Player,
         make_outline: callable,
         render_item_name: callable,
+        get_scaled_image: callable,
     ):
         self.screen = screen
         self.graphics = graphics
@@ -283,6 +287,7 @@ class ItemGrid:
         self.player = player
         self.make_outline = make_outline
         self.render_item_name = render_item_name
+        self.get_scaled_image = get_scaled_image
         
         self.cell_width, self.cell_height = TILE_SIZE * 2, TILE_SIZE * 2
         self.x_cells = self.window_outline.width // self.cell_width
@@ -312,13 +317,7 @@ class ItemGrid:
             if not isinstance(self.graphics[item_name], dict):
                 image = self.graphics[item_name]
                 padding = 2
-                bounding_box = (self.cell_width - (padding * 2), self.cell_height - (padding * 2))
-                aspect_ratio = min(image.width / bounding_box[0], image.height / bounding_box[1]) # avoid stretching an image too wide/tall
-                scale = (
-                    min(bounding_box[0], image.width * aspect_ratio),
-                    min(bounding_box[1], image.height * aspect_ratio)
-                )
-                scaled_image = pg.transform.scale(self.graphics[item_name], scale)
+                scaled_image = self.get_scaled_image(image, item_name, self.cell_width, self.cell_height, padding)
                 rect = scaled_image.get_rect(center = (
                     self.left + (self.cell_width * x) + (self.cell_width // 2), 
                     self.top + (self.cell_height * y) + (self.cell_height // 2)
