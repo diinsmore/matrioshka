@@ -36,6 +36,7 @@ class ProcGen:
         tile_id_map = {}
         # key = tile type, value = tile index
         tile_id_map.update((tile, index) for index, tile in enumerate(TILES))
+        tile_id_map['solid object'] = -1
         return tile_id_map
     
     def generate_height_map(self) -> None:

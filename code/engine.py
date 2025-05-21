@@ -53,7 +53,7 @@ class Engine:
 
         self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory, self.sprite_manager, self.player)
         
-        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui)
+        self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui, self.player)
 
         self.chunk_manager = ChunkManager(self.camera.offset)
         
@@ -65,13 +65,14 @@ class Engine:
             self.proc_gen,
             self.sprite_manager,
             self.chunk_manager,
+            self.input_manager
         )
         
         # keep this line below the sprite instances
         self.sprite_manager.init_active_items()
         
     def update(self, dt: float) -> None:
-        self.input_manager.update(self.player, self.camera.offset, self.proc_gen.update_collision_map, dt)
+        self.input_manager.update(self.camera.offset, self.proc_gen.update_collision_map, dt)
         self.graphics_engine.update(
             self.input_manager.mouse.coords, 
             self.input_manager.mouse.moving, 

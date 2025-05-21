@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from procgen import ProcGen
     from sprite_manager import SpriteManager
     from chunk_manager import ChunkManager
+    from input_manager import InputManager
     
 import pygame as pg
 from os import walk
@@ -24,7 +25,8 @@ class GraphicsEngine:
         ui: UI,
         proc_gen: ProcGen, 
         sprite_manager: SpriteManager,
-        chunk_manager: ChunkManager
+        chunk_manager: ChunkManager,
+        input_manager: InputManager
     ):
         self.screen = screen
         self.camera = camera
@@ -34,6 +36,7 @@ class GraphicsEngine:
         self.proc_gen = proc_gen
         self.sprite_manager = sprite_manager
         self.chunk_manager = chunk_manager
+        self.input_manager = input_manager
 
         self.tile_map = proc_gen.tile_map
         self.tile_IDs = proc_gen. tile_IDs
@@ -153,7 +156,7 @@ class GraphicsEngine:
         self.terrain.update()
         self.render_sprites(dt)
         
-        self.ui.update(mouse_coords, mouse_moving, left_click)
+        self.ui.update(mouse_coords, mouse_moving, left_click, self.input_manager.mouse.drag)
 
 
 class Terrain:
