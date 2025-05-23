@@ -148,4 +148,3 @@ class InventoryUI:
             self.render_slots()
             self.render_icons(click_states, mouse_coords)
             self.drag_item(click_states)
-        print(self.player.item_holding)

@@ -160,7 +160,7 @@ class Mouse:
         if click[0]:
             self.click_states['left'] = True
         
-        elif click[1]:
+        elif click[2]:
             self.click_states['right'] = True
         
     def reset_click_states(self) -> None:
@@ -177,3 +177,4 @@ class Mouse:
 
     def update(self, camera_offset: pg.Vector2) -> None:
         self.get_input(camera_offset)
+        print(self.click_states)
