@@ -44,7 +44,7 @@ class Player(pg.sprite.Sprite):
         self.physics_engine = physics_engine
 
         self.inventory = inventory
-        self.item_holding = 'iron pickaxe' # just for testing purposes, normally self.inv[self.inv_index]
+        self.item_holding = None
         
         self.direction = pg.Vector2()
         self.speed = 200
@@ -56,22 +56,6 @@ class Player(pg.sprite.Sprite):
         self.spawned = False
         self.facing_left = True
         self.grounded = True
-
-    def place_block(self, tile_coords: tuple[int, int], tile_id: int) -> None:
-        self.tile_map[tile_coords] = self.tile_IDs[self.item_holding][tile_id]
-
-    def place_item(self, rect: pg.Rect) -> None:
-        coords = self.get_item_coords(rect)
-
-       # for coords in tile_coords:
-           # self.tile_map[coords] = self.tile_IDs['solid object']
-
-    def get_item_coords(self, rect: pg.Rect) -> list[tuple[int, int]]:
-        left, top = rect.left // TILE_SIZE, rect.top // TILE_SIZE
-        coords = []
-        for x in range(1, (rect.width // TILE_SIZE) + 1):
-            for y in range(1, (rect.height // TILE_SIZE) + 1):
-                coords.append((left + (x * TILE_SIZE), top + (y * TILE_SIZE)))
 
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH

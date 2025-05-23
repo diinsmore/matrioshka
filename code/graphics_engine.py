@@ -111,18 +111,19 @@ class GraphicsEngine:
             self.render_item_held(dt)
 
     def render_item_held(self, dt: float) -> None:
+        # TODO: this is unfinished
         for sprite in self.sprite_manager.human_sprites:
             self.update_active_item(sprite)
-            item_category = self.get_item_category(sprite)
-            if not item_category:
-                pass # will have to add a method to return 'machines' for the assembler, etc.
-            
-            if sprite.state in self.item_render_states[item_category]:
-                image = pg.transform.flip(self.graphics[item_category][sprite.item_holding], sprite.facing_left, False)
-                image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
-                coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
-                rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
-                self.screen.blit(image_frame if image_frame else image, rect)
+
+            if sprite.item_holding:
+                item_category = self.get_item_category(sprite)
+                if item_category:
+                    if sprite.state in self.item_render_states[item_category]:
+                        image = pg.transform.flip(self.graphics[item_category][sprite.item_holding], sprite.facing_left, False)
+                        image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
+                        coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
+                        rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
+                        self.screen.blit(image_frame if image_frame else image, rect)
 
     def update_active_item(self, sprite: pg.sprite.Sprite) -> str:
         if sprite.item_holding != self.sprite_manager.active_items[sprite]:
@@ -131,7 +132,7 @@ class GraphicsEngine:
     @staticmethod
     def get_item_category(sprite: pg.sprite.Sprite) -> str:
         '''removes the material name from the item_holding variable if applicable'''
-        return sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None 
+        return sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None
 
     def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> pg.Surface:
         match category:
@@ -148,7 +149,13 @@ class GraphicsEngine:
             case 'pickaxe':
                 return pg.Vector2(3 if facing_left else -3, 6) 
 
-    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, dt: float) -> None:
+    def update(
+        self, 
+        mouse_coords: tuple[int, int], 
+        mouse_moving: bool, 
+        click_states: dict[str, bool], 
+        dt: float
+    ) -> None:
         self.sprite_manager.update(dt)
         
         self.weather.update()
@@ -156,7 +163,7 @@ class GraphicsEngine:
         self.terrain.update()
         self.render_sprites(dt)
         
-        self.ui.update(mouse_coords, mouse_moving, left_click, self.input_manager.mouse.drag)
+        self.ui.update(mouse_coords, mouse_moving, click_states)
 
 
 class Terrain:

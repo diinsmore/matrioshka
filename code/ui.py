@@ -9,6 +9,7 @@ import pygame as pg
 
 from settings import TILE_SIZE, RES
 from craft_window import CraftWindow
+from inventory_ui import InventoryUI
 
 class UI:
     def __init__(
@@ -30,7 +31,9 @@ class UI:
         self.mini_map = MiniMap(self.screen, self.assets, self.make_outline)
 
         self.inventory_ui = InventoryUI(
-            self.inventory, 
+            self.inventory,
+            self.player,
+            self.sprite_manager,
             self.screen,
             self.camera_offset,
             self.assets,
@@ -66,7 +69,7 @@ class UI:
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
 
     def get_craft_window_height(self) -> int:
-        inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.slots // self.inventory_ui.cols)
+        inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
         return inv_grid_max_height + self.mini_map.height + self.mini_map.padding
 
     def make_outline(
@@ -121,12 +124,12 @@ class UI:
         scaled_image = pg.transform.scale(self.assets['graphics'][item_name], scale)
         return scaled_image
 
-    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool, drag: callable) -> None:
-        self.mouse_grid.update(mouse_coords, mouse_moving, left_click)
+    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, click_states: dict[str, dict[str, bool]]) -> None:
+        self.mouse_grid.update(mouse_coords, mouse_moving, click_states)
         self.HUD.update()
         self.mini_map.update()
-        self.craft_window.update(mouse_coords, left_click) # keep above the inventory ui otherwise item names may be rendered behind the window
-        self.inventory_ui.update(drag, left_click)
+        self.craft_window.update(mouse_coords, click_states) # keep above the inventory ui otherwise item names may be rendered behind the window
+        self.inventory_ui.update(click_states, mouse_coords)
         
 
 class MouseGrid:
@@ -188,123 +191,6 @@ class MiniMap:
 
     def update(self) -> None:
         self.render_outline()
-
-
-class InventoryUI:
-    def __init__(
-        self, 
-        inventory: Inventory, 
-        screen: pg.Surface,
-        camera_offset: pg.Vector2,
-        assets: dict[str, dict[str, any]], 
-        top: int,
-        make_outline: callable,
-        make_transparent_bg: callable,
-        render_item_name: callable,
-        get_scaled_image: callable
-    ):
-        self.inventory = inventory
-        self.screen = screen
-        self.camera_offset = camera_offset
-        self.assets = assets
-        self.padding = 5
-        self.top = top + self.padding
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
-        self.render_item_name = render_item_name
-        self.get_scaled_image = get_scaled_image
-
-        self.graphics = self.assets['graphics']
-        self.fonts = self.assets['fonts']
-        self.colors = self.assets['colors']
-
-        self.slots = self.inventory.slots
-        self.cols = 5
-        self.rows = 2
-        self.box_width, self.box_height = TILE_SIZE * 2, TILE_SIZE * 2
-        self.total_width = self.box_width * self.cols
-        self.total_height = self.box_height * self.rows
-        self.render = True
-        self.expand = False
-        self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
-
-        self.drag_item = False
-    
-    def update_dimensions(self) -> None:
-        # the number of columns is static
-        self.rows = 2 if not self.expand else self.slots // self.cols
-        self.total_height = self.box_height * self.rows
-
-    def render_bg(self) -> None:
-        rect = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
-        outline = self.make_outline(rect)
-        self.make_transparent_bg(rect)
-        
-    def render_slots(self) -> None:
-        for x in range(self.cols):
-            for y in range(self.rows):
-                box = pg.Rect(
-                    (self.padding, self.top) + pg.Vector2(x * self.box_width, y * self.box_height), 
-                    (self.box_width - 1, self.box_height - 1) # -1 for a slight gap between boxes
-                )
-                pg.draw.rect(self.screen, 'black', box, 1)
-
-    def render_icons(self, drag: callable, left_click: bool) -> None:
-        contents = self.inventory.contents.items()
-        if contents:
-            for item_name, item_data in contents:
-                try:
-                    icon_image = self.graphics[item_name]
-                    target_size = (TILE_SIZE, TILE_SIZE)
-                    if icon_image.get_size() != target_size:
-                        icon_image = self.get_scaled_image(icon_image, item_name, *target_size)
-                    
-                    # determine the slot an item corresponds to
-                    col = item_data['index'] % self.cols
-                    row = item_data['index'] // (self.rows if self.expand else self.slots // self.cols)
-                    
-                    # render at the center of the inventory slot
-                    x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
-                    y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
-
-                    icon_rect = icon_image.get_rect(topleft = (x, y))
-                    self.screen.blit(icon_image, icon_rect)
-
-                    self.render_item_amount(item_data['amount'], (x, y))
-                    self.render_item_name(icon_rect, item_name)
-
-                    self.get_selected_item(icon_rect, drag, left_click)
-                except KeyError:
-                    pass
-
-    def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
-        amount_image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])
-        
-        # move the text 5 pixels further to the right for each digit > 2
-        num_digits = len(str(amount))
-        x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0
-
-        amount_rect = amount_image.get_rect(center = coords + pg.Vector2(x_offset, -2))
-        self.make_transparent_bg(amount_rect)
-        self.screen.blit(amount_image, amount_rect)
-
-    def get_selected_item(self, rect: pg.Rect, drag: callable, left_click: bool) -> str:
-        if left_click:
-            if not self.drag_item:
-                if rect.collidepoint(pg.mouse.get_pos()):
-                    self.drag_item = True
-            else:
-                self.drag_item = False
-                
-        if self.drag_item:
-            drag(rect, self.camera_offset)
-
-    def update(self, drag: callable, left_click: bool) -> None:
-        if self.render:
-            self.update_dimensions()
-            self.render_bg()
-            self.render_slots()
-            self.render_icons(drag, left_click)
 
 
 class HUD:

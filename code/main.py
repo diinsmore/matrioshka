@@ -16,8 +16,7 @@ class Main:
      
     def run(self) -> None:
         while self.running:
-            dt = self.clock.tick(FPS) / 1000
-            
+            dt = self.clock.tick(FPS) / 1000.0
             for event in pg.event.get():
                 if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                     pg.quit()

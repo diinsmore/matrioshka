@@ -22,7 +22,7 @@ class InputManager:
         self.ui = ui
         self.player = player
         
-        self.mouse = Mouse(self.physics_engine, self.sprite_manager, self.ui, self.player)
+        self.mouse = Mouse(self.physics_engine, self.sprite_manager, self.ui)
         self.keyboard = Keyboard(self.physics_engine, self.sprite_manager, self.ui, self.mouse.tile_coords, self.player)
 
     def update(self, camera_offset: pg.Vector2, update_collision_map: callable, dt: float) -> None:
@@ -132,56 +132,48 @@ class Keyboard:
 
 
 class Mouse:
-    def __init__(
-        self,
-        physics_engine: PhysicsEngine, 
-        sprite_manager: SpriteManager, 
-        ui: UI,
-        player: Player,
-    ):
+    def __init__(self, physics_engine: PhysicsEngine, sprite_manager: SpriteManager, ui: UI):
         self.physics_engine = physics_engine
         self.sprite_manager = sprite_manager
         self.ui = ui
-        self.player = player
         
-        self.clicks = {'left': False, 'right': False} 
+        self.click_states = {'left': False, 'right': False}
+
         self.moving = False
         self.coords = pg.Vector2()
         self.tile_coords = pg.Vector2()
         
     def get_input(self, camera_offset: pg.Vector2) -> None:
-        self.get_mouse_movement(camera_offset)
-        self.get_mouse_click()
+        self.get_movement(camera_offset)
+        self.update_click_states()
     
-    def get_mouse_movement(self, camera_offset: pg.Vector2) -> None:
+    def get_movement(self, camera_offset: pg.Vector2) -> None:
         self.moving = False
         if pg.mouse.get_rel():
             self.moving = True
-            self.coords = self.get_mouse_coords(camera_offset)
+            self.coords = self.get_coords(camera_offset)
             self.tile_coords = (self.coords[0] // TILE_SIZE, self.coords[1] // TILE_SIZE)
 
-    def get_mouse_click(self) -> None:
-        self.clicks['left'], self.clicks['right'] = False, False
+    def update_click_states(self) -> None:
+        self.reset_click_states()
         click = pg.mouse.get_just_pressed()
         if click[0]:
-            self.clicks['left'] = True
+            self.click_states['left'] = True
         
-        if click[2]:
-            self.clicks['right'] = True
+        elif click[1]:
+            self.click_states['right'] = True
+        
+    def reset_click_states(self) -> None:
+        self.click_states['left'] = False
+        self.click_states['right'] = False
 
     @staticmethod
-    def get_mouse_coords(camera_offset: pg.Vector2, rel_screen: bool = False) -> tuple[int, int]:
+    def get_coords(camera_offset: pg.Vector2, rel_screen: bool = False) -> tuple[int, int]:
         screen_space = pg.mouse.get_pos()
         if rel_screen:
             return screen_space
         # convert from screen-space to world-space
         return (int(screen_space[0] + camera_offset.x), int(screen_space[1] + camera_offset.y))
-
-    def drag(self, rect: pg.Rect, camera_offset: pg.Vector2) -> None:
-        if not self.clicks['left']:
-            rect.center = self.get_mouse_coords(camera_offset)
-        else:
-            self.player.place_item(rect)
 
     def update(self, camera_offset: pg.Vector2) -> None:
         self.get_input(camera_offset)

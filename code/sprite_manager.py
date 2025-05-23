@@ -16,7 +16,7 @@ class SpriteManager:
         self, 
         asset_manager: AssetManager,
         tile_map: np.ndarray,
-         tile_IDs: dict[str, int],
+        tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
     ):
         self.asset_manager = asset_manager
@@ -42,6 +42,12 @@ class SpriteManager:
         )
 
         self.crafting = Crafting(
+            self.tile_map,
+            self.tile_IDs,
+            self.collision_map
+        )
+
+        self.item_placement = ItemPlacement(
             self.tile_map,
             self.tile_IDs,
             self.collision_map
@@ -110,7 +116,7 @@ class Mining:
         self.tile_reach_radius = 4
 
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
-        if sprite.item_holding.split()[1] == 'pickaxe': # ignore the item's material if specified
+        if sprite.item_holding and sprite.item_holding.split()[1] == 'pickaxe': # ignore the item's material if specified
             if isinstance(sprite, Player): 
                 if self.valid_tile(sprite, tile_coords):
                     sprite.state = 'mining'
@@ -173,3 +179,32 @@ class Crafting:
     def can_craft_item(inventory_contents: dict[str, dict[str, int]], recipe: dict[str, int]) -> bool:
         # first check if the recipe items are available, then check if the quantity of them item are enough
         return all(inventory_contents.get(item, {}).get('amount', 0) >= amount_needed for item, amount_needed in recipe.items())
+
+
+class ItemPlacement:
+    def __init__(
+        self, 
+        tile_map: np.ndarray,
+        tile_IDs: dict[str, int],
+        collision_map: dict[tuple[int, int], pg.Rect]
+    ):
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
+        self.collision_map = collision_map  
+
+    def place_item(self, tile_coords: tuple[int, int]) -> None:
+        pass
+        # if 0 <= tile_id < len(TILES.keys()): # placing a tile
+             # self.tile_map[tile_coords] = self.tile_IDs[self.item_holding][tile_id]
+
+       # coords = self.get_item_coords(rect)
+
+       # for coords in tile_coords:
+           # self.tile_map[coords] = self.tile_IDs['solid object']
+
+    def get_item_coords(self, rect: pg.Rect) -> list[tuple[int, int]]:
+        left, top = rect.left // TILE_SIZE, rect.top // TILE_SIZE
+        coords = []
+        for x in range(1, (rect.width // TILE_SIZE) + 1):
+            for y in range(1, (rect.height // TILE_SIZE) + 1):
+                coords.append((left + (x * TILE_SIZE), top + (y * TILE_SIZE)))

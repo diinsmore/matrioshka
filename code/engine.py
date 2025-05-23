@@ -76,7 +76,7 @@ class Engine:
         self.graphics_engine.update(
             self.input_manager.mouse.coords, 
             self.input_manager.mouse.moving, 
-            self.input_manager.mouse.clicks['left'], 
+            self.input_manager.mouse.click_states, 
             dt
         )
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
