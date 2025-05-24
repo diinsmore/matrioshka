@@ -13,7 +13,7 @@ from timer import Timer
 
 class SpriteManager:
     def __init__(
-        self, 
+        self,
         asset_manager: AssetManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
@@ -116,7 +116,7 @@ class Mining:
         self.tile_reach_radius = 4
 
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
-        if sprite.item_holding and sprite.item_holding.split()[1] == 'pickaxe': # ignore the item's material if specified
+        if sprite.item_holding and 'pickaxe' in sprite.item_holding:
             if isinstance(sprite, Player): 
                 if self.valid_tile(sprite, tile_coords):
                     sprite.state = 'mining'
@@ -183,7 +183,7 @@ class Crafting:
 
 class ItemPlacement:
     def __init__(
-        self, 
+        self,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect]
@@ -192,15 +192,11 @@ class ItemPlacement:
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map  
 
-    def place_item(self, tile_coords: tuple[int, int]) -> None:
-        pass
-        # if 0 <= tile_id < len(TILES.keys()): # placing a tile
-             # self.tile_map[tile_coords] = self.tile_IDs[self.item_holding][tile_id]
-
-       # coords = self.get_item_coords(rect)
-
-       # for coords in tile_coords:
-           # self.tile_map[coords] = self.tile_IDs['solid object']
+    def place_item(self, item_name: str, rect: pg.Rect, tile_coords: tuple[int, int]) -> None:
+        if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
+            self.tile_map[tile_coords] = self.get_tile_id(item_name)
+        else:
+            pass
 
     def get_item_coords(self, rect: pg.Rect) -> list[tuple[int, int]]:
         left, top = rect.left // TILE_SIZE, rect.top // TILE_SIZE
@@ -208,3 +204,9 @@ class ItemPlacement:
         for x in range(1, (rect.width // TILE_SIZE) + 1):
             for y in range(1, (rect.height // TILE_SIZE) + 1):
                 coords.append((left + (x * TILE_SIZE), top + (y * TILE_SIZE)))
+        return coords
+
+    def get_tile_id(self, tile_name: str) -> int:
+        for name, id_num in self.tile_IDs.items():
+            if name == tile_name:
+                return id_num

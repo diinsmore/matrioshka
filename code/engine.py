@@ -26,7 +26,7 @@ class Engine:
         
         self.asset_manager = AssetManager()
 
-        self.sprite_manager = SpriteManager( 
+        self.sprite_manager = SpriteManager(
             self.asset_manager, 
             tile_map, 
             tile_IDs, 

@@ -177,4 +177,3 @@ class Mouse:
 
     def update(self, camera_offset: pg.Vector2) -> None:
         self.get_input(camera_offset)
-        print(self.click_states)

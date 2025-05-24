@@ -93,8 +93,7 @@ class InventoryUI:
                 self.render_item_amount(item_data['amount'], (x, y))
                 self.render_item_name(icon_rect, item_name)
 
-                if click_states['left']:
-                    self.drag = self.update_drag_state(item_name, icon_rect)
+                self.drag_item(click_states, mouse_coords, item_name, icon_rect)
             except KeyError:
                 pass
 
@@ -116,19 +115,24 @@ class InventoryUI:
         self.make_transparent_bg(amount_rect)
         self.screen.blit(amount_image, amount_rect)
     
-    def drag_item(self, click_states: dict[str, bool]):
-        mouse_rel_screen = pg.mouse.get_pos()
-        if self.drag:
-            if not self.image_to_drag:
-                self.image_to_drag = self.graphics[self.player.item_holding]
-                self.rect_to_drag = self.image_to_drag.get_rect(center = mouse_rel_screen)
-
-            if not click_states['left']: # continue dragging until a left click is detected
+    def drag_item(self, click_states: dict[str, bool], mouse_coords: tuple[int, int], item_name: str, icon_rect: pg.Rect):
+        if click_states['left']:
+            mouse_rel_screen = pg.mouse.get_pos() # the mouse_coords parameter is relative to the world-space | TODO: fix the naming convention for the mouse coordinates 
+            self.drag = self.update_drag_state(item_name, icon_rect)
+            if self.drag: # starting to drag
+                if not self.image_to_drag:
+                    self.image_to_drag = self.graphics[self.player.item_holding]
+                    self.rect_to_drag = self.image_to_drag.get_rect(center = mouse_rel_screen)
+            else: # end by placing the item
+                tile_coords = (mouse_coords[0] // TILE_SIZE, mouse_coords[1] // TILE_SIZE) # not converting to a vector2 since the values need to be ints to index the tile map
+                self.sprite_manager.item_placement.place_item(item_name, self.rect_to_drag, tile_coords)
+                self.image_to_drag, self.rect_to_drag = None, None
+        else: # continue dragging until a left click is detected
+            if self.drag:
+                mouse_rel_screen = pg.mouse.get_pos()
                 self.rect_to_drag.center = mouse_rel_screen
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
-            else:
-                self.sprite_manager.item_placement.place_item(mouse_rel_screen)
-
+            
     def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
         '''start/stop dragging'''
         if not self.drag and icon_rect.collidepoint(pg.mouse.get_pos()): # not using mouse_coords since i'd have to convert it to screen-space
@@ -147,4 +151,3 @@ class InventoryUI:
             self.render_bg()
             self.render_slots()
             self.render_icons(click_states, mouse_coords)
-            self.drag_item(click_states)
