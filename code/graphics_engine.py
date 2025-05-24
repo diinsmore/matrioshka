@@ -153,7 +153,8 @@ class GraphicsEngine:
         self, 
         mouse_coords: tuple[int, int], 
         mouse_moving: bool, 
-        click_states: dict[str, bool], 
+        click_states: dict[str, bool],
+        update_collision_map: callable,
         dt: float
     ) -> None:
         self.sprite_manager.update(dt)
@@ -163,7 +164,7 @@ class GraphicsEngine:
         self.terrain.update()
         self.render_sprites(dt)
         
-        self.ui.update(mouse_coords, mouse_moving, click_states)
+        self.ui.update(mouse_coords, mouse_moving, click_states, update_collision_map)
 
 
 class Terrain:

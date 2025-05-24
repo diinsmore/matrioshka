@@ -60,7 +60,7 @@ class PhysicsEngine:
         '''precompute rects with the coordinates of solid tiles'''
         for x in range(MAP_SIZE[0]):
             for y in range(MAP_SIZE[1]):
-                if self.tile_map[x, y] != self. tile_IDs['air'] : 
+                if self.tile_map[x, y] != self.tile_IDs['air']: 
                     cell_coords = (x // CELL_SIZE, y // CELL_SIZE)
                     if cell_coords not in self.collision_map:
                         self.collision_map[cell_coords] = []  

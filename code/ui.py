@@ -124,12 +124,19 @@ class UI:
         scaled_image = pg.transform.scale(self.assets['graphics'][item_name], scale)
         return scaled_image
 
-    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, click_states: dict[str, dict[str, bool]]) -> None:
+    def update(
+        self, 
+        mouse_coords: 
+        tuple[int, int], 
+        mouse_moving: bool, 
+        click_states: dict[str, dict[str, bool]],
+        update_collision_map: callable
+    ) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, click_states)
         self.HUD.update()
         self.mini_map.update()
         self.craft_window.update(mouse_coords, click_states) # keep above the inventory ui otherwise item names may be rendered behind the window
-        self.inventory_ui.update(click_states, mouse_coords)
+        self.inventory_ui.update(click_states, mouse_coords, update_collision_map)
         
 
 class MouseGrid:

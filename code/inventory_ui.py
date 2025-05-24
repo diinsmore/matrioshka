@@ -74,7 +74,7 @@ class InventoryUI:
                 )
                 pg.draw.rect(self.screen, 'black', box, 1)
 
-    def render_icons(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
+    def render_icons(self, click_states: dict[str, bool], mouse_coords: tuple[int, int], update_collision_map: callable) -> None:
         contents = self.inventory.contents.items()
         for item_name, item_data in contents:
             try:
@@ -93,7 +93,7 @@ class InventoryUI:
                 self.render_item_amount(item_data['amount'], (x, y))
                 self.render_item_name(icon_rect, item_name)
 
-                self.drag_item(click_states, mouse_coords, item_name, icon_rect)
+                self.drag_item(click_states, mouse_coords, item_name, icon_rect, update_collision_map)
             except KeyError:
                 pass
 
@@ -115,7 +115,14 @@ class InventoryUI:
         self.make_transparent_bg(amount_rect)
         self.screen.blit(amount_image, amount_rect)
     
-    def drag_item(self, click_states: dict[str, bool], mouse_coords: tuple[int, int], item_name: str, icon_rect: pg.Rect):
+    def drag_item(
+        self, 
+        click_states: dict[str, bool], 
+        mouse_coords: tuple[int, int], 
+        item_name: str, 
+        icon_rect: pg.Rect,
+        update_collision_map: callable
+    ):
         if click_states['left']:
             mouse_rel_screen = pg.mouse.get_pos() # the mouse_coords parameter is relative to the world-space | TODO: fix the naming convention for the mouse coordinates 
             self.drag = self.update_drag_state(item_name, icon_rect)
@@ -124,9 +131,11 @@ class InventoryUI:
                     self.image_to_drag = self.graphics[self.player.item_holding]
                     self.rect_to_drag = self.image_to_drag.get_rect(center = mouse_rel_screen)
             else: # end by placing the item
-                tile_coords = (mouse_coords[0] // TILE_SIZE, mouse_coords[1] // TILE_SIZE) # not converting to a vector2 since the values need to be ints to index the tile map
-                self.sprite_manager.item_placement.place_item(item_name, self.rect_to_drag, tile_coords)
-                self.image_to_drag, self.rect_to_drag = None, None
+                if self.image_to_drag:
+                    tile_coords = (mouse_coords[0] // TILE_SIZE, mouse_coords[1] // TILE_SIZE) # not converting to a vector2 since the values need to be ints to index the tile map
+                    self.sprite_manager.item_placement.place_item(item_name, self.rect_to_drag, tile_coords, update_collision_map)
+                    self.inventory.contents[item_name]['amount'] -= 1
+                    self.image_to_drag, self.rect_to_drag = None, None
         else: # continue dragging until a left click is detected
             if self.drag:
                 mouse_rel_screen = pg.mouse.get_pos()
@@ -145,9 +154,9 @@ class InventoryUI:
             if name == item_name:
                 return data['index']
 
-    def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
+    def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int], update_collision_map: callable) -> None:
         if self.render:
             self.update_dimensions()
             self.render_bg()
             self.render_slots()
-            self.render_icons(click_states, mouse_coords)
+            self.render_icons(click_states, mouse_coords, update_collision_map)

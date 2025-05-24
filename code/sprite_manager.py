@@ -192,12 +192,13 @@ class ItemPlacement:
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map  
 
-    def place_item(self, item_name: str, rect: pg.Rect, tile_coords: tuple[int, int]) -> None:
+    def place_item(self, item_name: str, rect: pg.Rect, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
         if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
-            self.tile_map[tile_coords] = self.get_tile_id(item_name)
+            self.tile_map[tile_coords] = self.get_tile_id(item_name)   
         else:
             pass
-
+        update_collision_map(tile_coords, self.collision_map)
+        
     def get_item_coords(self, rect: pg.Rect) -> list[tuple[int, int]]:
         left, top = rect.left // TILE_SIZE, rect.top // TILE_SIZE
         coords = []
