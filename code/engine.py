@@ -25,16 +25,17 @@ class Engine:
         self.camera = Camera()
         
         self.asset_manager = AssetManager()
+        
+        self.inventory = Inventory()
 
         self.sprite_manager = SpriteManager(
             self.asset_manager, 
             tile_map, 
             tile_IDs, 
             self.physics_engine.collision_map,
+            self.inventory
         )
 
-        self.inventory = Inventory()
-        
         self.player = Player( 
             coords = self.proc_gen.get_player_spawn_point(), 
             frames = self.asset_manager.load_subfolders(join('..', 'graphics', 'player')), 

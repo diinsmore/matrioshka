@@ -3,11 +3,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from asset_manager import AssetManager
     import numpy as np
+    from inventory import Inventory
 
 import pygame as pg
 from os.path import join
 
-from settings import TILE_SIZE, TILES, TOOLS, FPS
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, FPS
 from player import Player
 from timer import Timer
 
@@ -18,11 +19,13 @@ class SpriteManager:
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
+        inventory: Inventory
     ):
         self.asset_manager = asset_manager
         self.tile_map = tile_map
         self.tile_IDs =  tile_IDs
         self.collision_map = collision_map
+        self.inventory = inventory
 
         self.all_sprites = pg.sprite.Group()
         self.human_sprites = pg.sprite.Group()
@@ -50,7 +53,8 @@ class SpriteManager:
         self.item_placement = ItemPlacement(
             self.tile_map,
             self.tile_IDs,
-            self.collision_map
+            self.collision_map,
+            self.inventory
         )
 
     # not doing a list comprehension in __init__ since sprites aren't 
@@ -113,7 +117,6 @@ class Mining:
         self.pick_up_item = pick_up_item
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
-        self.tile_reach_radius = 4
 
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
@@ -143,7 +146,7 @@ class Mining:
     def valid_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
         tile_distance = sprite_coords.distance_to(tile_coords)
-        return tile_distance <= self.tile_reach_radius and self.tile_map[tile_coords] != self.tile_IDs['air']
+        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[tile_coords] != self.tile_IDs['air']
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
     def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
@@ -186,18 +189,36 @@ class ItemPlacement:
         self,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
-        collision_map: dict[tuple[int, int], pg.Rect]
+        collision_map: dict[tuple[int, int], pg.Rect],
+        inventory: Inventory
     ):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
-        self.collision_map = collision_map  
+        self.collision_map = collision_map
+        self.inventory = inventory
 
-    def place_item(self, item_name: str, rect: pg.Rect, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
-        if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
-            self.tile_map[tile_coords] = self.get_tile_id(item_name)   
-        else:
-            pass
-        update_collision_map(tile_coords, self.collision_map)
+    def place_item(
+        self, 
+        item_name: str, 
+        rect: pg.Rect, 
+        tile_coords: tuple[int, int], 
+        player_coords: tuple[int, int], 
+        update_collision_map: callable
+    ) -> None:
+        if self.can_place_item(tile_coords, player_coords):
+            if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
+                self.tile_map[tile_coords] = self.get_tile_id(item_name)   
+            else:
+                pass
+
+            self.inventory.remove_item(item_name, 1)
+            update_collision_map(tile_coords, self.collision_map)
+
+    @staticmethod
+    def can_place_item(tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
+        x_dist = tile_coords[0] - (player_coords[0] // TILE_SIZE)
+        y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
+        return abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
         
     def get_item_coords(self, rect: pg.Rect) -> list[tuple[int, int]]:
         left, top = rect.left // TILE_SIZE, rect.top // TILE_SIZE
@@ -205,6 +226,7 @@ class ItemPlacement:
         for x in range(1, (rect.width // TILE_SIZE) + 1):
             for y in range(1, (rect.height // TILE_SIZE) + 1):
                 coords.append((left + (x * TILE_SIZE), top + (y * TILE_SIZE)))
+
         return coords
 
     def get_tile_id(self, tile_name: str) -> int:

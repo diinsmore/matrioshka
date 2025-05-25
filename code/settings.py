@@ -30,6 +30,8 @@ TILES = {
     'gold': {'ore': True, 'hardness': 600},
 }
 
+TILE_REACH_RADIUS = 4
+
 # ordered from left-right
 # since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
 # TODO: the highlands & tundra noise parameters are especially in need of fine-tuning

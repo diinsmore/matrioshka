@@ -93,7 +93,7 @@ class InventoryUI:
                 self.render_item_amount(item_data['amount'], (x, y))
                 self.render_item_name(icon_rect, item_name)
 
-                self.drag_item(click_states, mouse_coords, item_name, icon_rect, update_collision_map)
+                self.drag_item(click_states, item_name, icon_rect, update_collision_map)
             except KeyError:
                 pass
 
@@ -115,39 +115,38 @@ class InventoryUI:
         self.make_transparent_bg(amount_rect)
         self.screen.blit(amount_image, amount_rect)
     
-    def drag_item(
-        self, 
-        click_states: dict[str, bool], 
-        mouse_coords: tuple[int, int], 
-        item_name: str, 
-        icon_rect: pg.Rect,
-        update_collision_map: callable
-    ):
+    def drag_item(self, click_states: dict[str, bool], item_name: str, icon_rect: pg.Rect, update_collision_map: callable):
         if click_states['left']:
-            mouse_rel_screen = pg.mouse.get_pos() # the mouse_coords parameter is relative to the world-space | TODO: fix the naming convention for the mouse coordinates 
             self.drag = self.update_drag_state(item_name, icon_rect)
-            if self.drag: # starting to drag
-                if not self.image_to_drag:
-                    self.image_to_drag = self.graphics[self.player.item_holding]
-                    self.rect_to_drag = self.image_to_drag.get_rect(center = mouse_rel_screen)
-            else: # end by placing the item
-                if self.image_to_drag:
-                    tile_coords = (mouse_coords[0] // TILE_SIZE, mouse_coords[1] // TILE_SIZE) # not converting to a vector2 since the values need to be ints to index the tile map
-                    self.sprite_manager.item_placement.place_item(item_name, self.rect_to_drag, tile_coords, update_collision_map)
-                    self.inventory.contents[item_name]['amount'] -= 1
-                    self.image_to_drag, self.rect_to_drag = None, None
-        else: # continue dragging until a left click is detected
             if self.drag:
-                mouse_rel_screen = pg.mouse.get_pos()
-                self.rect_to_drag.center = mouse_rel_screen
+                self.start_drag() 
+            else:
+                self.end_drag(pg.mouse.get_pos(), item_name, update_collision_map)
+        else: # continue dragging until a second left click is detected
+            if self.drag:
+                self.rect_to_drag.center = pg.mouse.get_pos()
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
-            
+    
     def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
-        '''start/stop dragging'''
+        '''start/stop dragging upon detecting a left-click'''
         if not self.drag and icon_rect.collidepoint(pg.mouse.get_pos()): # not using mouse_coords since i'd have to convert it to screen-space
             self.player.item_holding = list(self.inventory.contents)[self.get_inventory_item_index(item_name)]
             return True
         return False
+    
+    def start_drag(self) -> None:
+        if not self.image_to_drag:
+            self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
+            self.image_to_drag.set_alpha(100) # slightly transparent until it's placed
+            self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())
+
+    def end_drag(self, mouse_screen_coords: tuple[int, int], item_name: str, update_collision_map: callable) -> None:
+        tile_coords = (
+            int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE, # converted to an int since the camera offset is a vector2
+            int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
+        )
+        self.sprite_manager.item_placement.place_item(item_name, self.rect_to_drag, tile_coords, self.player.rect.center, update_collision_map)
+        self.image_to_drag, self.rect_to_drag = None, None
 
     def get_inventory_item_index(self, item_name: str) -> int:
         for name, data in self.inventory.contents.items():
