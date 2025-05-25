@@ -230,6 +230,9 @@ class ItemPlacement:
         return coords
 
     def get_tile_id(self, tile_name: str) -> int:
-        for name, id_num in self.tile_IDs.items():
-            if name == tile_name:
-                return id_num
+        if tile_name in TILES.keys(): 
+            for name, id_num in self.tile_IDs.items():
+                if name == tile_name:
+                    return id_num
+        else:
+            return self.tile_IDs['solid object']

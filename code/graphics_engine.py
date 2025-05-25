@@ -117,7 +117,7 @@ class GraphicsEngine:
 
             if sprite.item_holding:
                 item_category = self.get_item_category(sprite)
-                if item_category:
+                if item_category and item_category in self.item_render_states:
                     if sprite.state in self.item_render_states[item_category]:
                         image = pg.transform.flip(self.graphics[item_category][sprite.item_holding], sprite.facing_left, False)
                         image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use

@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
     from player import Player
     from sprite_manager import SpriteManager
+    from ui import MouseGrid
 
 import pygame as pg
 
@@ -124,9 +125,16 @@ class InventoryUI:
                 self.end_drag(pg.mouse.get_pos(), item_name, update_collision_map)
         else: # continue dragging until a second left click is detected
             if self.drag:
-                self.rect_to_drag.center = pg.mouse.get_pos()
+                # align the object with the tile map as it moves around the screen
+                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag)
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
-    
+
+    @staticmethod
+    def get_grid_aligned_coords(rect: pg.Rect) -> tuple[int, int]:
+        x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE
+        y = round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE
+        return (x + 2, y) # the 2px offset appears to give better alignment, which i'd imagine is due to the mouse grid's 1px lines, though the y-axis seems fine as is
+
     def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
         '''start/stop dragging upon detecting a left-click'''
         if not self.drag and icon_rect.collidepoint(pg.mouse.get_pos()): # not using mouse_coords since i'd have to convert it to screen-space
@@ -137,7 +145,7 @@ class InventoryUI:
     def start_drag(self) -> None:
         if not self.image_to_drag:
             self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
-            self.image_to_drag.set_alpha(100) # slightly transparent until it's placed
+            self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
             self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())
 
     def end_drag(self, mouse_screen_coords: tuple[int, int], item_name: str, update_collision_map: callable) -> None:
