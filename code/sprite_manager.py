@@ -207,13 +207,12 @@ class ItemPlacement:
     ) -> None:
         if self.can_place_item(tile_coords, player_coords):
             if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
-                self.tile_map[tile_coords] = self.get_tile_id(item_name)   
+                self.tile_map[tile_coords] = self.get_tile_id(item_name)
             else:
                 pass
-
             self.inventory.remove_item(item_name, 1)
-            update_collision_map(tile_coords, self.collision_map)
-
+            update_collision_map(tile_coords, self.collision_map)     
+            
     @staticmethod
     def can_place_item(tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
         x_dist = tile_coords[0] - (player_coords[0] // TILE_SIZE)
