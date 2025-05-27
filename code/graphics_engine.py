@@ -26,7 +26,7 @@ class GraphicsEngine:
         proc_gen: ProcGen, 
         sprite_manager: SpriteManager,
         chunk_manager: ChunkManager,
-        input_manager: InputManager
+        input_manager: InputManager,
     ):
         self.screen = screen
         self.camera = camera
@@ -37,9 +37,9 @@ class GraphicsEngine:
         self.sprite_manager = sprite_manager
         self.chunk_manager = chunk_manager
         self.input_manager = input_manager
-
+        
         self.tile_map = proc_gen.tile_map
-        self.tile_IDs = proc_gen. tile_IDs
+        self.tile_IDs = proc_gen.tile_IDs
         self.biome_order = proc_gen.biome_order
         self.terrain = Terrain(
             self.screen, 
@@ -154,7 +154,6 @@ class GraphicsEngine:
         mouse_coords: tuple[int, int], 
         mouse_moving: bool, 
         click_states: dict[str, bool],
-        update_collision_map: callable,
         dt: float
     ) -> None:
         self.sprite_manager.update(dt)
@@ -164,7 +163,7 @@ class GraphicsEngine:
         self.terrain.update()
         self.render_sprites(dt)
         
-        self.ui.update(mouse_coords, mouse_moving, click_states, update_collision_map)
+        self.ui.update(mouse_coords, mouse_moving, click_states)
 
 
 class Terrain:

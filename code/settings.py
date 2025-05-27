@@ -1,12 +1,14 @@
 RES = (1280, 720)
 FPS = 60
 
-MAP_SIZE = (2500, 400) 
-BIOME_WIDTH = 500
-
 TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
+
+MAP_SIZE = (2500, 400) 
+BIOME_WIDTH = 500
+WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
+WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
 
 Z_LAYERS = {
     'clouds': 0,

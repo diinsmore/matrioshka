@@ -118,7 +118,7 @@ class Mining:
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
 
-    def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int], update_collision_map: callable) -> None:
+    def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
             if isinstance(sprite, Player): 
                 if self.valid_tile(sprite, tile_coords):
@@ -128,7 +128,7 @@ class Mining:
                         self.init_tile(tile_coords)
 
                     self.update_tile(sprite, tile_coords) 
-                    update_collision_map(tile_coords, self.collision_map)
+                    self.collision_map.update_map(tile_coords)
             else:
                 pass
        
@@ -202,8 +202,7 @@ class ItemPlacement:
         item_name: str, 
         rect: pg.Rect, 
         tile_coords: tuple[int, int], 
-        player_coords: tuple[int, int], 
-        update_collision_map: callable
+        player_coords: tuple[int, int]
     ) -> None:
         if self.can_place_item(tile_coords, player_coords):
             if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
@@ -211,7 +210,7 @@ class ItemPlacement:
             else:
                 pass
             self.inventory.remove_item(item_name, 1)
-            update_collision_map(tile_coords, self.collision_map)     
+            self.collision_map.update_map(tile_coords)     
             
     @staticmethod
     def can_place_item(tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:

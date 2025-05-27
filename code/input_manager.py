@@ -25,9 +25,9 @@ class InputManager:
         self.mouse = Mouse(self.physics_engine, self.sprite_manager, self.ui)
         self.keyboard = Keyboard(self.physics_engine, self.sprite_manager, self.ui, self.mouse.tile_coords, self.player)
 
-    def update(self, camera_offset: pg.Vector2, update_collision_map: callable, dt: float) -> None:
+    def update(self, camera_offset: pg.Vector2, dt: float) -> None:
         self.mouse.update(camera_offset)
-        self.keyboard.update(update_collision_map, self.mouse.tile_coords, dt)
+        self.keyboard.update(self.mouse.tile_coords, dt)
         
 
 class Keyboard:
@@ -50,9 +50,9 @@ class Keyboard:
         # subtracting 1 so the 1 key corresponds to index 0 and the 0 key to index 9
         self.key_map = {key: (key - pg.K_0 - 1) % 10 for key in self.num_keys}
 
-    def get_input(self, update_collision_map: callable, dt: float) -> None:
+    def get_input(self, dt: float) -> None:
         self.get_key_pressed()
-        self.get_key_held(update_collision_map, dt)
+        self.get_key_held(dt)
 
     def get_key_pressed(self) -> None:
         '''
@@ -62,7 +62,7 @@ class Keyboard:
         keys = pg.key.get_just_pressed()
 
         if keys[pg.K_SPACE]:
-            self.physics_engine.jump(self.player)
+            self.physics_engine.sprite_movement.jump(self.player)
 
         for key in self.num_keys:
             if keys[key]:
@@ -70,7 +70,7 @@ class Keyboard:
 
         self.update_render_state(keys)
           
-    def get_key_held(self, update_collision_map: callable, dt: float) -> None:
+    def get_key_held(self, dt: float) -> None:
         '''
         tracks keys being held down
         associated functions will be called continuously until the key is lifted
@@ -78,10 +78,10 @@ class Keyboard:
         keys = pg.key.get_pressed()
 
         direction_x = self.get_direction_x(keys)
-        self.physics_engine.move_sprite(self.player, direction_x, dt)
+        self.physics_engine.sprite_movement.move_sprite(self.player, direction_x, dt)
 
         if keys[pg.K_s]:
-            self.sprite_manager.mining.start(self.player, self.tile_coords, update_collision_map)
+            self.sprite_manager.mining.start(self.player, self.tile_coords, self.physics_engine.collision_map.update_map)
         else:
             if self.player.state == 'mining':
                 self.sprite_manager.end_action(self.player)
@@ -120,14 +120,8 @@ class Keyboard:
 
         return direction['right'] - direction['left']
 
-    def update(
-        self,  
-        update_collision_map: callable, 
-        updated_tile_coords: tuple[int, int], 
-        dt: float
-    ) -> None:
-
-        self.get_input(update_collision_map, dt)
+    def update(self, updated_tile_coords: tuple[int, int], dt: float) -> None:
+        self.get_input(dt)
         self.tile_coords = updated_tile_coords # updated in the mouse class
 
 
@@ -140,8 +134,7 @@ class Mouse:
         self.click_states = {'left': False, 'right': False}
 
         self.moving = False
-        self.coords = pg.Vector2()
-        self.tile_coords = pg.Vector2()
+        self.coords, self.tile_coords = pg.Vector2(), pg.Vector2()
         
     def get_input(self, camera_offset: pg.Vector2) -> None:
         self.get_movement(camera_offset)

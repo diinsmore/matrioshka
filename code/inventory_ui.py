@@ -74,7 +74,7 @@ class InventoryUI:
                 )
                 pg.draw.rect(self.screen, 'black', box, 1)
 
-    def render_icons(self, click_states: dict[str, bool], mouse_coords: tuple[int, int], update_collision_map: callable) -> None:
+    def render_icons(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
         contents = list(self.inventory.contents.items()) # storing in a list to avoid the 'dictionary size changed during iteration' error when items are removed from the inventory dictionary after being placed
         for item_name, item_data in contents:
             try:
@@ -93,7 +93,7 @@ class InventoryUI:
                 self.render_item_amount(item_data['amount'], (x, y))
                 self.render_item_name(icon_rect, item_name)
 
-                self.drag_item(click_states, item_name, icon_rect, update_collision_map)
+                self.drag_item(click_states, item_name, icon_rect)
             except KeyError:
                 pass
 
@@ -115,13 +115,13 @@ class InventoryUI:
         self.make_transparent_bg(amount_rect)
         self.screen.blit(amount_image, amount_rect)
     
-    def drag_item(self, click_states: dict[str, bool], item_name: str, icon_rect: pg.Rect, update_collision_map: callable):
+    def drag_item(self, click_states: dict[str, bool], item_name: str, icon_rect: pg.Rect):
         if click_states['left']:
             self.drag = self.update_drag_state(item_name, icon_rect)
             if self.drag:
                 self.start_drag() 
             else:
-                self.end_drag(pg.mouse.get_pos(), update_collision_map)
+                self.end_drag(pg.mouse.get_pos())
         else: # continue dragging until a second left click is detected
             if self.drag:
                 # align the object with the tile map as it moves around the screen
@@ -147,21 +147,21 @@ class InventoryUI:
             self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
             self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())
 
-    def end_drag(self, mouse_screen_coords: tuple[int, int], update_collision_map: callable) -> None:
+    def end_drag(self, mouse_screen_coords: tuple[int, int]) -> None:
         tile_coords = (
             int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE, # converted to an int since the camera offset is a vector2
             int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
         )
-        self.sprite_manager.item_placement.place_item(self.player.item_holding, self.rect_to_drag, tile_coords, self.player.rect.center, update_collision_map)
+        self.sprite_manager.item_placement.place_item(self.player.item_holding, self.rect_to_drag, tile_coords, self.player.rect.center)
 
     def get_inventory_item_index(self, item_name: str) -> int:
         for name, data in self.inventory.contents.items():
             if name == item_name:
                 return data['index']
 
-    def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int], update_collision_map: callable) -> None:
+    def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
         if self.render:
             self.update_dimensions()
             self.render_bg()
             self.render_slots()
-            self.render_icons(click_states, mouse_coords, update_collision_map)
+            self.render_icons(click_states, mouse_coords)

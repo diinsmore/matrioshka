@@ -16,6 +16,7 @@ class ProcGen:
         self.biome_order = self.order_biomes()
         self.current_biome = 'forest'
         self.tile_IDs = self.get_tile_IDs()
+        print(self.tile_IDs)
        
         self.generate_terrain()
 
@@ -177,19 +178,3 @@ class ProcGen:
         air = self.tile_IDs['air'] 
         return all(tile != air for tile in (current_tile, left_tile, right_tile)) and \
                all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
-
-    # update tiles that have been mined, will also have to account for the use of explosives and perhaps weather altering the terrain
-    def update_collision_map(self, tile_coords: tuple[int, int], collision_map: dict[tuple[int, int], pg.Rect]) -> None:
-        cell_coords = (
-            tile_coords[0] // CELL_SIZE, 
-            tile_coords[1] // CELL_SIZE
-        )
-        if cell_coords in collision_map: # false if you're up in the stratosphere
-            rect = pg.Rect(tile_coords[0] * TILE_SIZE, tile_coords[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-            if rect in collision_map[cell_coords]:
-                # sprites could occasionally pass through tiles whose graphic was still being rendered
-                # removing the associated rectangle only after the tile id's update is confirmed appears to fix the issue
-                if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air']:
-                    collision_map[cell_coords].remove(rect)
-            else:
-                collision_map[cell_coords].append(rect)
