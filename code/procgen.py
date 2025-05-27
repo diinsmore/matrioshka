@@ -16,7 +16,6 @@ class ProcGen:
         self.biome_order = self.order_biomes()
         self.current_biome = 'forest'
         self.tile_IDs = self.get_tile_IDs()
-        print(self.tile_IDs)
        
         self.generate_terrain()
 

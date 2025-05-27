@@ -119,13 +119,14 @@ class InventoryUI:
         if click_states['left']:
             self.drag = self.update_drag_state(item_name, icon_rect)
             if self.drag:
-                self.start_drag() 
-            else:
+                self.start_drag()
+            
+            elif not self.drag and self.player.item_holding: # the item_holding condition prevents the error of left-clicking a tile before selecting an item to place
                 self.end_drag(pg.mouse.get_pos())
-        else: # continue dragging until a second left click is detected
-            if self.drag:
-                # align the object with the tile map as it moves around the screen
-                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag)
+        else: 
+            if self.drag: 
+                # continue dragging until a second left click is detected
+                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag) # align the object with the tile map as it moves around the screen
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
 
     @staticmethod
