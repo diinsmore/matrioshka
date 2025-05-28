@@ -27,6 +27,7 @@ class GraphicsEngine:
         sprite_manager: SpriteManager,
         chunk_manager: ChunkManager,
         input_manager: InputManager,
+        player: Player
     ):
         self.screen = screen
         self.camera = camera
@@ -37,6 +38,7 @@ class GraphicsEngine:
         self.sprite_manager = sprite_manager
         self.chunk_manager = chunk_manager
         self.input_manager = input_manager
+        self.player = player
         
         self.tile_map = proc_gen.tile_map
         self.tile_IDs = proc_gen.tile_IDs
@@ -47,7 +49,8 @@ class GraphicsEngine:
             self.camera_offset, 
             self.proc_gen, 
             self.chunk_manager, 
-            self.sprite_manager.mining.mining_map
+            self.sprite_manager.mining.mining_map,
+            self.player
         )
 
         self.mining_animation = MiningAnimation(self.screen, self.render_item_held)
@@ -174,7 +177,8 @@ class Terrain:
         camera_offset: pg.Vector2, 
         proc_gen: ProcGen, 
         chunk_manager: ChunkManager,
-        mining_map: dict[tuple[int, int], dict[str, int]]
+        mining_map: dict[tuple[int, int], dict[str, int]],
+        player: Player
     ):
         self.screen = screen
         self.graphics = graphics
@@ -182,6 +186,7 @@ class Terrain:
         self.proc_gen = proc_gen
         self.chunk_manager = chunk_manager
         self.mining_map = mining_map
+        self.player = player
         
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
@@ -247,7 +252,8 @@ class Terrain:
         for coords in visible_chunks: # all visible tile coordinates
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
-                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
+                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and \
+                self.tile_map[x, y] not in (self.tile_IDs['air'], self.tile_IDs['object']):
                     tile = self.get_tile_type(x, y)
                     
                     if (x, y) not in self.mining_map.keys():

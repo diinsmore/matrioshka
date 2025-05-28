@@ -153,8 +153,9 @@ class InventoryUI:
             int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE, # converted to an int since the camera offset is a vector2
             int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
         )
-        self.sprite_manager.item_placement.place_item(self.player.item_holding, self.rect_to_drag, tile_coords, self.player.rect.center)
-
+        self.sprite_manager.item_placement.place_item(self.player, self.rect_to_drag, tile_coords)
+        self.image_to_drag, self.rect_to_drag = None, None
+        
     def get_inventory_item_index(self, item_name: str) -> int:
         for name, data in self.inventory.contents.items():
             if name == item_name:

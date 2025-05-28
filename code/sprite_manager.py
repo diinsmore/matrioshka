@@ -4,9 +4,11 @@ if TYPE_CHECKING:
     from asset_manager import AssetManager
     import numpy as np
     from inventory import Inventory
+    from player import Player
 
 import pygame as pg
 from os.path import join
+import math
 
 from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, FPS
 from player import Player
@@ -128,7 +130,7 @@ class Mining:
                         self.init_tile(tile_coords)
 
                     self.update_tile(sprite, tile_coords) 
-                    self.collision_map.update_map(tile_coords)
+                    self.collision_map.update_map(tile_coords, remove_tile = True)
             else:
                 pass
        
@@ -197,20 +199,21 @@ class ItemPlacement:
         self.collision_map = collision_map
         self.inventory = inventory
 
-    def place_item(
-        self, 
-        item_name: str, 
-        rect: pg.Rect, 
-        tile_coords: tuple[int, int], 
-        player_coords: tuple[int, int]
-    ) -> None:
-        if self.can_place_item(tile_coords, player_coords):
+    def place_item(self, player: Player, rect: pg.Rect, tile_coords: tuple[int, int]) -> None:
+        if self.can_place_item(tile_coords, player.rect.center):
             if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
-                self.tile_map[tile_coords] = self.get_tile_id(item_name)
+                self.tile_map[tile_coords] = self.get_tile_id(player.item_holding)
+                self.collision_map.update_map(tile_coords, add_tile = True)
+                player.item_holding = None
             else:
-                pass
-            self.inventory.remove_item(item_name, 1)
-            self.collision_map.update_map(tile_coords)     
+                coords_list = self.get_tile_coords_list(tile_coords, rect)
+                for coord in coords_list: # iterate through the list of x/y tuples
+                    self.tile_map[coord] = self.get_tile_id(player.item_holding)
+                    self.collision_map.update_map(coord, add_tile = True)
+                    if coord == coords_list[-1]:
+                        player.item_holding = None
+
+            self.inventory.remove_item(player.item_holding, 1)
             
     @staticmethod
     def can_place_item(tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
@@ -218,13 +221,14 @@ class ItemPlacement:
         y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
         return abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
         
-    def get_item_coords(self, rect: pg.Rect) -> list[tuple[int, int]]:
-        left, top = rect.left // TILE_SIZE, rect.top // TILE_SIZE
+    def get_tile_coords_list(self, tile_coords: tuple[int, int], rect: pg.Rect) -> list[tuple[int, int]]:
+        '''return a list of tile map coordinates to update when placing items that cover >1 tile'''
         coords = []
-        for x in range(1, (rect.width // TILE_SIZE) + 1):
-            for y in range(1, (rect.height // TILE_SIZE) + 1):
-                coords.append((left + (x * TILE_SIZE), top + (y * TILE_SIZE)))
-
+        tile_span_x = math.ceil(rect.width / TILE_SIZE)
+        tile_span_y = math.ceil(rect.height / TILE_SIZE)
+        for x in range(tile_span_x):
+            for y in range(tile_span_y):
+                coords.append((tile_coords[0] + x, tile_coords[1] + y))
         return coords
 
     def get_tile_id(self, tile_name: str) -> int:
@@ -233,4 +237,4 @@ class ItemPlacement:
                 if name == tile_name:
                     return id_num
         else:
-            return self.tile_IDs['solid object']
+            return self.tile_IDs['object']

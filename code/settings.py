@@ -110,7 +110,7 @@ TOOLS = {
 }
 
 MACHINES = {
-    'burner furnace': {'recipe': {'stone': 7, 'wood': 2, 'torch': 1}}, 'electric furnace': {},
+    'burner furnace': {'recipe': {'stone': 7, 'wood': 2, 'torch': 1}, 'index': len(TILES)}, 'electric furnace': {},
     'burner drill': {}, 'electric drill': {}, 'inserter': {}, 'assembler': {}, 'printing press': {},
     'electric pole': {}, 'electric grid': {}, 'boiler': {}, 'steam engine': {}, 'pump': {}, 'solar panel': {},
     'belt': {}, 'pipes': {},  # TODO: add trains or maybe minecarts with similar functionality?

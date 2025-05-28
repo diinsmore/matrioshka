@@ -3,7 +3,7 @@ import numpy as np
 import noise
 import random
 
-from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH
+from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH, MACHINES
 from nature_sprites import *
 from timer import Timer
 
@@ -33,10 +33,8 @@ class ProcGen:
     @staticmethod
     def get_tile_IDs() -> dict[str, int]:
         '''give each tile a unique number to store at its locations within the tile map'''
-        tile_id_map = {}
-        # key = tile type, value = tile index
-        tile_id_map.update((tile, index) for index, tile in enumerate(TILES))
-        tile_id_map['solid object'] = -1
+        tile_id_map = {'object': 0} # machines, storage units, etc.
+        tile_id_map.update((tile, index + 1) for index, tile in enumerate(TILES))
         return tile_id_map
     
     def generate_height_map(self) -> None:

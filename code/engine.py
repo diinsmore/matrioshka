@@ -66,7 +66,8 @@ class Engine:
             self.proc_gen,
             self.sprite_manager,
             self.chunk_manager,
-            self.input_manager
+            self.input_manager,
+            self.player
         )
         
         # keep this line below the sprite instances

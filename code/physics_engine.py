@@ -61,17 +61,21 @@ class CollisionMap:
         return rects
 
     # update tiles that have been mined/placed, will also have to account for the use of explosives and perhaps weather altering the terrain
-    def update_map(self, tile_coords: tuple[int, int]) -> None:
+    def update_map(self, tile_coords: tuple[int, int], add_tile: bool = False, remove_tile: bool = False) -> None:
         cell_coords = (tile_coords[0] // CELL_SIZE, tile_coords[1] // CELL_SIZE)
+        rect = pg.Rect(tile_coords[0] * TILE_SIZE, tile_coords[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE)    
         if cell_coords in self.map: # false if you're up in the stratosphere
-            rect = pg.Rect(tile_coords[0] * TILE_SIZE, tile_coords[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-            if rect in self.map[cell_coords]:
-                # sprites could occasionally pass through tiles whose graphic was still being rendered
-                # removing the associated rectangle only after the tile ID update is confirmed appears to fix the issue
-                if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air']:
-                    self.map[cell_coords].remove(rect)
-            else:
+            if add_tile and rect not in self.map[cell_coords]:
                 self.map[cell_coords].append(rect)
+            
+            elif remove_tile and rect in self.map[cell_coords]:
+                self.remove_tile(rect, tile_coords, cell_coords)
+                
+    def remove_tile(self, rect: pg.Rect, tile_coords: tuple[int, int], cell_coords: tuple[int, int]) -> None:
+        # sprites could occasionally pass through tiles whose graphic was still being rendered
+        # removing the associated rectangle only after the tile ID update is confirmed appears to fix the issue
+        if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air']:
+            self.map[cell_coords].remove(rect)
 
 
 class CollisionDetection:
