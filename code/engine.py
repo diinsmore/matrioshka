@@ -22,7 +22,7 @@ class Engine:
 
         self.physics_engine = PhysicsEngine(tile_map, tile_IDs)
 
-        self.camera = Camera()
+        self.camera = Camera(self.proc_gen.player_spawn_point)
         
         self.asset_manager = AssetManager()
         
@@ -39,7 +39,7 @@ class Engine:
         )
 
         self.player = Player( 
-            coords = self.proc_gen.get_player_spawn_point(), 
+            coords = self.proc_gen.get_player_spawn_point(), # passing the spawn point variable from procgen.py freezes the player in midair??
             frames = self.asset_manager.load_subfolders(join('..', 'graphics', 'player')), 
             z = Z_LAYERS['player'],
             sprite_groups = [

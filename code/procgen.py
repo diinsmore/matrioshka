@@ -16,6 +16,7 @@ class ProcGen:
         self.biome_order = self.order_biomes()
         self.current_biome = 'forest'
         self.tile_IDs = self.get_tile_IDs()
+        self.player_spawn_point = self.get_player_spawn_point()
        
         self.generate_terrain()
 
@@ -149,7 +150,7 @@ class ProcGen:
                 valid_coords = []
                 for x in range(1, MAP_SIZE[0] - 1):
                     xy = (x, int(self.height_map[x]))
-                    if self.valid_spawn_point(xy[0], xy[1]):
+                    if self.valid_spawn_point(*xy):
                         valid_coords.append(xy)
 
                 if valid_coords:

@@ -254,12 +254,7 @@ class Terrain:
                 # ensure that the tile is within the map borders & is a solid tile
                 if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
                     tile = self.get_tile_type(x, y)
-                    
-                    if (x, y) not in self.mining_map.keys():
-                        image = self.graphics[tile]
-                    else:
-                        image = self.get_mined_tile_image(x, y)
-
+                    image = self.graphics[tile] if (x, y) not in self.mining_map.keys() else self.get_mined_tile_image(x, y)
                     # convert from tile to pixel coordinates
                     px_x = (x * TILE_SIZE) - self.camera_offset.x
                     px_y = (y * TILE_SIZE) - self.camera_offset.y 
@@ -268,11 +263,10 @@ class Terrain:
 
     def get_mined_tile_image(self, x: int, y: int) -> None:
         '''reduce the opacity of a given tile as it's mined away'''
-        if (x, y) in self.mining_map.keys():
-            tile = self.get_tile_type(x, y)
-            tile_image = self.graphics[tile].copy()
-            tile_image.set_alpha(170) 
-            return tile_image
+        tile = self.get_tile_type(x, y)
+        tile_image = self.graphics[tile].copy()
+        tile_image.set_alpha(170) 
+        return tile_image
 
     def update(self) -> None:
         for bg in ('landscape', 'terrain wall', 'underground'):

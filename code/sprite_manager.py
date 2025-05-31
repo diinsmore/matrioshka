@@ -210,15 +210,14 @@ class ItemPlacement:
         self.inventory = inventory
 
     def place_item(self, player: Player, image: pg.Surface, tile_coords: tuple[int, int]) -> None:
-        rect = image.get_rect()
-        if rect.size == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
+        if image.size == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
             if self.can_place_item(tile_coords, player.rect.center):
                 self.tile_map[tile_coords] = self.get_tile_id(player.item_holding)
                 self.collision_map.update_map(tile_coords, add_tile = True)
         else: # the object covers multiple tiles
-            coords_list = self.get_tile_coords_list(tile_coords, rect)
-            for coord in coords_list: # iterate through the list of x/y tuples
-                self.tile_map[coord] = self.get_tile_id(player.item_holding)
+            tile_coords_list = self.get_tile_coords_list(tile_coords, image)
+            self.tile_map[tile_coords_list[0]] = self.get_tile_id(player.item_holding) # only update the topleft to prevent rendering multiple images
+            for coord in tile_coords_list:
                 self.collision_map.update_map(coord, add_tile = True)
                 
         self.inventory.remove_item(player.item_holding, 1)
@@ -229,11 +228,11 @@ class ItemPlacement:
         y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
         return abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
         
-    def get_tile_coords_list(self, tile_coords: tuple[int, int], rect: pg.Rect) -> list[tuple[int, int]]:
+    def get_tile_coords_list(self, tile_coords: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
         '''return a list of tile map coordinates to update when placing items that cover >1 tile'''
         coords = []
-        tile_span_x = math.ceil(rect.width / TILE_SIZE)
-        tile_span_y = math.ceil(rect.height / TILE_SIZE)
+        tile_span_x = math.ceil(image.width / TILE_SIZE)
+        tile_span_y = math.ceil(image.height / TILE_SIZE)
         for x in range(tile_span_x):
             for y in range(tile_span_y):
                 coords.append((tile_coords[0] + x, tile_coords[1] + y))

@@ -129,8 +129,9 @@ class InventoryUI:
 
     @staticmethod
     def get_grid_aligned_coords(rect: pg.Rect) -> tuple[int, int]:
-        coords = (round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE, round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE)
-        return (coords[0] + 3, coords[1])
+        x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE 
+        y = round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE
+        return (x + 3, y)
 
     def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
         '''start/stop dragging upon detecting a left-click'''

@@ -172,7 +172,7 @@ class SpriteMovement:
         if not sprite.spawned: 
             # safeguard against a collision detection issue where the player falls through the map after being spawned
             # downward velocity is severely limited until the 1st player/tile collision is detected 
-            sprite.direction.y = 10
+            sprite.direction.y = 0
 
         # getting the average of the downward velocity
         sprite.direction.y += (sprite.gravity / 2) * dt
