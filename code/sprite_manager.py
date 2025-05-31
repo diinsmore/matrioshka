@@ -17,12 +17,16 @@ from timer import Timer
 class SpriteManager:
     def __init__(
         self,
+        screen: pg.Surface,
+        camera_offset: pg.Vector2,
         asset_manager: AssetManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         inventory: Inventory
     ):
+        self.screen = screen
+        self.camera_offset = camera_offset
         self.asset_manager = asset_manager
         self.tile_map = tile_map
         self.tile_IDs =  tile_IDs
@@ -53,6 +57,8 @@ class SpriteManager:
         )
 
         self.item_placement = ItemPlacement(
+            self.screen,
+            self.camera_offset,
             self.tile_map,
             self.tile_IDs,
             self.collision_map,
@@ -189,34 +195,36 @@ class Crafting:
 class ItemPlacement:
     def __init__(
         self,
+        screen: pg.Surface,
+        camera_offset: pg.Vector2,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         inventory: Inventory
     ):
+        self.screen = screen
+        self.camera_offset = camera_offset
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map
         self.inventory = inventory
 
-    def place_item(self, player: Player, rect: pg.Rect, tile_coords: tuple[int, int]) -> None:
-        if self.can_place_item(tile_coords, player.rect.center):
-            if (rect.width, rect.height) == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
+    def place_item(self, player: Player, image: pg.Surface, tile_coords: tuple[int, int]) -> None:
+        rect = image.get_rect()
+        if rect.size == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
+            if self.can_place_item(tile_coords, player.rect.center):
                 self.tile_map[tile_coords] = self.get_tile_id(player.item_holding)
                 self.collision_map.update_map(tile_coords, add_tile = True)
-                player.item_holding = None
-            else:
-                coords_list = self.get_tile_coords_list(tile_coords, rect)
-                for coord in coords_list: # iterate through the list of x/y tuples
-                    self.tile_map[coord] = self.get_tile_id(player.item_holding)
-                    self.collision_map.update_map(coord, add_tile = True)
-                    if coord == coords_list[-1]:
-                        player.item_holding = None
-
-            self.inventory.remove_item(player.item_holding, 1)
-            
-    @staticmethod
-    def can_place_item(tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
+        else: # the object covers multiple tiles
+            coords_list = self.get_tile_coords_list(tile_coords, rect)
+            for coord in coords_list: # iterate through the list of x/y tuples
+                self.tile_map[coord] = self.get_tile_id(player.item_holding)
+                self.collision_map.update_map(coord, add_tile = True)
+                
+        self.inventory.remove_item(player.item_holding, 1)
+        player.item_holding = None
+        
+    def can_place_item(self, tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
         x_dist = tile_coords[0] - (player_coords[0] // TILE_SIZE)
         y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
         return abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
@@ -232,9 +240,6 @@ class ItemPlacement:
         return coords
 
     def get_tile_id(self, tile_name: str) -> int:
-        if tile_name in TILES.keys(): 
-            for name, id_num in self.tile_IDs.items():
-                if name == tile_name:
-                    return id_num
-        else:
-            return self.tile_IDs['object']
+        for name, id_num in self.tile_IDs.items():
+            if name == tile_name:
+                return id_num

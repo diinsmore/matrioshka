@@ -13,12 +13,12 @@ class InventoryUI:
     def __init__(
         self, 
         inventory: Inventory,
-        player: Player,
-        sprite_manager: SpriteManager,
         screen: pg.Surface,
         camera_offset: pg.Vector2,
         assets: dict[str, dict[str, any]], 
         top: int,
+        player: Player,
+        sprite_manager: SpriteManager,
         make_outline: callable,
         make_transparent_bg: callable,
         render_item_name: callable,
@@ -32,7 +32,6 @@ class InventoryUI:
         self.assets = assets
         self.padding = 5
         self.top = top + self.padding
-        
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
         self.render_item_name = render_item_name
@@ -56,7 +55,6 @@ class InventoryUI:
         self.image_to_drag, self.rect_to_drag = None, None
     
     def update_dimensions(self) -> None:
-        # the number of columns is static
         self.num_rows = 2 if not self.expand else self.num_slots // self.num_cols
         self.total_height = self.box_height * self.num_rows
 
@@ -75,7 +73,7 @@ class InventoryUI:
                 pg.draw.rect(self.screen, 'black', box, 1)
 
     def render_icons(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
-        contents = list(self.inventory.contents.items()) # storing in a list to avoid the 'dictionary size changed during iteration' error when items are removed from the inventory dictionary after being placed
+        contents = list(self.inventory.contents.items()) # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
         for item_name, item_data in contents:
             try:
                 icon_image = self.get_icon_image(item_name)
@@ -93,7 +91,7 @@ class InventoryUI:
                 self.render_item_amount(item_data['amount'], (x, y))
                 self.render_item_name(icon_rect, item_name)
 
-                self.drag_item(click_states, item_name, icon_rect)
+                self.drag_item(click_states, item_name, icon_rect) # TODO: precompute the locations of the icon rects to avoid calling this within the loop
             except KeyError:
                 pass
 
@@ -131,9 +129,8 @@ class InventoryUI:
 
     @staticmethod
     def get_grid_aligned_coords(rect: pg.Rect) -> tuple[int, int]:
-        x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE
-        y = round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE
-        return (x + 3, y)
+        coords = (round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE, round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE)
+        return (coords[0] + 3, coords[1])
 
     def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
         '''start/stop dragging upon detecting a left-click'''
@@ -153,9 +150,9 @@ class InventoryUI:
             int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE, # converted to an int since the camera offset is a vector2
             int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
         )
-        self.sprite_manager.item_placement.place_item(self.player, self.rect_to_drag, tile_coords)
+        self.sprite_manager.item_placement.place_item(self.player, self.graphics[self.player.item_holding], tile_coords) # not passing the image/rect to drag since they get reset after the item is placed
         self.image_to_drag, self.rect_to_drag = None, None
-        
+
     def get_inventory_item_index(self, item_name: str) -> int:
         for name, data in self.inventory.contents.items():
             if name == item_name:

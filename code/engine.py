@@ -29,6 +29,8 @@ class Engine:
         self.inventory = Inventory()
 
         self.sprite_manager = SpriteManager(
+            screen,
+            self.camera.offset,
             self.asset_manager, 
             tile_map, 
             tile_IDs, 

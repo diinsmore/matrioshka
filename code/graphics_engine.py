@@ -252,8 +252,7 @@ class Terrain:
         for coords in visible_chunks: # all visible tile coordinates
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
-                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and \
-                self.tile_map[x, y] not in (self.tile_IDs['air'], self.tile_IDs['object']):
+                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
                     tile = self.get_tile_type(x, y)
                     
                     if (x, y) not in self.mining_map.keys():

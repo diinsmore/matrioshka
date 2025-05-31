@@ -34,12 +34,12 @@ class UI:
 
         self.inventory_ui = InventoryUI(
             self.inventory,
-            self.player,
-            self.sprite_manager,
             self.screen,
             self.camera_offset,
             self.assets,
             self.mini_map.height + self.mini_map.padding,
+            self.player,
+            self.sprite_manager,
             self.make_outline,
             self.make_transparent_bg,
             self.render_item_name,
