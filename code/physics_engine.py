@@ -85,11 +85,11 @@ class CollisionDetection:
     def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str, step_over_tile: callable) -> None:
         '''adjust movement/positioning upon detecting a tile collision'''
         tiles_near = self.collision_map.search_map(sprite)
-        if not tiles_near: # surrounded by air
+        if not tiles_near or (sprite.rect.collidelist(tiles_near) == -1 and int(sprite.direction.y) > 65): # surrounded by air/no tile below 
             sprite.grounded = False
             sprite.state = 'jumping' # the jumping graphic applies to both jumping/falling
             return
-
+        
         for tile in tiles_near:
             if sprite.rect.colliderect(tile):
                 if axis == 'x' and sprite.direction.x:
@@ -97,9 +97,10 @@ class CollisionDetection:
                     self.tile_collision_x(sprite, tile, direction, step_over_tile)
 
                 elif axis == 'y' and sprite.direction.y:
-                    direction = 'up' if sprite.direction.y < 0 else 'down'
-                    self.tile_collision_y(sprite, tile, direction)
-    
+                    if sprite.direction.y > 0:
+                        direction = 'up' if sprite.direction.y < 0 else 'down'
+                        self.tile_collision_y(sprite, tile, direction)
+        
     @staticmethod
     def tile_collision_x(sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str, step_over_tile: callable) -> None:
         if not step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):
@@ -172,10 +173,10 @@ class SpriteMovement:
         if not sprite.spawned: 
             # safeguard against a collision detection issue where the player falls through the map after being spawned
             # downward velocity is severely limited until the 1st player/tile collision is detected 
-            sprite.direction.y = 0
+            sprite.direction.y = 10
 
         # getting the average of the downward velocity
-        sprite.direction.y += (sprite.gravity / 2) * dt
+        sprite.direction.y += (sprite.gravity / 2 * dt)
         sprite.rect.y += sprite.direction.y * dt
         sprite.direction.y += (sprite.gravity / 2) * dt
       
@@ -195,5 +196,6 @@ class SpriteMovement:
     def jump(sprite: pg.sprite.Sprite) -> None:
         if sprite.grounded and sprite.state != 'jumping':
             sprite.direction.y -= sprite.jump_height
+            sprite.grounded = False
             sprite.state = 'jumping'
             sprite.frame_index = 0
