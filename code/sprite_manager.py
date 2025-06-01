@@ -235,7 +235,7 @@ class ItemPlacement:
         tile_span_y = math.ceil(image.height / TILE_SIZE)
         for x in range(tile_span_x):
             for y in range(tile_span_y):
-                coords.append((tile_coords[0] + x, tile_coords[1] + y))
+                coords.append((tile_coords[0] + x - 1, tile_coords[1] + y - 1)) # -1 since the image is rendered from the topleft
         return coords
 
     def get_tile_id(self, tile_name: str) -> int:

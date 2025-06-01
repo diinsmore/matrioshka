@@ -255,11 +255,17 @@ class Terrain:
                 if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
                     tile = self.get_tile_type(x, y)
                     image = self.graphics[tile] if (x, y) not in self.mining_map.keys() else self.get_mined_tile_image(x, y)
-                    # convert from tile to pixel coordinates
-                    px_x = (x * TILE_SIZE) - self.camera_offset.x
-                    px_y = (y * TILE_SIZE) - self.camera_offset.y 
-                    
-                    self.screen.blit(image, (px_x, px_y))
+                    self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
+    
+    @staticmethod
+    def tile_pixel_convert(image_size: tuple[int, int], x: int, y: int) -> pg.Vector2:
+        if image_size == (TILE_SIZE, TILE_SIZE):
+            return pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)
+            
+        return pg.Vector2(
+            (x * TILE_SIZE) + image_size[0] % TILE_SIZE, 
+            (y * TILE_SIZE) + image_size[1] % TILE_SIZE
+        )
 
     def get_mined_tile_image(self, x: int, y: int) -> None:
         '''reduce the opacity of a given tile as it's mined away'''

@@ -8,7 +8,7 @@ class Camera:
         self.offset = pg.Vector2()
 
     def update(self, target_coords: pg.Vector2) -> None:
-        speed_offset = 0.1 # update gradually
+        speed_offset = 0.05 # update gradually
         self.coords += (target_coords - self.coords) * speed_offset 
 
         target_x = self.coords.x - (RES[0] // 2)
