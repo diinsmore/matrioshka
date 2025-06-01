@@ -10,9 +10,10 @@ import pygame as pg
 from os.path import join
 import math
 
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, FPS
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS
 from player import Player
 from timer import Timer
+from mech_sprites import mech_sprite_dict
 
 class SpriteManager:
     def __init__(
@@ -62,7 +63,9 @@ class SpriteManager:
             self.tile_map,
             self.tile_IDs,
             self.collision_map,
-            self.inventory
+            self.inventory,
+            self.all_sprites,
+            self.mech_sprites
         )
 
     # not doing a list comprehension in __init__ since sprites aren't 
@@ -92,21 +95,6 @@ class SpriteManager:
     def update(self, dt) -> None:
         for sprite in self.all_sprites:
             sprite.update(dt)
-
-
-class SpriteBase(pg.sprite.Sprite):
-    def __init__(
-        self, 
-        coords: pg.Vector2,
-        image: dict[str, dict[str, pg.Surface]], 
-        z: dict[str, int],  
-        sprite_groups: list[pg.sprite.Group]
-    ):
-        super().__init__(*sprite_groups)
-        self.sprite_groups = sprite_groups
-        self.image = image
-        self.rect = self.image.get_rect(topleft = coords)
-        self.z = z # layer to render on
 
 
 class Mining:
@@ -200,7 +188,9 @@ class ItemPlacement:
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
-        inventory: Inventory
+        inventory: Inventory,
+        all_sprites: pg.sprite.Group,
+        mech_sprites: pg.sprite.Group
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -208,31 +198,42 @@ class ItemPlacement:
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map
         self.inventory = inventory
+        self.all_sprites = all_sprites
+        self.mech_sprites = mech_sprites
 
     def place_item(self, player: Player, image: pg.Surface, tile_coords: tuple[int, int]) -> None:
-        if image.size == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
+        if image.get_size() == (TILE_SIZE, TILE_SIZE): # only 1 tile in the tile map needs updating
             if self.can_place_item(tile_coords, player.rect.center):
                 self.tile_map[tile_coords] = self.get_tile_id(player.item_holding)
                 self.collision_map.update_map(tile_coords, add_tile = True)
         else: # the object covers multiple tiles
             tile_coords_list = self.get_tile_coords_list(tile_coords, image)
-            self.tile_map[tile_coords_list[0]] = self.get_tile_id(player.item_holding) # only update the topleft to prevent rendering multiple images
+            topleft_tile = tile_coords_list[0]
+            self.tile_map[topleft_tile] = self.get_tile_id(player.item_holding) # only update the topleft to prevent rendering multiple images
             for coord in tile_coords_list:
                 self.collision_map.update_map(coord, add_tile = True)
-                
+            
+            if player.item_holding in mech_sprite_dict.keys():
+                self.instantiate_item_placed(player.item_holding, topleft_tile, image)
+
         self.inventory.remove_item(player.item_holding, 1)
         player.item_holding = None
-        
+    
     def can_place_item(self, tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
         x_dist = tile_coords[0] - (player_coords[0] // TILE_SIZE)
         y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
         return abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
-        
+    
+    def instantiate_item_placed(self, item: str, coords: tuple[int, int], image: pg.Surface) -> None:
+        item_class = mech_sprite_dict[item]
+        sprite_groups = [self.all_sprites, self.mech_sprites]
+        item_class(coords, image, Z_LAYERS['main'], sprite_groups)
+
     def get_tile_coords_list(self, tile_coords: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
         '''return a list of tile map coordinates to update when placing items that cover >1 tile'''
         coords = []
-        tile_span_x = math.ceil(image.width / TILE_SIZE)
-        tile_span_y = math.ceil(image.height / TILE_SIZE)
+        tile_span_x = math.ceil(image.get_width() / TILE_SIZE)
+        tile_span_y = math.ceil(image.get_height() / TILE_SIZE)
         for x in range(tile_span_x):
             for y in range(tile_span_y):
                 coords.append((tile_coords[0] + x - 1, tile_coords[1] + y - 1)) # -1 since the image is rendered from the topleft

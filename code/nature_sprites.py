@@ -3,7 +3,7 @@ from random import randint, choice
 from math import sin
 
 from settings import RES
-from sprite_manager import SpriteBase
+from sprite_base import SpriteBase
 
 class Cloud(SpriteBase):
     def __init__(
