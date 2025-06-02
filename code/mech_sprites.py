@@ -9,9 +9,14 @@ class Furnace(SpriteBase):
         coords: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group]
+        sprite_groups: list[pg.sprite.Group],
+        camera_offset: pg.Vector2
     ):
         super().__init__(coords, image, z, sprite_groups)
+        self.coords = pg.Vector2(coords)
+        self.rect = image.get_rect(topleft = coords)
+        self.camera_offset = camera_offset
+
         self.max_capacity = {'smelting': 100, 'fuel': 50}
         self.valid_inputs = {
             'smelting': {
@@ -22,14 +27,17 @@ class Furnace(SpriteBase):
             },
         } 
         self.placed = False
-        
-    def make(self, sprite_inv: dict[str, int]) -> None:
-        if all(sprite_inv[item]['amount'] >= self.recipe[item] for item in self.recipe.keys()):
-            for item in self.recipe.keys():
-                sprite_inv[item]['amount'] -= self.recipe[item]
-        
+    
     def smelt(self) -> None:
         pass
+    
+    def load_ui(self) -> None:
+        if self.rect.collidepoint(pg.mouse.get_pos()):
+            pass
+
+    def update(self, dt) -> None:
+        self.rect.topleft = self.coords - self.camera_offset
+        self.load_ui()
 
 
 class BurnerFurnace(Furnace):
@@ -38,9 +46,10 @@ class BurnerFurnace(Furnace):
         coords: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group]
+        sprite_groups: list[pg.sprite.Group],
+        camera_offset: pg.Vector2
     ):
-        super().__init__(coords, image, z, sprite_groups)
+        super().__init__(coords, image, z, sprite_groups, camera_offset)
         self.recipe = MACHINES['burner furnace']['recipe']
         self.valid_inputs['fuel'] = {'wood', 'coal'}
 
@@ -51,9 +60,10 @@ class ElectricFurnace(Furnace):
         coords: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group]
+        sprite_groups: list[pg.sprite.Group],
+        camera_offset: pg.Vector2
     ):
-        super().__init__(coords, image, z, sprite_groups)
+        super().__init__(coords, image, z, sprite_groups, camera_offset)
         self.recipe = {'iron plate': 4, 'circuit': 2}
 
 
@@ -63,9 +73,10 @@ class Drill(SpriteBase):
         coords: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group]
+        sprite_groups: list[pg.sprite.Group],
+        camera_offset: pg.Vector2
     ):
-        super().__init__(coords, image, z, sprite_groups)
+        super().__init__(coords, image, z, sprite_groups, camera_offset)
         self.target_ore = None
         self.reach_radius = ((image.width // TILE_SIZE) + 2, RES[1] // 5)
 

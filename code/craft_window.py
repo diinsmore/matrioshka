@@ -185,12 +185,6 @@ class CategoryGrid:
         ) 
         
         image_rect = image.get_rect(topleft = self.window_outline.topleft + offset)
-        bg_rect = pg.Rect(
-            image_rect.topleft - pg.Vector2(self.padding, self.padding), 
-            image_rect.size + pg.Vector2(self.padding * 2, self.padding * 2)
-        )
-        self.make_transparent_bg(bg_rect, alpha = 100 if category != self.selected_category else 255)
-        self.make_outline(bg_rect)
         self.screen.blit(image, image_rect)
 
     def render_category_names(self, topleft: tuple[int, int], category: str) -> None:
