@@ -206,14 +206,6 @@ class ItemPlacement:
             self.place_single_tile_object(tile_coords, player) 
         else:
             self.place_multiple_tile_object(tile_coords, image, player)
-    
-    def can_place_item(self, tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
-        x_dist = tile_coords[0] - (player_coords[0] // TILE_SIZE)
-        y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
-        in_reach = abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
-
-        empty_tile = self.tile_map[tile_coords] == self.tile_IDs['air']
-        return in_reach and empty_tile
 
     def place_single_tile_object(self, tile_coords: tuple[int, int], player: Player) -> None:
         if self.can_place_item(tile_coords, player.rect.center):
@@ -226,7 +218,8 @@ class ItemPlacement:
     def place_multiple_tile_object(self, tile_coords: tuple[int, int], image: pg.Surface, player: Player) -> None:
         tile_coords_list = self.get_tile_coords_list(tile_coords, image)
         tiles_available = [self.can_place_item(tile, player.rect.center) for tile in tile_coords_list]
-        if False not in tiles_available:
+        
+        if self.object_grounded_check(tile_coords_list) and False not in tiles_available:
             image_topleft = tile_coords_list[0]
             self.tile_map[image_topleft] = self.get_tile_id(player.item_holding) # only store the topleft to prevent rendering multiple images
             for coord in tile_coords_list[1:]: 
@@ -239,11 +232,14 @@ class ItemPlacement:
             self.inventory.remove_item(player.item_holding, 1)
             player.item_holding = None
     
-    def instantiate_item_placed(self, item: str, coords: tuple[int, int], image: pg.Surface) -> None:
-        '''create an instance of the item's class if applicable (e.g non-terrain tile objects)'''
-        item_class = mech_sprite_dict[item]
-        sprite_groups = [self.all_sprites, self.mech_sprites]
-        item = item_class(coords, image, Z_LAYERS['main'], sprite_groups, self.camera_offset)
+    def can_place_item(self, tile_coords: tuple[int, int], player_coords: tuple[int, int]) -> bool:
+        x_dist = tile_coords[0] - (player_coords[0] // TILE_SIZE)
+        y_dist = tile_coords[1] - (player_coords[1] // TILE_SIZE)
+        in_reach = abs(x_dist) <= TILE_REACH_RADIUS and abs(y_dist) <= TILE_REACH_RADIUS
+
+        empty_tile = self.tile_map[tile_coords] == self.tile_IDs['air']
+        
+        return in_reach and empty_tile
 
     def get_tile_coords_list(self, tile_coords: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
         '''return a list of tile map coordinates to update when placing items that cover >1 tile'''
@@ -259,3 +255,16 @@ class ItemPlacement:
         for name, id_num in self.tile_IDs.items():
             if name == tile_name:
                 return id_num
+    
+    def object_grounded_check(self, tile_coords_list: list[tuple[int, int]]) -> None:
+        '''for objects of heights > 1 tile, get their southernmost tiles to check if they border the ground'''
+        max_y = max([xy[1] for xy in tile_coords_list])
+        ground_coords = [xy for xy in tile_coords_list if xy[1] == max_y]
+        on_ground = all([self.tile_map[xy[0], xy[1] + 1] != self.tile_IDs['air'] for xy in ground_coords]) 
+        return on_ground
+
+    def instantiate_item_placed(self, item: str, coords: tuple[int, int], image: pg.Surface) -> None:
+        '''create an instance of the item's class if applicable (e.g non-terrain tile objects)'''
+        item_class = mech_sprite_dict[item]
+        sprite_groups = [self.all_sprites, self.mech_sprites]
+        item = item_class(coords, image, Z_LAYERS['main'], sprite_groups, self.camera_offset)
