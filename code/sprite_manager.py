@@ -208,10 +208,8 @@ class ItemPlacement:
                 self.collision_map.update_map(tile_coords, add_tile = True)
             else: # the object covers multiple tiles
                 tile_coords_list = self.get_tile_coords_list(tile_coords, image)
-                image_topleft = (tile_coords_list[0][0] - 1, tile_coords_list[0][1] - 1)
+                image_topleft = tile_coords_list[0]
                 self.tile_map[image_topleft] = self.get_tile_id(player.item_holding) # only update the topleft to prevent rendering multiple images
-                for coord in tile_coords_list:
-                    self.collision_map.update_map(coord, add_tile = True)
                 
                 if player.item_holding in mech_sprite_dict.keys():
                     world_space_coords = pg.Vector2(image_topleft) * TILE_SIZE

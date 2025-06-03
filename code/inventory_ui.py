@@ -124,14 +124,17 @@ class InventoryUI:
         else: 
             if self.drag: 
                 # continue dragging until a second left click is detected
-                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag) # align the object with the tile map as it moves around the screen
+                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag.size) # align the object with the tile map as it moves around the screen
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
 
     @staticmethod
-    def get_grid_aligned_coords(rect: pg.Rect) -> tuple[int, int]:
+    def get_grid_aligned_coords(item_size: tuple[int, int]) -> tuple[int, int]:
         x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE 
         y = round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE
-        return (x + 3, y)
+        return (
+            x if item_size[0] == TILE_SIZE else x + (item_size[0] % TILE_SIZE), 
+            y if item_size[1] == TILE_SIZE else y + (item_size[1] % TILE_SIZE), 
+        )
 
     def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
         '''start/stop dragging upon detecting a left-click'''
@@ -141,10 +144,9 @@ class InventoryUI:
         return False
     
     def start_drag(self) -> None:
-        if not self.image_to_drag:
-            self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
-            self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
-            self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())
+        self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
+        self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
+        self.rect_to_drag = self.image_to_drag.get_rect(topleft = pg.mouse.get_pos())
 
     def end_drag(self, mouse_screen_coords: tuple[int, int]) -> None:
         tile_coords = (

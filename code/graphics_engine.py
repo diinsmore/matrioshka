@@ -261,11 +261,9 @@ class Terrain:
     def tile_pixel_convert(image_size: tuple[int, int], x: int, y: int) -> pg.Vector2:
         if image_size == (TILE_SIZE, TILE_SIZE):
             return pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)
-            
-        return pg.Vector2(
-            (x * TILE_SIZE) + image_size[0] % TILE_SIZE, 
-            (y * TILE_SIZE) + image_size[1] % TILE_SIZE
-        )
+        
+        tile_size_offset = pg.Vector2(image_size[0] % TILE_SIZE, image_size[1] % TILE_SIZE) // 2
+        return pg.Vector2((x * TILE_SIZE) + tile_size_offset[0], (y * TILE_SIZE) + tile_size_offset[0])
 
     def get_mined_tile_image(self, x: int, y: int) -> None:
         '''reduce the opacity of a given tile as it's mined away'''

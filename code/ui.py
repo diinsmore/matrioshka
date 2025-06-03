@@ -121,8 +121,7 @@ class UI:
         bounding_box = (width - (padding * 2), height - (padding * 2))
         aspect_ratio = min(image.width / bounding_box[0], image.height / bounding_box[1]) # avoid stretching an image too wide/tall
         scale = (min(bounding_box[0], image.width * aspect_ratio), min(bounding_box[1], image.height * aspect_ratio))
-        scaled_image = pg.transform.scale(self.assets['graphics'][item_name], scale)
-        return scaled_image
+        return pg.transform.scale(self.assets['graphics'][item_name], scale)
 
     def update(
         self, 
