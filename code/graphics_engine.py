@@ -216,6 +216,7 @@ class Terrain:
         for tile in self.tile_IDs.keys():
             if self.tile_IDs[tile] == self.tile_map[x, y]:
                 return tile
+        return 'obj extended'
 
     def get_terrain_type(self) -> str:
         '''just for getting a specific wall variant but could become more modular'''
@@ -254,6 +255,8 @@ class Terrain:
                 # ensure that the tile is within the map borders & is a solid tile
                 if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
                     tile = self.get_tile_type(x, y)
+                    if tile == 'obj extended': # to be ignored as far as rendering is concerned
+                        continue 
                     image = self.graphics[tile] if (x, y) not in self.mining_map.keys() else self.get_mined_tile_image(x, y)
                     self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
     

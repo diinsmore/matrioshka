@@ -37,6 +37,7 @@ class ProcGen:
         id_map = {}
         world_objects = {**TILES, **MACHINES, **STORAGE}
         id_map.update((obj, index) for index, obj in enumerate(world_objects.keys()))
+        id_map['obj extended'] = len(id_map)
         return id_map
     
     def generate_height_map(self) -> None:
