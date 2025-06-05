@@ -23,6 +23,11 @@ class Inventory:
             self.contents[item]['amount'] -= amount
         else:
             del self.contents[item]
+            self.update_indexing()
+    
+    def update_indexing(self) ->  None:
+        for i, (name, data) in enumerate(self.contents.items()):
+            data['index'] = i
             
     def set_slot_capacity(self) -> None:
         for tile in TILES.keys():

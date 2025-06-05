@@ -47,6 +47,7 @@ class InventoryUI:
         self.box_width, self.box_height = TILE_SIZE * 2, TILE_SIZE * 2
         self.total_width = self.box_width * self.num_cols
         self.total_height = self.box_height * self.num_rows
+        self.icon_size = (TILE_SIZE, TILE_SIZE)
         self.render = True
         self.expand = False
         self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
@@ -60,7 +61,7 @@ class InventoryUI:
 
     def render_bg(self) -> None:
         rect = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
-        outline = self.make_outline(rect)
+        self.make_outline(rect)
         self.make_transparent_bg(rect)
         
     def render_slots(self) -> None:
@@ -68,65 +69,99 @@ class InventoryUI:
             for y in range(self.num_rows):
                 box = pg.Rect(
                     (self.padding, self.top) + pg.Vector2(x * self.box_width, y * self.box_height), 
-                    (self.box_width - 1, self.box_height - 1) # -1 for a slight gap between boxes
+                    (self.box_width - 1, self.box_height - 1)  # -1 for a slight gap between boxes
                 )
                 pg.draw.rect(self.screen, 'black', box, 1)
 
-    def render_icons(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
+    def render_icons(self) -> None:
         contents = list(self.inventory.contents.items()) # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
         for item_name, item_data in contents:
             try:
                 icon_image = self.get_icon_image(item_name)
                 # determine the slot an item corresponds to
                 col = item_data['index'] % self.num_cols
-                row = item_data['index'] // (self.num_rows if self.expand else self.num_slots // self.num_cols)
-                
-                # render at the center of the inventory slot
-                x = self.outline.left + (col * self.box_width) + (icon_image.get_width() // 2)
-                y = self.outline.top + (row * self.box_height) + (icon_image.get_height() // 2)
+                row = item_data['index'] // self.num_cols
+        
+                left = self.outline.left + (col * self.box_width)
+                top = self.outline.top + (row * self.box_height)
+                # center the icon within the inventory slot
+                padding_x = (self.box_width - icon_image.get_width()) // 2
+                padding_y = (self.box_height - icon_image.get_height()) // 2
 
-                icon_rect = icon_image.get_rect(topleft = (x, y))
+                blit_x = left + padding_x
+                blit_y = top + padding_y
+
+                icon_rect = icon_image.get_rect(topleft = (blit_x, blit_y))
                 self.screen.blit(icon_image, icon_rect)
 
-                self.render_item_amount(item_data['amount'], (x, y))
+                self.render_item_amount(item_data['amount'], (blit_x, blit_y))
                 self.render_item_name(icon_rect, item_name)
-
-                self.drag_item(click_states, item_name, icon_rect) # TODO: precompute the locations of the icon rects to avoid calling this within the loop
             except KeyError:
                 pass
 
     def get_icon_image(self, item_name: str) -> pg.Surface:
-        image = self.graphics[item_name]
-        target_size = (TILE_SIZE, TILE_SIZE)
-        if image.get_size() != target_size:
-            image = self.get_scaled_image(image, item_name, *target_size)
-        return image
+        image = self.graphics[item_name] 
+        return image if image.get_size() == self.icon_size else self.get_scaled_image(image, item_name, *self.icon_size)
 
     def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
-        amount_image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])
+        image = self.fonts['number'].render(str(amount), False, self.assets['colors']['text'])
         
-        # move the text 5 pixels further to the right for each digit > 2
         num_digits = len(str(amount))
-        x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0
+        x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0 # move 3+ digit values to the left by 5px for every remaining digit 
 
-        amount_rect = amount_image.get_rect(center = coords + pg.Vector2(x_offset, -2))
-        self.make_transparent_bg(amount_rect)
-        self.screen.blit(amount_image, amount_rect)
+        rect = image.get_rect(center = (coords[0] + x_offset, coords[1] - 2))
+        self.make_transparent_bg(rect)
+        self.screen.blit(image, rect)
     
-    def drag_item(self, click_states: dict[str, bool], item_name: str, icon_rect: pg.Rect):
-        if click_states['left']:
-            self.drag = self.update_drag_state(item_name, icon_rect)
-            if self.drag:
-                self.start_drag()
-            
-            elif not self.drag and self.player.item_holding: # the item_holding condition prevents the error of left-clicking a tile before selecting an item to place
+    def check_drag(self, left_click: bool) -> None:
+        if left_click:
+            if not self.drag:
+                item = self.get_clicked_item()
+                if item:
+                    self.player.item_holding = item
+                    self.drag = True
+                    self.start_drag()
+            else:
                 self.end_drag(pg.mouse.get_pos())
-        else: 
+        else:
             if self.drag: 
-                # continue dragging until a second left click is detected
-                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag.size) # align the object with the tile map as it moves around the screen
+                # continue dragging
+                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag.size)
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
+    
+    def get_clicked_item(self) -> str | None:
+        for item_name, item_data in self.inventory.contents.items():
+            col = item_data['index'] % self.num_cols
+            row = item_data['index'] // self.num_cols
 
+            left = self.outline.left + (col * self.box_width)
+            top = self.outline.top + (row * self.box_height)
+
+            padding_x = (self.box_width - self.icon_size[0]) // 2
+            padding_y = (self.box_height - self.icon_size[1]) // 2
+
+            icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
+            if icon_rect.collidepoint(pg.mouse.get_pos()):
+                return item_name
+        return None
+
+    def start_drag(self) -> None:
+        self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
+        self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
+        self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())
+ 
+    def end_drag(self, mouse_screen_coords: tuple[int, int]) -> None:
+        if self.player.item_holding:
+            tile_coords = (
+                int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE,
+                int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
+            )
+            self.sprite_manager.item_placement.place_item(self.player, self.graphics[self.player.item_holding], tile_coords)
+
+        self.drag = False
+        self.image_to_drag, self.rect_to_drag = None, None
+        self.player.item_holding = None
+        
     @staticmethod
     def get_grid_aligned_coords(item_size: tuple[int, int]) -> tuple[int, int]:
         x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE 
@@ -136,34 +171,10 @@ class InventoryUI:
             y if item_size[1] == TILE_SIZE else y + (item_size[1] % TILE_SIZE), 
         )
 
-    def update_drag_state(self, item_name: str, icon_rect: pg.Rect) -> bool: 
-        '''start/stop dragging upon detecting a left-click'''
-        if not self.drag and icon_rect.collidepoint(pg.mouse.get_pos()): # not using mouse_coords since i'd have to convert it to screen-space
-            self.player.item_holding = list(self.inventory.contents)[self.get_inventory_item_index(item_name)]
-            return True
-        return False
-    
-    def start_drag(self) -> None:
-        self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
-        self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
-        self.rect_to_drag = self.image_to_drag.get_rect(topleft = pg.mouse.get_pos())
-
-    def end_drag(self, mouse_screen_coords: tuple[int, int]) -> None:
-        tile_coords = (
-            int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE, # converted to an int since the camera offset is a vector2
-            int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
-        )
-        self.sprite_manager.item_placement.place_item(self.player, self.graphics[self.player.item_holding], tile_coords) # not passing the image/rect to drag since they get reset after the item is placed
-        self.image_to_drag, self.rect_to_drag = None, None
-
-    def get_inventory_item_index(self, item_name: str) -> int:
-        for name, data in self.inventory.contents.items():
-            if name == item_name:
-                return data['index']
-
     def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
         if self.render:
             self.update_dimensions()
             self.render_bg()
             self.render_slots()
-            self.render_icons(click_states, mouse_coords)
+            self.render_icons()
+            self.check_drag(click_states['left'])
