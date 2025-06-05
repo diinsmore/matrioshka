@@ -98,13 +98,13 @@ class Keyboard:
             self.ui.HUD.shift_right = not self.ui.HUD.shift_right
 
         if keys[pg.K_LSHIFT]:
-            self.ui.inv_ui.expand = not self.ui.inv_ui.expand
+            self.ui.inventory_ui.expand = not self.ui.inventory_ui.expand
 
         if keys[pg.K_m]:
             self.ui.mini_map.render = not self.ui.mini_map.render
 
         if keys[pg.K_i]:
-            self.ui.inv_ui.render = not self.ui.inv_ui.render
+            self.ui.inventory_ui.render = not self.ui.inventory_ui.render
 
         if keys[pg.K_h]:
             self.ui.HUD.render = not self.ui.HUD.render
