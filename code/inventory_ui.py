@@ -167,8 +167,8 @@ class InventoryUI:
         x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE 
         y = round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE
         return (
-            x if item_size[0] == TILE_SIZE else x + (item_size[0] % TILE_SIZE), 
-            y if item_size[1] == TILE_SIZE else y + (item_size[1] % TILE_SIZE), 
+            x + (item_size[0] % TILE_SIZE) + 2, # +2 to not overlap with the mouse grid outline
+            y + (item_size[1] % TILE_SIZE) + 2, 
         )
 
     def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
