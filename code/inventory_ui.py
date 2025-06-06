@@ -128,6 +128,9 @@ class InventoryUI:
                 # continue dragging
                 self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag.size)
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
+                tile_coords = (self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE # assigning the rect's center results in an off by 1 error on the y-axis for objects >1 tile tall
+                tile_coords = (int(tile_coords[0]), int(tile_coords[1])) # previously vector2 floats
+                self.sprite_manager.item_placement.render_placement_ui(self.image_to_drag, self.rect_to_drag, tile_coords, self.player)
     
     def get_clicked_item(self) -> str | None:
         for item_name, item_data in self.inventory.contents.items():

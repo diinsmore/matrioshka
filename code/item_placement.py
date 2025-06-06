@@ -4,8 +4,10 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 import pygame as pg
+import math
 
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, Z_LAYERS
+from mech_sprites import mech_sprite_dict
 
 class ItemPlacement:
     def __init__(
@@ -91,7 +93,7 @@ class ItemPlacement:
 
     def valid_obj_border(self, tile_coords: tuple[int, int], single_tile_obj: bool = False, multi_tile_obj: bool = False) -> bool:
         '''
-        single tile objects: check for any tile bordering the tile selected
+        single tile objects: check for any solid tile bordering the tile selected
         multi-tile objects: check the bottom row of tiles to ensure the object is grounded
         '''
         tile_names = list(TILES.keys())[1:] # excluding air (stored in a list to convert from a dict_keys object)
@@ -106,7 +108,23 @@ class ItemPlacement:
             return any(self.tile_map[bc] in tile_IDs for bc in border_coords)
         else:
             return self.tile_map[tile_coords[0], tile_coords[1] + 1] in tile_IDs
-    
+
+    def render_placement_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, tile_coords: tuple[int, int], player: Player) -> None:
+        '''add a slight tinge of color to the image to signal whether it can be placed at the current location'''
+        mouse_world_coords = pg.mouse.get_pos() + self.camera_offset
+        tiles_covered = math.ceil(icon_image.width / TILE_SIZE)
+        if tiles_covered == 1:
+            valid = self.valid_placement(tile_coords, player)
+        else:
+            coords_list = self.get_tile_coords_list(tile_coords, icon_image)
+            valid = self.valid_placement(coords_list, player)
+
+        tint_image = pg.Surface(icon_image.get_size())
+        tint_image.fill('green' if valid else 'red')
+        tint_image.set_alpha(25)
+        tint_rect = tint_image.get_rect(topleft = icon_rect.topleft)
+        self.screen.blit(tint_image, tint_rect)
+            
     @staticmethod
     def get_ground_coords(tile_coords: tuple[int, int]) -> list[tuple[int, int]]:
         '''returns the tiles of an object that would be directly above the ground/surface that it's being placed on'''
