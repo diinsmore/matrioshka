@@ -106,7 +106,7 @@ class ProcGen:
 
     def place_trees(self) -> None:
         for x in range(MAP_SIZE[0]):
-            surface_level = int(self.height_map[x])
+            y = int(self.height_map[x]) # surface level
             current_biome = list(BIOMES.keys())[x // BIOME_WIDTH]
             if current_biome in {'forest', 'taiga', 'desert'} and random.randint(0, 100) <= 10:
                 self.tree_map.append((x, y))
