@@ -52,6 +52,6 @@ class Tree(SpriteBase):
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group]
     ):
-        super().__init__(coords, image, z, *sprite_groups)
+        super().__init__(coords, image, z, sprite_groups)
         self.rect = self.image.get_rect(midbottom = coords) # SpriteBase uses the topleft
         self.strength = 50 # chopped down when <= 0

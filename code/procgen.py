@@ -107,9 +107,10 @@ class ProcGen:
     def place_trees(self) -> None:
         for x in range(MAP_SIZE[0]):
             surface_level = int(self.height_map[x])
-            biome_names = list(BIOMES.keys())
-            current_biome = biome_names[x // BIOME_WIDTH]
-            self.add_tree(current_biome, x, surface_level)
+            current_biome = list(BIOMES.keys())[x // BIOME_WIDTH]
+            if current_biome in {'forest', 'taiga', 'desert'} and random.randint(0, 100) <= 10:
+                self.tree_map.append((x, y))
+                self.tile_map[x, y] = self.tile_IDs['tree base']
     
     def ore_distribution(self, x: int, y: int, biome: str) -> None:
         '''
@@ -142,27 +143,7 @@ class ProcGen:
                 if index < len(tiles) - 1:
                     continue
                 return False
-
-    def add_tree(self, biome, x: int, y: int) -> None:
-        if all((
-            self.current_biome in {'forest', 'taiga', 'desert'},
-            TILE_SIZE < x < MAP_SIZE[0] - TILE_SIZE,
-            random.randint(0, 100) <= 10
-        )):
-            tile_left = self.tile_map[x - 1, y]
-            tile_center = self.tile_map[x, y]
-            tile_right = self.tile_map[x + 1, y]
-            tiles_valid = all(tile == self.tile_IDs['dirt'] for tile in [tile_left, tile_center, tile_right])
-            if any((
-                self.tile_map[x, y + 1] != self.tile_IDs['dirt'],
-                self.tile_map[x, y - 1] != self.tile_IDs['air'],
-                not tiles_valid
-            )):
-                return
-                
-            self.tree_map.append((x, y))
-            self.tile_map[x, y] = self.tile_IDs['tree base']
-
+        
     def get_player_spawn_point(self) -> tuple[int, int]:
             '''spawn at the nearest flat surface (at least 3 solid tiles on the same y-axis) to the map's center-x'''
             center_x = MAP_SIZE[0] // 2

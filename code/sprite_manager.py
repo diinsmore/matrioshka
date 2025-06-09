@@ -41,6 +41,7 @@ class SpriteManager:
         self.all_sprites = pg.sprite.Group()
         self.human_sprites = pg.sprite.Group()
         self.mech_sprites = pg.sprite.Group()
+        self.nature_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
@@ -103,7 +104,7 @@ class SpriteManager:
     def render_trees(self) -> None:
         image = self.graphics['forest']['trees']
         for xy in self.tree_map:
-            Tree((pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, image, Z_LAYERS['bg'], [self.all_sprites])
+            Tree((pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, image, Z_LAYERS['bg'], [self.all_sprites, self.nature_sprites])
             
     def update(self, dt) -> None:
         for sprite in self.all_sprites:
