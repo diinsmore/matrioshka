@@ -13,17 +13,18 @@ from physics_engine import PhysicsEngine
 from sprite_manager import SpriteManager
 from input_manager import InputManager
 from ui import UI
+from file_import_functions import *
 
 class Engine:
     def __init__(self, screen: pg.Surface):
-        self.proc_gen = ProcGen()
+        self.camera = Camera()
+
+        self.proc_gen = ProcGen(screen, self.camera.offset)
         tile_map = self.proc_gen.tile_map
         tile_IDs = self.proc_gen.tile_IDs
 
         self.physics_engine = PhysicsEngine(tile_map, tile_IDs)
 
-        self.camera = Camera(self.proc_gen.player_spawn_point)
-        
         self.asset_manager = AssetManager()
         
         self.inventory = Inventory()
@@ -32,15 +33,16 @@ class Engine:
             screen,
             self.camera.offset,
             self.asset_manager, 
-            tile_map, 
-            tile_IDs, 
+            tile_map,
+            tile_IDs,
+            self.proc_gen.tree_map,
             self.physics_engine.collision_map,
             self.inventory
         )
 
         self.player = Player( 
             coords = self.proc_gen.get_player_spawn_point(), # passing the spawn point variable from procgen.py freezes the player in midair??
-            frames = self.asset_manager.load_subfolders(join('..', 'graphics', 'player')), 
+            frames = load_subfolders(join('..', 'graphics', 'player')), 
             z = Z_LAYERS['player'],
             sprite_groups = [
                 self.sprite_manager.all_sprites, 

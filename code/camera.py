@@ -2,9 +2,9 @@ import pygame as pg
 from settings import RES, MAP_SIZE, TILE_SIZE
 
 class Camera:
-    def __init__(self, player_spawn_point: tuple[int, int]):
+    def __init__(self):
         '''center the screen on the player'''  
-        self.coords = pg.Vector2(player_spawn_point) 
+        self.coords = pg.Vector2() 
         self.offset = pg.Vector2()
 
     def update(self, target_coords: pg.Vector2) -> None:

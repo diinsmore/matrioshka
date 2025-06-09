@@ -2,24 +2,30 @@ import pygame as pg
 import numpy as np
 import noise
 import random
+from os.path import join
 
-from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH, MACHINES, STORAGE
-from nature_sprites import *
+from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE
 from timer import Timer
+from file_import_functions import load_image
+import camera
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 
 class ProcGen:
-    def __init__(self):
+    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2):
+        self.screen = screen
+        self.camera_offset = camera_offset
+
         self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
         self.height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
+        self.tree_map = [] # store the coordinates of each tree's base to avoid looping through the entire tile map
         self.biome_order = self.order_biomes()
         self.current_biome = 'forest'
         self.tile_IDs = self.get_tile_IDs()
         self.player_spawn_point = self.get_player_spawn_point()
        
         self.generate_terrain()
-
+        
     # TODO: randomize the sequence
     @staticmethod
     def order_biomes() -> dict[str, int]:
@@ -38,6 +44,7 @@ class ProcGen:
         world_objects = {**TILES, **MACHINES, **STORAGE}
         id_map.update((obj, index) for index, obj in enumerate(world_objects.keys()))
         id_map['obj extended'] = len(id_map)
+        id_map['tree base'] = id_map['obj extended'] + 1
         return id_map
     
     def generate_height_map(self) -> None:
@@ -66,32 +73,43 @@ class ProcGen:
 
     def generate_terrain(self) -> None:
         self.generate_height_map()
-        # TODO: add the underworld
+        self.place_tiles()
+        self.place_trees()
+
+    def place_tiles(self) -> None:
         for x in range(MAP_SIZE[0]):
-            surface_level = round(self.height_map[x])
-            for y in range(MAP_SIZE[1]):
+            surface_level = int(self.height_map[x])
+            for y in range(MAP_SIZE[1]): 
                 if y < surface_level: 
                     self.tile_map[x, y] = self.tile_IDs['air'] 
 
-                elif y == surface_level: 
-                    self.tile_map[x, y] = self.tile_IDs['dirt'] 
-                    
+                elif y == surface_level:
+                    self.tile_map[x, y] = self.tile_IDs['dirt']
+
                 else:
                     # calculate the tile's depth relative to the height of the map
                     rel_depth = (y - surface_level) / MAP_SIZE[1]
                     if rel_depth < 0.1:
-                        self.tile_map[x, y] = self.tile_IDs['dirt'] 
+                        self.tile_map[x, y] = self.tile_IDs['dirt']
 
                     elif rel_depth < 0.2:
                         self.tile_map[x, y] = self.tile_IDs['stone' if random.randint(0, 100) <= 33 else 'dirt'] 
-
+                    
                     elif rel_depth < 0.4:
                         if random.randint(0, 100) <= 25:
-                            self.tile_map[x, y] = random.choice((self.tile_IDs['sandstone'] , self.tile_IDs['ice'] ))
+                            self.tile_map[x, y] = random.choice((self.tile_IDs['sandstone'], self.tile_IDs['ice']))
                         else:
                             self.tile_map[x, y] = self.tile_IDs['stone' if random.randint(0, 100) < 60 else 'dirt']  
+                    
                     else:
-                        self.ore_distribution(x, y, self.current_biome)  
+                        self.ore_distribution(x, y, self.current_biome)
+
+    def place_trees(self) -> None:
+        for x in range(MAP_SIZE[0]):
+            surface_level = int(self.height_map[x])
+            biome_names = list(BIOMES.keys())
+            current_biome = biome_names[x // BIOME_WIDTH]
+            self.add_tree(current_biome, x, surface_level)
     
     def ore_distribution(self, x: int, y: int, biome: str) -> None:
         '''
@@ -125,20 +143,25 @@ class ProcGen:
                     continue
                 return False
 
-    def add_tree(self, coords: tuple[int, int], biome) -> None:
-        image = load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
-        if TILE_SIZE < coords[0] < MAP_SIZE[0] - TILE_SIZE: # not positioned at the edge of the map
-            center_tile = self.tile_map[coords[0] + 1, coords[1]]    
-            left_tile = self.tile_map[coords[0] - 1, coords[1]]
-            right_tile = self.tile_map[coords[0] + 1, coords[1]]
-            # only spawn at coordinates where the x-axis is consistent for 3+ tiles (equal to the tree's width of 36px)
-            if center_tile == 0 and left_tile == 0 and right_tile == 0: # dirt tiles
-                Tree(
-                    coords = (coords[0] * TILE_SIZE, coords[1] * TILE_SIZE - image.get_height()), 
-                    image = image, 
-                    z = Z_LAYERS['bg'], 
-                    groups = self.all_sprites
-                )
+    def add_tree(self, biome, x: int, y: int) -> None:
+        if all((
+            self.current_biome in {'forest', 'taiga', 'desert'},
+            TILE_SIZE < x < MAP_SIZE[0] - TILE_SIZE,
+            random.randint(0, 100) <= 10
+        )):
+            tile_left = self.tile_map[x - 1, y]
+            tile_center = self.tile_map[x, y]
+            tile_right = self.tile_map[x + 1, y]
+            tiles_valid = all(tile == self.tile_IDs['dirt'] for tile in [tile_left, tile_center, tile_right])
+            if any((
+                self.tile_map[x, y + 1] != self.tile_IDs['dirt'],
+                self.tile_map[x, y - 1] != self.tile_IDs['air'],
+                not tiles_valid
+            )):
+                return
+                
+            self.tree_map.append((x, y))
+            self.tile_map[x, y] = self.tile_IDs['tree base']
 
     def get_player_spawn_point(self) -> tuple[int, int]:
             '''spawn at the nearest flat surface (at least 3 solid tiles on the same y-axis) to the map's center-x'''

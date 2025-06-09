@@ -10,10 +10,11 @@ import pygame as pg
 from os.path import join
 import math
 
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
+from nature_sprites import Tree
 from item_placement import ItemPlacement
 
 class SpriteManager:
@@ -24,6 +25,7 @@ class SpriteManager:
         asset_manager: AssetManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
+        tree_map: list[tuple[int, int]],
         collision_map: dict[tuple[int, int], pg.Rect],
         inventory: Inventory
     ):
@@ -31,10 +33,11 @@ class SpriteManager:
         self.camera_offset = camera_offset
         self.asset_manager = asset_manager
         self.tile_map = tile_map
-        self.tile_IDs =  tile_IDs
+        self.tile_IDs = tile_IDs
+        self.tree_map = tree_map
         self.collision_map = collision_map
         self.inventory = inventory
-
+        
         self.all_sprites = pg.sprite.Group()
         self.human_sprites = pg.sprite.Group()
         self.mech_sprites = pg.sprite.Group()
@@ -69,6 +72,10 @@ class SpriteManager:
             self.mech_sprites
         )
 
+        self.graphics = self.asset_manager.assets['graphics']
+
+        self.render_trees()
+
     # not doing a list comprehension in __init__ since sprites aren't 
     # assigned their groups until after SpriteManager is initialized
     def init_active_items(self) -> None:
@@ -92,7 +99,12 @@ class SpriteManager:
 
     def pick_up_item(self, sprite: pg.sprite.Sprite) -> None:
         pass
-
+    
+    def render_trees(self) -> None:
+        image = self.graphics['forest']['trees']
+        for xy in self.tree_map:
+            Tree((pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, image, Z_LAYERS['bg'], [self.all_sprites])
+            
     def update(self, dt) -> None:
         for sprite in self.all_sprites:
             sprite.update(dt)

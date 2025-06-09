@@ -1,0 +1,33 @@
+import pygame as pg
+from os import walk
+from os.path import join
+
+def load_image(dir_path: str) -> pg.Surface:
+    return pg.image.load(dir_path).convert_alpha()
+
+def load_folder(dir_path: str) -> dict[str, pg.Surface]:
+    images = {}
+    for path, _, files in walk(dir_path):    
+        for file_name in files:
+            key = file_name.split('.')[0] # not reassigning 'file_name' because it needs the file extension when passed to load_image()
+            images[int(key) if key.isnumeric() else key] = load_image(join(path, file_name))
+
+    return images
+
+def load_subfolders(dir_path: str) -> dict[str, dict[str, pg.Surface]]:
+    '''load folders stored in a given parent folder'''
+    images = {}
+    for _, subfolders, __ in walk(dir_path):
+        for folder in subfolders:
+            path = join(dir_path, folder)
+            images[folder] = load_folder(path)
+            
+    return images
+
+def load_frames(dir_path: str) -> list[pg.Surface]:
+    '''load the individual frames of an animation (numeric file names)'''
+    frames = []
+    # remove the file extension to sort from 0 to n
+    for path, _, files in walk(dir_path):   
+        for file in sorted(files, key = lambda name: int(name.split('.')[0])): 
+            frames.append(load_image(join(path, file)))

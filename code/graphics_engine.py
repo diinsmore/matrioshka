@@ -257,6 +257,8 @@ class Terrain:
                     tile = self.get_tile_type(x, y)
                     if tile == 'obj extended': # to be ignored as far as rendering is concerned
                         continue 
+                    elif tile == 'tree base':
+                        tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
                     image = self.graphics[tile] if (x, y) not in self.mining_map.keys() else self.get_mined_tile_image(x, y)
                     self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
     
