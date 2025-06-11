@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 from os.path import join
-import math
+from random import choice
 
 from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE
 from player import Player
@@ -39,29 +39,19 @@ class SpriteManager:
         self.inventory = inventory
         
         self.all_sprites = pg.sprite.Group()
+        self.player_sprite = pg.sprite.GroupSingle()
         self.human_sprites = pg.sprite.Group()
         self.mech_sprites = pg.sprite.Group()
         self.nature_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
+        self.tree_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
 
         self.active_items = {} # block/tool currently held by a given sprite
          
-        self.mining = Mining(
-            self.tile_map, 
-            self.tile_IDs, 
-            self.collision_map, 
-            self.get_tool_strength, 
-            self.pick_up_item
-        )
-
-        self.crafting = Crafting(
-            self.tile_map,
-            self.tile_IDs,
-            self.collision_map
-        )
-
+        self.mining = Mining(self.tile_map, self.tile_IDs, self.collision_map, self.get_tool_strength, self.pick_up_item)
+        self.crafting = Crafting(self.tile_map, self.tile_IDs, self.collision_map)
         self.item_placement = ItemPlacement(
             self.screen,
             self.camera_offset,
@@ -72,13 +62,14 @@ class SpriteManager:
             self.all_sprites,
             self.mech_sprites
         )
-
+        self.wood_harvesting = WoodHarvesting(self.tile_map, self.tile_IDs, self.tree_sprites, self.tree_map, self.camera_offset)
+        
         self.graphics = self.asset_manager.assets['graphics']
-
+        self.current_biome = 'forest'
         self.render_trees()
 
     # not doing a list comprehension in __init__ since sprites aren't 
-    # assigned their groups until after SpriteManager is initialized
+    # assigned their groups until after the class is initialized
     def init_active_items(self) -> None:
         # TODO: update this for loop once a sprite group for mobs is added, unless you decide they can't hold items
         for sprite in self.human_sprites: 
@@ -102,9 +93,17 @@ class SpriteManager:
         pass
     
     def render_trees(self) -> None:
-        image = self.graphics['forest']['trees']
-        for xy in self.tree_map:
-            Tree((pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, image, Z_LAYERS['bg'], [self.all_sprites, self.nature_sprites])
+        images = self.graphics[self.current_biome]['trees']
+        for xy in self.tree_map: 
+            Tree(
+                (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
+                images[choice((0, 1))], 
+                Z_LAYERS['bg'], 
+                [self.all_sprites, self.nature_sprites, self.tree_sprites], 
+                self.tree_map, 
+                xy, 
+                self.camera_offset
+            )
             
     def update(self, dt) -> None:
         for sprite in self.all_sprites:
@@ -192,3 +191,35 @@ class Crafting:
     def can_craft_item(inventory_contents: dict[str, dict[str, int]], recipe: dict[str, int]) -> bool:
         # first check if the recipe items are available, then check if the quantity of them item are enough
         return all(inventory_contents.get(item, {}).get('amount', 0) >= amount_needed for item, amount_needed in recipe.items())
+
+
+class WoodHarvesting:
+    def __init__(
+        self, 
+        tile_map: np.ndarray,
+        tile_IDs: dict[str, int],
+        tree_sprites: pg.sprite.Group(),
+        tree_map: list[tuple[int, int]],
+        camera_offset: pg.Vector2
+    ):
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
+        self.tree_sprites = tree_sprites
+        self.tree_map = tree_map
+        self.camera_offset = camera_offset
+
+    def make_cut(self, sprite: pg.sprite.Sprite) -> None:
+        if isinstance(sprite, Player):
+            if sprite.item_holding and sprite.item_holding.split()[-1] == 'axe':
+                nearby_trees = [tree for tree in self.tree_sprites if self.in_reach(sprite, tree.rect)]
+                for tree in nearby_trees:
+                    if tree.rect.collidepoint(pg.mouse.get_pos() + self.camera_offset):
+                        tree.cut_down(sprite)
+        else:
+            pass
+
+    @staticmethod
+    def in_reach(sprite: pg.sprite.Sprite, tree_rect: pg.Rect) -> bool:
+        px_dist = abs(sprite.rect.x - tree_rect.x)
+        tile_dist = px_dist // TILE_SIZE
+        return tile_dist <= TILE_REACH_RADIUS

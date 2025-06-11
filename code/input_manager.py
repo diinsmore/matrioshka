@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from physics_engine import PhysicsEngine
     from sprite_manager import SpriteManager
@@ -22,7 +22,7 @@ class InputManager:
         self.ui = ui
         self.player = player
         
-        self.mouse = Mouse(self.physics_engine, self.sprite_manager, self.ui)
+        self.mouse = Mouse(self.physics_engine, self.sprite_manager, self.ui, self.player)
         self.keyboard = Keyboard(self.physics_engine, self.sprite_manager, self.ui, self.mouse.tile_coords, self.player)
 
     def update(self, camera_offset: pg.Vector2, dt: float) -> None:
@@ -126,12 +126,14 @@ class Keyboard:
 
 
 class Mouse:
-    def __init__(self, physics_engine: PhysicsEngine, sprite_manager: SpriteManager, ui: UI):
+    def __init__(self, physics_engine: PhysicsEngine, sprite_manager: SpriteManager, ui: UI, player: Player):
         self.physics_engine = physics_engine
         self.sprite_manager = sprite_manager
         self.ui = ui
+        self.player = player
         
         self.click_states = {'left': False, 'right': False}
+        self.buttons_held = {'left': False, 'right': False}
 
         self.moving = False
         self.coords, self.tile_coords = pg.Vector2(), pg.Vector2()
@@ -149,16 +151,22 @@ class Mouse:
 
     def update_click_states(self) -> None:
         self.reset_click_states()
+        
         click = pg.mouse.get_just_pressed()
         if click[0]:
             self.click_states['left'] = True
-        
         elif click[2]:
             self.click_states['right'] = True
+            
+        buttons_held = pg.mouse.get_pressed()
+        if buttons_held[0]:
+            self.buttons_held['left'] = True
+        if buttons_held[1]:
+            self.buttons_held['right'] = True
         
     def reset_click_states(self) -> None:
-        self.click_states['left'] = False
-        self.click_states['right'] = False
+        self.buttons_held['left'], self.buttons_held['right'] = False, False
+        self.click_states['left'], self.click_states['right'] = False, False
 
     @staticmethod
     def get_coords(camera_offset: pg.Vector2, rel_screen: bool = False) -> tuple[int, int]:
@@ -170,3 +178,5 @@ class Mouse:
 
     def update(self, camera_offset: pg.Vector2) -> None:
         self.get_input(camera_offset)
+        if self.buttons_held['left']:
+            self.sprite_manager.wood_harvesting.make_cut(self.player)

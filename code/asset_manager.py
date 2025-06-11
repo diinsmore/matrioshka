@@ -38,7 +38,7 @@ class AssetManager:
             }
             
             if biome in ('forest', 'taiga', 'desert'):
-                self.assets['graphics'][biome]['trees'] = load_image(join('..', 'graphics', 'terrain', 'trees', f'{biome} tree.png'))
+                self.assets['graphics'][biome]['trees'] = load_folder(join('..', 'graphics', 'terrain', 'trees', biome))
 
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():

@@ -50,20 +50,23 @@ BIOMES = {
         'elevation': {'top': 130, 'bottom': 180},
         'tile probs': {'coal': 3, 'copper': 7, 'iron': 6, 'silver': 6, 'gold': 2},
         'liquid probs': {'oil': 7, 'lava': 5},
+        'tree prob': 10
     },
     
     'forest': {
         'noise params': {'scale': 450, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 2.0},
         'elevation': {'top': 150, 'bottom': 190},
         'tile probs': {'coal': 7, 'copper': 4, 'iron': 5, 'silver': 3, 'gold': 3},
-        'liquid probs': {'water': 7, 'lava': 2}  
+        'liquid probs': {'water': 7, 'lava': 2},
+        'tree prob': 35
     },
     
     'taiga': {
         'noise params': {'scale': 400, 'octaves': 4, 'persistence': 1.3, 'lacunarity': 1.6},
         'elevation': {'top': 110, 'bottom': 160},
         'tile probs': {'coal': 5, 'copper': 3, 'iron': 6, 'silver': 5, 'gold': 4},
-        'liquid probs': {'water': 5, 'lava': 1}  
+        'liquid probs': {'water': 5, 'lava': 1},
+        'tree prob': 20
     },
     
     'tundra': {
@@ -92,8 +95,8 @@ TOOLS = {
     },
     'axe': {
         'stone': {'recipe': {'wood': 3, 'stone': 4}, 'strength': 10, 'producers': {'player', 'workbench', 'anvil'}},
-        'iron': {'recipe': {'wood': 3, 'iron bar': 2}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
-        'copper': {'recipe': {'wood': 3, 'stone': 2}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
+        'iron': {'recipe': {'wood': 3, 'iron bar': 2}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
+        'copper': {'recipe': {'wood': 3, 'stone': 2}, 'strength': 10, 'producers': {'player', 'workbench', 'anvil'}},
     },
     'sword': {
         'stone': {'recipe': {'stone': 12}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},

@@ -108,7 +108,10 @@ class ProcGen:
         for x in range(MAP_SIZE[0]):
             y = int(self.height_map[x]) # surface level
             current_biome = list(BIOMES.keys())[x // BIOME_WIDTH]
-            if current_biome in {'forest', 'taiga', 'desert'} and random.randint(0, 100) <= 10:
+            # don't use any() here or an error will be thrown from the biomes missing 'tree prob'
+            if current_biome in {'forest', 'taiga', 'desert'} and \
+            random.randint(0, 100) <= BIOMES[current_biome]['tree prob'] and \
+            self.valid_spawn_point(x, y):
                 self.tree_map.append((x, y))
                 self.tile_map[x, y] = self.tile_IDs['tree base']
     
@@ -167,10 +170,6 @@ class ProcGen:
                     return (center_x * TILE_SIZE, y * TILE_SIZE)
 
     def valid_spawn_point(self, x: int, y: int) -> bool:
-        '''
-        Determine whether a 3x3 horizontal line of tiles are all solid, 
-        to find a suitable spawn point for the player (and maybe future entities)
-        '''
         current_tile = self.tile_map[x, y]
         left_tile = self.tile_map[x - 1, y]
         right_tile = self.tile_map[x + 1, y]

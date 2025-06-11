@@ -1,7 +1,7 @@
 import pygame as pg
 
 class Timer:
-    def __init__(self, length: int, function: callable, auto_start: bool, loop: bool):
+    def __init__(self, length: int, function: callable = False, auto_start: bool = False, loop: bool = False):
         self.length = length
         self.function = function
         self.auto_start = auto_start

@@ -2,8 +2,9 @@ import pygame as pg
 from random import randint, choice
 from math import sin
 
-from settings import RES
+from settings import RES, TOOLS
 from sprite_base import SpriteBase
+from timer import Timer
 
 class Cloud(SpriteBase):
     def __init__(
@@ -47,11 +48,45 @@ class Cloud(SpriteBase):
 class Tree(SpriteBase):
     def __init__(
         self, 
-        coords: pg.Vector2, 
+        coords: pg.Vector2,
         image: pg.Surface,
         z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group]
+        sprite_groups: list[pg.sprite.Group],
+        tree_map: list[tuple[int, int]],
+        tree_map_coords: tuple[int, int], # the coords value before it was adjusted by the camera offset & tile size
+        camera_offset: pg.Vector2,
     ):
         super().__init__(coords, image, z, sprite_groups)
+        self.coords = coords
+        self.tree_map = tree_map
+        self.tree_map_coords = tree_map_coords
+        self.camera_offset = camera_offset
+        
+        self.image = self.image.copy()
         self.rect = self.image.get_rect(midbottom = coords) # SpriteBase uses the topleft
-        self.strength = 50 # chopped down when <= 0
+        self.max_strength, self.current_strength = 50, 50
+        self.alpha = 255
+
+        self.delay_timer = Timer(length = 1000) # prevents cut_down() from being called every frame
+
+    def cut_down(self, sprite: pg.sprite.Sprite) -> None:
+        self.delay_timer.update()
+    
+        if not self.delay_timer.running:
+            axe_material = sprite.item_holding.split()[0]
+            tool_strength = TOOLS['axe'][axe_material]['strength']
+            self.current_strength = max(0, self.current_strength - tool_strength)
+            
+            rel_strength = self.max_strength // tool_strength
+            rel_alpha = self.alpha * (1 / rel_strength)
+            self.alpha = max(0, self.alpha - rel_alpha)
+            self.image.set_alpha(self.alpha)
+
+            if self.current_strength == 0 and self.tree_map_coords in self.tree_map:
+                self.tree_map.remove(self.tree_map_coords)  
+                self.kill()
+
+            self.delay_timer.start()
+
+    def produce_wood(self, sprite: pg.sprite.Sprite) -> None:
+        pass

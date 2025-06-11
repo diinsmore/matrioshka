@@ -10,7 +10,7 @@ from graphics_engine import GraphicsEngine
 from asset_manager import AssetManager
 from chunk_manager import ChunkManager
 from physics_engine import PhysicsEngine
-from sprite_manager import SpriteManager
+from sprite_manager import SpriteManager, WoodHarvesting
 from input_manager import InputManager
 from ui import UI
 from file_import_functions import *
@@ -46,6 +46,7 @@ class Engine:
             z = Z_LAYERS['player'],
             sprite_groups = [
                 self.sprite_manager.all_sprites, 
+                self.sprite_manager.player_sprite,
                 self.sprite_manager.human_sprites,
                 self.sprite_manager.animated_sprites
             ],
@@ -73,10 +74,9 @@ class Engine:
             self.input_manager,
             self.player
         )
-        
-        # keep this line below the sprite instances
-        self.sprite_manager.init_active_items()
-        
+        # making an instance here since the sprite manager currently can't take parameters from the graphics engine
+        self.sprite_manager.init_active_items() # keep this line below the sprite instances
+
     def update(self, dt: float) -> None:
         self.input_manager.update(self.camera.offset, dt)
         self.graphics_engine.update(
@@ -86,5 +86,4 @@ class Engine:
             dt
         )
         self.camera.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
-
-        self.proc_gen.current_biome = self.player.current_biome
+        self.proc_gen.current_biome = self.sprite_manager.current_biome = self.player.current_biome

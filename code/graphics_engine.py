@@ -89,11 +89,15 @@ class GraphicsEngine:
         
     def render_sprites(self, dt: float) -> None:
         for sprite in sorted(self.sprite_manager.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
-            if abs(sprite.rect.centerx - self.player.rect.centerx) < (RES[0] // 2) + 100: # would be visible on-screen (+100 to avoid removing the sprite before it's completely out of view)
+            if self.visible_check(sprite): # would be visible on-screen (+100 to avoid removing the sprite before it's completely out of view)
                 self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
                 groups = self.get_sprite_groups(sprite)
                 if groups: # the sprite isn't just a member of all_sprites
                     self.render_group_action(groups, sprite, dt)
+
+    def visible_check(self, sprite) -> bool:
+        '''returns whether the sprite is within/outside the screen boundary'''
+        return abs(sprite.rect.centerx - self.player.rect.centerx) < (RES[0] // 2) + 100
 
     def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[str]:
         '''
