@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     import numpy as np
     from inventory import Inventory
     from player import Player
+    from physics_engine import PhysicsEngine
 
 import pygame as pg
 from os.path import join
@@ -25,7 +26,7 @@ class SpriteManager:
         asset_manager: AssetManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
-        collision_map: dict[tuple[int, int], pg.Rect],
+        physics_engine: PhysicsEngine,
         tree_map: list[tuple[int, int]],
         inventory: Inventory
     ):
@@ -35,7 +36,8 @@ class SpriteManager:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tree_map = tree_map
-        self.collision_map = collision_map
+        self.physics_engine = physics_engine
+        self.collision_map = self.physics_engine.collision_map
         self.inventory = inventory
         
         self.all_sprites = pg.sprite.Group()
@@ -106,13 +108,16 @@ class SpriteManager:
         images = self.graphics[self.current_biome]['trees']
         for xy in self.tree_map: 
             Tree(
-                (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
-                images[choice((0, 1))], 
-                Z_LAYERS['bg'], 
-                [self.all_sprites, self.nature_sprites, self.tree_sprites], 
-                self.tree_map, 
-                xy,
-                self.camera_offset
+                coords = (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
+                image = images[choice((0, 1))], 
+                z = Z_LAYERS['bg'],
+                camera_offset = self.camera_offset,
+                sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 
+                tree_map = self.tree_map, 
+                tree_map_coords = xy,
+                physics_engine = self.physics_engine,
+                wood_image = self.graphics['materials']['wood'],
+                wood_sprites = [self.all_sprites, self.nature_sprites]
             )
             
     def update(self, dt) -> None:

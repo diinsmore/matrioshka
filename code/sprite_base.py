@@ -9,7 +9,8 @@ class SpriteBase(pg.sprite.Sprite):
         sprite_groups: list[pg.sprite.Group]
     ):
         super().__init__(sprite_groups)
+        self.coords = coords
         self.image = image
-        self.rect = self.image.get_rect(topleft = coords)
+        self.rect = self.image.get_rect(topleft = self.coords)
         self.z = z # layer to render on
         self.sprite_groups = sprite_groups

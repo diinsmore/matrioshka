@@ -1,8 +1,13 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from physics_engine import PhysicsEngine
+
 import pygame as pg
 from random import randint, choice
 from math import sin, ceil
 
-from settings import RES, TOOLS
+from settings import RES, TOOLS, Z_LAYERS, GRAVITY
 from sprite_base import SpriteBase
 from timer import Timer
 
@@ -50,20 +55,26 @@ class Tree(SpriteBase):
         self, 
         coords: pg.Vector2,
         image: pg.Surface,
-        z: dict[str, int], 
+        z: dict[str, int],
+        camera_offset: pg.Vector2,
         sprite_groups: list[pg.sprite.Group],
         tree_map: list[tuple[int, int]],
         tree_map_coords: tuple[int, int], # the coords value before it was adjusted by the camera offset & tile size
-        camera_offset: pg.Vector2
+        # passing to the Wood class
+        physics_engine: PhysicsEngine,
+        wood_image: pg.Surface,
+        wood_sprites: list[pg.sprite.Group]
     ):
         super().__init__(coords, image, z, sprite_groups)
-        self.coords = coords
+        self.image = self.image.copy()
+        self.rect = self.image.get_rect(midbottom = self.coords) # SpriteBase uses the topleft
+        self.camera_offset = camera_offset
         self.tree_map = tree_map
         self.tree_map_coords = tree_map_coords
-        self.camera_offset = camera_offset
-        
-        self.image = self.image.copy()
-        self.rect = self.image.get_rect(midbottom = coords) # SpriteBase uses the topleft
+        self.physics_engine = physics_engine
+        self.wood_image = wood_image
+        self.wood_sprites = wood_sprites
+
         self.max_strength, self.current_strength = 50, 50
         self.alpha = 255
 
@@ -88,11 +99,42 @@ class Tree(SpriteBase):
             if self.current_strength == 0 and self.tree_map_coords in self.tree_map:
                 self.tree_map.remove(self.tree_map_coords)  
                 self.kill()
-                self.produce_wood(sprite)
                 sprite.state = 'idle'
+                self.produce_wood()
                 return
 
             self.delay_timer.start()
+    
+    def produce_wood(self) -> None:
+        for i in range(self.available_wood):
+            left = choice((self.rect.left, self.rect.right))
+            Wood(
+                coords = pg.Vector2(left, (self.rect.top + self.wood_image.height) * i),
+                image = self.wood_image,
+                z = Z_LAYERS['main'],
+                sprite_groups = self.wood_sprites,
+                direction = pg.Vector2(-1 if left == self.rect.left else 1, 1),
+                speed = randint(15, 30),
+                physics_engine = self.physics_engine
+            )
 
-    def produce_wood(self, sprite: pg.sprite.Sprite) -> None:
-        pass
+class Wood(SpriteBase):
+    def __init__(
+        self, 
+        coords: pg.Vector2,
+        image: pg.Surface,
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group],
+        direction: pg.Vector2,
+        speed: int,
+        physics_engine: PhysicsEngine
+    ):
+        super().__init__(coords, image, z, sprite_groups)
+        self.direction = direction
+        self.speed = speed
+        self.physics_engine = physics_engine
+
+        self.gravity = GRAVITY
+
+    def update(self, dt: float) -> None:
+        self.physics_engine.sprite_movement.move_sprite(self, self.direction.x, dt)

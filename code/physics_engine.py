@@ -129,7 +129,7 @@ class CollisionDetection:
             if not sprite.grounded:
                 sprite.grounded = True
 
-            if not sprite.spawned:
+            if hasattr(sprite, 'spawned') and not sprite.spawned:
                 sprite.spawned = True 
             
             if sprite.state == 'jumping':
@@ -165,12 +165,12 @@ class SpriteMovement:
         sprite.rect.x += sprite.direction.x * sprite.speed * dt
         sprite.rect.x = max(0, min(sprite.rect.x, WORLD_EDGE_RIGHT))
 
-        if sprite.state == 'idle': # avoid overwriting an active state
+        if hasattr(sprite, 'state') and sprite.state == 'idle': # avoid overwriting an active state
             sprite.state = 'walking'
     
     @staticmethod
     def update_movement_y(sprite, dt: float) -> None:
-        if not sprite.spawned: 
+        if hasattr(sprite, 'spawned') and not sprite.spawned: 
             # safeguard against a collision detection issue where the player falls through the map after being spawned
             # downward velocity is severely limited until the 1st player/tile collision is detected 
             sprite.direction.y = 10

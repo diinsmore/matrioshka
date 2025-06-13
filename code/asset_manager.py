@@ -58,8 +58,12 @@ class AssetManager:
                 if machine in {'steam engine', 'burner furnace', 'burner drill', 'electric drill', 'inserter'}: # don't have the others yet
                     self.assets['graphics'][machine] = load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
 
+    def load_material_graphics(self) -> None:
+        self.assets['graphics']['materials'] = load_folder(join('..', 'graphics', 'materials'))
+
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
         self.load_tile_graphics()
         self.load_tool_graphics()
         self.load_machine_graphics()
+        self.load_material_graphics()

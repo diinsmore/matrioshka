@@ -35,7 +35,7 @@ class Engine:
             self.asset_manager, 
             tile_map,
             tile_IDs,
-            self.physics_engine.collision_map,
+            self.physics_engine,
             self.proc_gen.tree_map,
             self.inventory
         )

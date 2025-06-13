@@ -9,6 +9,7 @@ MAP_SIZE = (2500, 200)
 BIOME_WIDTH = 500
 WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
 WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
+GRAVITY = 1200
 
 Z_LAYERS = {
     'clouds': 0,
