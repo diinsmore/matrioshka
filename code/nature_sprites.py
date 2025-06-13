@@ -109,11 +109,11 @@ class Tree(SpriteBase):
         for i in range(self.available_wood):
             left = choice((self.rect.left, self.rect.right))
             Wood(
-                coords = pg.Vector2(left, (self.rect.top + self.wood_image.height) * i),
+                coords = pg.Vector2(left, self.rect.top + (self.wood_image.height * i)),
                 image = self.wood_image,
                 z = Z_LAYERS['main'],
                 sprite_groups = self.wood_sprites,
-                direction = pg.Vector2(-1 if left == self.rect.left else 1, 1),
+                direction = pg.Vector2(-1 if left == self.rect.left else 1, 10),
                 speed = randint(15, 30),
                 physics_engine = self.physics_engine
             )
