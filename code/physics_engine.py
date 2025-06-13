@@ -144,7 +144,7 @@ class SpriteMovement:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
 
-        self.active_states = {'jumping', 'mining'} # TODO: revisit this line in case more relevant states are added
+        self.active_states = {'jumping', 'mining', 'chopping'} # TODO: revisit this line in case more relevant states are added
 
     def move_sprite(self, sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
         sprite.direction.x = 0

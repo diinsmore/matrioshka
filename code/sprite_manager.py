@@ -10,7 +10,7 @@ import pygame as pg
 from os.path import join
 from random import choice
 
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE
+from settings import TILE_SIZE, TILES, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
@@ -25,8 +25,8 @@ class SpriteManager:
         asset_manager: AssetManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
-        tree_map: list[tuple[int, int]],
         collision_map: dict[tuple[int, int], pg.Rect],
+        tree_map: list[tuple[int, int]],
         inventory: Inventory
     ):
         self.screen = screen
@@ -51,7 +51,9 @@ class SpriteManager:
         self.active_items = {} # block/tool currently held by a given sprite
          
         self.mining = Mining(self.tile_map, self.tile_IDs, self.collision_map, self.get_tool_strength, self.pick_up_item)
+
         self.crafting = Crafting(self.tile_map, self.tile_IDs, self.collision_map)
+
         self.item_placement = ItemPlacement(
             self.screen,
             self.camera_offset,
@@ -62,7 +64,15 @@ class SpriteManager:
             self.all_sprites,
             self.mech_sprites
         )
-        self.wood_harvesting = WoodHarvesting(self.tile_map, self.tile_IDs, self.tree_sprites, self.tree_map, self.camera_offset)
+
+        self.wood_gathering = WoodGathering(
+            self.tile_map, 
+            self.tile_IDs, 
+            self.tree_sprites, 
+            self.tree_map, 
+            self.camera_offset, 
+            self.get_tool_strength
+        )
         
         self.graphics = self.asset_manager.assets['graphics']
         self.current_biome = 'forest'
@@ -72,21 +82,21 @@ class SpriteManager:
     # assigned their groups until after the class is initialized
     def init_active_items(self) -> None:
         # TODO: update this for loop once a sprite group for mobs is added, unless you decide they can't hold items
-        for sprite in self.human_sprites: 
+        for sprite in self.human_sprites:
             self.active_items[sprite] = sprite.item_holding
         
     @staticmethod
     def get_tool_strength(sprite: pg.sprite.Sprite) -> int:
         if sprite.item_holding:
-            data = sprite.item_holding.split() # ['<material>', '<tool>']
-            return TOOLS[data[1]][data[0]]['strength']
+            data = sprite.item_holding.split()
+            material, tool = data[0], data[1]
+            return TOOLS[tool][material]['strength']
         return sprite.arm_strength
     
     @staticmethod
     def end_action(sprite: pg.sprite.Sprite) -> None:
         '''return a sprite to an idle state and update its graphic'''
         sprite.state = 'idle'
-        #'sprite.frame_index = 0' defaults to rendering the first frame of the old animation state
         sprite.image = sprite.frames['idle'][0] if sprite.facing_left else pg.transform.flip(sprite.frames['idle'][0], True, False)
 
     def pick_up_item(self, sprite: pg.sprite.Sprite) -> None:
@@ -101,7 +111,7 @@ class SpriteManager:
                 Z_LAYERS['bg'], 
                 [self.all_sprites, self.nature_sprites, self.tree_sprites], 
                 self.tree_map, 
-                xy, 
+                xy,
                 self.camera_offset
             )
             
@@ -143,8 +153,7 @@ class Mining:
        
     def init_tile(self, tile_coords: tuple[int, int]) -> None:
         '''initialize a new key/value pair in the mining map'''
-        tile_index = self.tile_map[tile_coords]
-        self.mining_map[tile_coords] = {'hardness': TILES[self.get_tile_name(tile_index)]['hardness'], 'hits': 0}
+        self.mining_map[tile_coords] = {'hardness': TILES[self.get_tile_name(self.tile_map[tile_coords])]['hardness'], 'hits': 0}
 
     @staticmethod
     def get_tile_name(tile_index: int) -> str:
@@ -158,11 +167,10 @@ class Mining:
         return tile_distance <= TILE_REACH_RADIUS and self.tile_map[tile_coords] != self.tile_IDs['air']
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
-    def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
-        tool_strength = self.get_tool_strength(sprite)     
+    def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:   
         data = self.mining_map[tile_coords]
         data['hits'] += 1 / FPS
-        data['hardness'] -= tool_strength * data['hits'] 
+        data['hardness'] -= self.get_tool_strength(sprite) * data['hits'] 
         
         if self.mining_map[tile_coords]['hardness'] <= 0:
             sprite.inventory.add_item(self.get_tile_name(self.tile_map[tile_coords]))
@@ -193,20 +201,22 @@ class Crafting:
         return all(inventory_contents.get(item, {}).get('amount', 0) >= amount_needed for item, amount_needed in recipe.items())
 
 
-class WoodHarvesting:
+class WoodGathering:
     def __init__(
         self, 
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         tree_sprites: pg.sprite.Group(),
         tree_map: list[tuple[int, int]],
-        camera_offset: pg.Vector2
+        camera_offset: pg.Vector2,
+        get_tool_strength: callable
     ):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tree_sprites = tree_sprites
         self.tree_map = tree_map
         self.camera_offset = camera_offset
+        self.get_tool_strength = get_tool_strength
 
     def make_cut(self, sprite: pg.sprite.Sprite) -> None:
         if isinstance(sprite, Player):
@@ -214,7 +224,8 @@ class WoodHarvesting:
                 nearby_trees = [tree for tree in self.tree_sprites if self.in_reach(sprite, tree.rect)]
                 for tree in nearby_trees:
                     if tree.rect.collidepoint(pg.mouse.get_pos() + self.camera_offset):
-                        tree.cut_down(sprite)
+                        tree.cut_down(sprite, self.get_tool_strength)
+                        break # avoid cutting multiple trees at once
         else:
             pass
 
@@ -222,4 +233,4 @@ class WoodHarvesting:
     def in_reach(sprite: pg.sprite.Sprite, tree_rect: pg.Rect) -> bool:
         px_dist = abs(sprite.rect.x - tree_rect.x)
         tile_dist = px_dist // TILE_SIZE
-        return tile_dist <= TILE_REACH_RADIUS
+        return tile_dist <= 3

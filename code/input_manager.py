@@ -179,4 +179,4 @@ class Mouse:
     def update(self, camera_offset: pg.Vector2) -> None:
         self.get_input(camera_offset)
         if self.buttons_held['left']:
-            self.sprite_manager.wood_harvesting.make_cut(self.player)
+            self.sprite_manager.wood_gathering.make_cut(self.player)

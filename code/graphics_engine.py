@@ -53,12 +53,13 @@ class GraphicsEngine:
             self.player
         )
 
-        self.mining_animation = MiningAnimation(self.screen, self.render_item_held)
+        self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
         self.weather = Weather(screen)
 
         # only render an equipped item while the sprite is in a given state
         self.item_render_states = {
             'pickaxe': {'mining', 'fighting'},
+            'axe': {'chopping', 'fighting'}
         }
 
         # self.sprite_manager.<sprite group> -> self.<sprite_group>
@@ -66,8 +67,7 @@ class GraphicsEngine:
             setattr(self, name, group)
 
     def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state not in ('idle', 'mining'):
-            self.flip_again = True
+        if sprite.state not in ('idle', 'mining', 'chopping'):
             sprite.frame_index += sprite.animation_speed[sprite.state] * dt
             if self.flip_sprite_x(sprite):
                 sprite.facing_left = not sprite.facing_left
@@ -125,8 +125,8 @@ class GraphicsEngine:
 
             if sprite.item_holding:
                 item_category = self.get_item_category(sprite)
-                if item_category and item_category in self.item_render_states:
-                    if sprite.state in self.item_render_states[item_category]:
+                if item_category:
+                    if item_category in self.item_render_states.keys() and sprite.state in self.item_render_states[item_category]:
                         image = pg.transform.flip(self.graphics[item_category][sprite.item_holding], sprite.facing_left, False)
                         image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
                         coords = sprite.rect.center - self.camera_offset + self.get_item_offset(item_category, sprite.facing_left)
@@ -144,9 +144,9 @@ class GraphicsEngine:
 
     def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> pg.Surface:
         match category:
-            case 'pickaxe':
-                if sprite.state == 'mining':
-                    image = self.mining_animation.get_pickaxe_rotation(sprite, image, dt)
+            case 'pickaxe' | 'axe':
+                if sprite.state in {'mining', 'chopping'}:
+                    image = self.tool_animation.get_rotation(sprite, image, dt)
                     return image
         return image
     
@@ -156,6 +156,8 @@ class GraphicsEngine:
         match category:
             case 'pickaxe':
                 return pg.Vector2(3 if facing_left else -3, 6) 
+            case 'axe':
+                return pg.Vector2(2 if facing_left else -2, -4)
 
     def update(
         self, 
@@ -289,14 +291,13 @@ class Terrain:
         self.render_tiles()
 
 
-class MiningAnimation:
+class ToolAnimation:
     def __init__(self, screen: pg.Surface, render_item_held: callable):
         self.screen = screen
         self.render_item_held = render_item_held
 
     @staticmethod
-    def get_pickaxe_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
+    def get_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
         sprite.rotate_timer = getattr(sprite, "rotate_timer", 0.0) + dt
-        angle = 50 * math.sin(sprite.rotate_timer * 10)
-        image = pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise
-        return image
+        angle = 45 * math.sin(sprite.rotate_timer * 10)
+        return pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise

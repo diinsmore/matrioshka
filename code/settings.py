@@ -58,7 +58,7 @@ BIOMES = {
         'elevation': {'top': 150, 'bottom': 190},
         'tile probs': {'coal': 7, 'copper': 4, 'iron': 5, 'silver': 3, 'gold': 3},
         'liquid probs': {'water': 7, 'lava': 2},
-        'tree prob': 35
+        'tree prob': 30
     },
     
     'taiga': {

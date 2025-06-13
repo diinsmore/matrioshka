@@ -1,6 +1,6 @@
 import pygame as pg
 from random import randint, choice
-from math import sin
+from math import sin, ceil
 
 from settings import RES, TOOLS
 from sprite_base import SpriteBase
@@ -54,7 +54,7 @@ class Tree(SpriteBase):
         sprite_groups: list[pg.sprite.Group],
         tree_map: list[tuple[int, int]],
         tree_map_coords: tuple[int, int], # the coords value before it was adjusted by the camera offset & tile size
-        camera_offset: pg.Vector2,
+        camera_offset: pg.Vector2
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.coords = coords
@@ -67,14 +67,17 @@ class Tree(SpriteBase):
         self.max_strength, self.current_strength = 50, 50
         self.alpha = 255
 
-        self.delay_timer = Timer(length = 1000) # prevents cut_down() from being called every frame
+        self.available_wood = ceil(self.image.height / 25)
 
-    def cut_down(self, sprite: pg.sprite.Sprite) -> None:
+        self.delay_timer = Timer(length = 500) # prevents cut_down() from being called every frame
+
+    def cut_down(self, sprite: pg.sprite.Sprite, get_tool_strength: callable) -> None:
         self.delay_timer.update()
     
         if not self.delay_timer.running:
+            sprite.state = 'chopping'
             axe_material = sprite.item_holding.split()[0]
-            tool_strength = TOOLS['axe'][axe_material]['strength']
+            tool_strength = get_tool_strength(sprite)
             self.current_strength = max(0, self.current_strength - tool_strength)
             
             rel_strength = self.max_strength // tool_strength
@@ -85,6 +88,9 @@ class Tree(SpriteBase):
             if self.current_strength == 0 and self.tree_map_coords in self.tree_map:
                 self.tree_map.remove(self.tree_map_coords)  
                 self.kill()
+                self.produce_wood(sprite)
+                sprite.state = 'idle'
+                return
 
             self.delay_timer.start()
 

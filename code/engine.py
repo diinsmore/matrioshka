@@ -10,7 +10,7 @@ from graphics_engine import GraphicsEngine
 from asset_manager import AssetManager
 from chunk_manager import ChunkManager
 from physics_engine import PhysicsEngine
-from sprite_manager import SpriteManager, WoodHarvesting
+from sprite_manager import SpriteManager
 from input_manager import InputManager
 from ui import UI
 from file_import_functions import *
@@ -35,8 +35,8 @@ class Engine:
             self.asset_manager, 
             tile_map,
             tile_IDs,
-            self.proc_gen.tree_map,
             self.physics_engine.collision_map,
+            self.proc_gen.tree_map,
             self.inventory
         )
 
