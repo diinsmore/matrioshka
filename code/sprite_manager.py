@@ -111,7 +111,12 @@ class SpriteManager:
                 return
 
     @staticmethod
-    def get_sprites_in_radius(target: pg.Rect, group: pg.sprite.Group, x_dist: int = RES[0] // 2, y_dist: int = RES[1] // 2) -> list[pg.sprite.Group]:
+    def get_sprites_in_radius(
+        target: pg.Rect, 
+        group: pg.sprite.Group, 
+        x_dist: int = (RES[0] // 2) + 100,
+        y_dist: int = (RES[1] // 2) + 100
+    ) -> list[pg.sprite.Group]:
         return [
             sprite for sprite in group if 
             abs(sprite.rect.centerx - target.centerx) < x_dist and \

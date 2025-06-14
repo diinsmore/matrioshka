@@ -88,12 +88,12 @@ class GraphicsEngine:
         return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
     def render_sprites(self, dt: float) -> None:
-        for sprite in sorted(self.sprite_manager.all_sprites, key = lambda sprite: sprite.z): # layer graphics by their z-level
-            if self.visible_check(sprite): # would be visible on-screen (+100 to avoid removing the sprite before it's completely out of view)
-                self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
-                groups = self.get_sprite_groups(sprite)
-                if groups: # the sprite isn't just a member of all_sprites
-                    self.render_group_action(groups, sprite, dt)
+        all_sprites = self.sprite_manager.all_sprites
+        for sprite in sorted(self.sprite_manager.get_sprites_in_radius(self.player.rect, all_sprites), key = lambda sprite: sprite.z):
+            self.screen.blit(sprite.image, sprite.rect.topleft - self.camera_offset)
+            groups = self.get_sprite_groups(sprite) 
+            if groups: # the sprite isn't just a member of all_sprites
+                self.render_group_action(groups, sprite, dt)
 
     def visible_check(self, sprite) -> bool:
         '''returns whether the sprite is within/outside the screen boundary'''
