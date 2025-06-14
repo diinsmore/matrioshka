@@ -126,7 +126,7 @@ class CollisionDetection:
         
         elif direction == 'down':
             sprite.rect.bottom = tile.top
-            if not sprite.grounded:
+            if hasattr(sprite, 'grounded') and not sprite.grounded:
                 sprite.grounded = True
 
             if hasattr(sprite, 'spawned') and not sprite.spawned:

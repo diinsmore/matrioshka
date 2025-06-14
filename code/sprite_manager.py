@@ -11,7 +11,7 @@ import pygame as pg
 from os.path import join
 from random import choice
 
-from settings import TILE_SIZE, TILES, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE
+from settings import TILE_SIZE, TILES, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
@@ -47,6 +47,7 @@ class SpriteManager:
         self.nature_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
         self.tree_sprites = pg.sprite.Group()
+        self.wood_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
 
@@ -73,12 +74,13 @@ class SpriteManager:
             self.tree_sprites, 
             self.tree_map, 
             self.camera_offset, 
-            self.get_tool_strength
+            self.get_tool_strength,
+            self.pick_up_item
         )
         
         self.graphics = self.asset_manager.assets['graphics']
         self.current_biome = 'forest'
-        self.render_trees()
+        self.init_trees()
 
     # not doing a list comprehension in __init__ since sprites aren't 
     # assigned their groups until after the class is initialized
@@ -101,10 +103,22 @@ class SpriteManager:
         sprite.state = 'idle'
         sprite.image = sprite.frames['idle'][0] if sprite.facing_left else pg.transform.flip(sprite.frames['idle'][0], True, False)
 
-    def pick_up_item(self, sprite: pg.sprite.Sprite) -> None:
-        pass
+    def pick_up_item(self, item: object, item_name: str, rect: pg.Rect) -> None:
+        for sprite in self.get_sprites_in_radius(rect, self.human_sprites):
+            if sprite.rect.colliderect(rect):
+                sprite.inventory.add_item(item_name)
+                item.kill()
+                return
+
+    @staticmethod
+    def get_sprites_in_radius(target: pg.Rect, group: pg.sprite.Group, x_dist: int = RES[0] // 2, y_dist: int = RES[1] // 2) -> list[pg.sprite.Group]:
+        return [
+            sprite for sprite in group if 
+            abs(sprite.rect.centerx - target.centerx) < x_dist and \
+            abs(sprite.rect.centery - target.centery) < y_dist
+        ]
     
-    def render_trees(self) -> None:
+    def init_trees(self) -> None:
         images = self.graphics[self.current_biome]['trees']
         for xy in self.tree_map: 
             Tree(
@@ -117,7 +131,7 @@ class SpriteManager:
                 tree_map_coords = xy,
                 physics_engine = self.physics_engine,
                 wood_image = self.graphics['materials']['wood'],
-                wood_sprites = [self.all_sprites, self.nature_sprites]
+                wood_sprites = [self.all_sprites, self.nature_sprites, self.wood_sprites]
             )
             
     def update(self, dt) -> None:
@@ -214,7 +228,8 @@ class WoodGathering:
         tree_sprites: pg.sprite.Group(),
         tree_map: list[tuple[int, int]],
         camera_offset: pg.Vector2,
-        get_tool_strength: callable
+        get_tool_strength: callable,
+        pick_up_item: callable
     ):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
@@ -222,6 +237,7 @@ class WoodGathering:
         self.tree_map = tree_map
         self.camera_offset = camera_offset
         self.get_tool_strength = get_tool_strength
+        self.pick_up_item = pick_up_item
 
     def make_cut(self, sprite: pg.sprite.Sprite) -> None:
         if isinstance(sprite, Player):
@@ -229,7 +245,7 @@ class WoodGathering:
                 nearby_trees = [tree for tree in self.tree_sprites if self.in_reach(sprite, tree.rect)]
                 for tree in nearby_trees:
                     if tree.rect.collidepoint(pg.mouse.get_pos() + self.camera_offset):
-                        tree.cut_down(sprite, self.get_tool_strength)
+                        tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
                         break # avoid cutting multiple trees at once
         else:
             pass

@@ -7,7 +7,7 @@ class Inventory:
         self.num_slots = 50
         self.slot_capacity = defaultdict(lambda: 999)
         self.set_slot_capacity()
-        self.contents = {'stone': {'amount': 1000, 'index': 0}, 'wood': {'amount': 1000, 'index': 1}, 'torch': {'amount': 1000, 'index': 2}} # values are just for testing the crafting system
+        self.contents = {'stone': {'amount': 100, 'index': 0}, 'wood': {'amount': 100, 'index': 1}, 'torch': {'amount': 100, 'index': 2}} # values are just for testing the crafting system
         
     def add_item(self, item: str) -> None:
         if item not in self.contents.keys():

@@ -82,7 +82,7 @@ class Tree(SpriteBase):
 
         self.delay_timer = Timer(length = 500) # prevents cut_down() from being called every frame
 
-    def cut_down(self, sprite: pg.sprite.Sprite, get_tool_strength: callable) -> None:
+    def cut_down(self, sprite: pg.sprite.Sprite, get_tool_strength: callable, pick_up_item: callable) -> None:
         self.delay_timer.update()
     
         if not self.delay_timer.running:
@@ -100,22 +100,23 @@ class Tree(SpriteBase):
                 self.tree_map.remove(self.tree_map_coords)  
                 self.kill()
                 sprite.state = 'idle'
-                self.produce_wood()
+                self.produce_wood(sprite, pick_up_item)
                 return
 
             self.delay_timer.start()
     
-    def produce_wood(self) -> None:
+    def produce_wood(self, sprite: pg.sprite.Sprite, pick_up_item: callable) -> None:
         for i in range(self.available_wood):
-            left = choice((self.rect.left, self.rect.right))
-            Wood(
+            left = choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50)))
+            wood = Wood(
                 coords = pg.Vector2(left, self.rect.top + (self.wood_image.height * i)),
                 image = self.wood_image,
                 z = Z_LAYERS['main'],
                 sprite_groups = self.wood_sprites,
-                direction = pg.Vector2(-1 if left == self.rect.left else 1, 10),
+                direction = pg.Vector2(-1 if left == self.rect.left else 1, 1),
                 speed = randint(15, 30),
-                physics_engine = self.physics_engine
+                physics_engine = self.physics_engine,
+                pick_up_item = pick_up_item
             )
 
 class Wood(SpriteBase):
@@ -127,14 +128,20 @@ class Wood(SpriteBase):
         sprite_groups: list[pg.sprite.Group],
         direction: pg.Vector2,
         speed: int,
-        physics_engine: PhysicsEngine
+        physics_engine: PhysicsEngine,
+        pick_up_item: callable
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.direction = direction
         self.speed = speed
         self.physics_engine = physics_engine
+        self.pick_up_item = pick_up_item
 
         self.gravity = GRAVITY
 
     def update(self, dt: float) -> None:
         self.physics_engine.sprite_movement.move_sprite(self, self.direction.x, dt)
+        if self.direction.x and int(self.direction.y) == 0:
+            self.direction.x = 0
+        
+        self.pick_up_item(self, 'wood', self.rect)
