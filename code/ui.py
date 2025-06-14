@@ -125,18 +125,22 @@ class UI:
         self.item_name_data.append({
             'name': item_name, 
             'color': color,
+            'alpha': 255,
             'font': self.assets['fonts']['item label'].render(item_name, True, color),
             'coords': item_rect.midtop - self.camera_offset,
             'timer': timer
         })
 
     def update_item_name_data(self) -> None:
-        for data in self.item_name_data:
+        for index, data in enumerate(self.item_name_data):
             data['timer'].update()
+            
             if data['timer'].running: 
-                data['coords'][1] -= 2 # move north across the screen
+                data['coords'][1] -= (index + 2) // 2 # move north across the screen
+                data['alpha'] = max(0, data['alpha'] - 2)
+                data['font'].set_alpha(data['alpha'])
                 self.screen.blit(data['font'], data['font'].get_rect(midbottom = data['coords']))
-        
+
         self.item_name_data = [data for data in self.item_name_data if data['timer'].running]
 
     def get_scaled_image(self, image: pg.Surface, item_name: str, width: int, height: int, padding: int = 0) -> pg.Surface:
