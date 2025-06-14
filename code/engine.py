@@ -58,7 +58,8 @@ class Engine:
         )
 
         self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory, self.sprite_manager, self.player)
-        
+        self.sprite_manager.ui = self.ui
+
         self.input_manager = InputManager(self.physics_engine, self.sprite_manager, self.ui, self.player)
 
         self.chunk_manager = ChunkManager(self.camera.offset)

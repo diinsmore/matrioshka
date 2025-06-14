@@ -41,14 +41,14 @@ class SpriteManager:
         self.inventory = inventory
         
         self.all_sprites = pg.sprite.Group()
+        self.animated_sprites = pg.sprite.Group()
         self.player_sprite = pg.sprite.GroupSingle()
         self.human_sprites = pg.sprite.Group()
         self.mech_sprites = pg.sprite.Group()
         self.nature_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
         self.tree_sprites = pg.sprite.Group()
-        self.wood_sprites = pg.sprite.Group()
-        self.animated_sprites = pg.sprite.Group()
+        self.item_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
 
         self.active_items = {} # block/tool currently held by a given sprite
@@ -78,6 +78,7 @@ class SpriteManager:
             self.pick_up_item
         )
         
+        self.ui = None # passed in engine.py after the UI class is initialized
         self.graphics = self.asset_manager.assets['graphics']
         self.current_biome = 'forest'
         self.init_trees()
@@ -103,10 +104,11 @@ class SpriteManager:
         sprite.state = 'idle'
         sprite.image = sprite.frames['idle'][0] if sprite.facing_left else pg.transform.flip(sprite.frames['idle'][0], True, False)
 
-    def pick_up_item(self, item: object, item_name: str, rect: pg.Rect) -> None:
-        for sprite in self.get_sprites_in_radius(rect, self.human_sprites):
-            if sprite.rect.colliderect(rect):
+    def pick_up_item(self, item: object, item_name: str, item_rect: pg.Rect) -> None:
+        for sprite in self.get_sprites_in_radius(item_rect, self.human_sprites):
+            if sprite.rect.colliderect(item_rect):
                 sprite.inventory.add_item(item_name)
+                self.ui.render_new_item_name(item_name, item_rect)
                 item.kill()
                 return
 
@@ -136,7 +138,7 @@ class SpriteManager:
                 tree_map_coords = xy,
                 physics_engine = self.physics_engine,
                 wood_image = self.graphics['materials']['wood'],
-                wood_sprites = [self.all_sprites, self.nature_sprites, self.wood_sprites]
+                wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
             )
             
     def update(self, dt) -> None:

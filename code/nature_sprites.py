@@ -10,6 +10,7 @@ from math import sin, ceil
 from settings import RES, TOOLS, Z_LAYERS, GRAVITY
 from sprite_base import SpriteBase
 from timer import Timer
+from ui import UI
 
 class Cloud(SpriteBase):
     def __init__(
@@ -78,7 +79,7 @@ class Tree(SpriteBase):
         self.max_strength, self.current_strength = 50, 50
         self.alpha = 255
 
-        self.available_wood = ceil(self.image.height / 25)
+        self.total_wood = ceil(self.image.height / 25)
 
         self.delay_timer = Timer(length = 500) # prevents cut_down() from being called every frame
 
@@ -106,7 +107,7 @@ class Tree(SpriteBase):
             self.delay_timer.start()
     
     def produce_wood(self, sprite: pg.sprite.Sprite, pick_up_item: callable) -> None:
-        for i in range(self.available_wood):
+        for i in range(self.total_wood):
             left = choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50)))
             wood = Wood(
                 coords = pg.Vector2(left, self.rect.top + (self.wood_image.height * i)),

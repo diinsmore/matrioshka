@@ -22,7 +22,7 @@ class CraftWindow:
         height: int,
         make_outline: callable,
         make_transparent_bg: callable,
-        render_item_name: callable,
+        render_inventory_item_name: callable,
         get_scaled_image: callable
     ):
         self.screen = screen
@@ -34,7 +34,7 @@ class CraftWindow:
         self.height = height
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
-        self.render_item_name = render_item_name
+        self.render_inventory_item_name = render_inventory_item_name
         self.get_scaled_image = get_scaled_image
 
         self.graphics = self.assets['graphics']
@@ -73,7 +73,7 @@ class CraftWindow:
             self.sprite_manager,
             self.player,
             self.make_outline, 
-            self.render_item_name,
+            self.render_inventory_item_name,
             self.get_scaled_image
         )
 

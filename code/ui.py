@@ -10,6 +10,7 @@ import pygame as pg
 from settings import TILE_SIZE, RES
 from craft_window import CraftWindow
 from inventory_ui import InventoryUI
+from timer import Timer
 
 class UI:
     def __init__(
@@ -42,7 +43,7 @@ class UI:
             self.sprite_manager,
             self.make_outline,
             self.make_transparent_bg,
-            self.render_item_name,
+            self.render_inventory_item_name,
             self.get_scaled_image
         )
 
@@ -56,7 +57,7 @@ class UI:
             self.get_craft_window_height(),
             self.make_outline,
             self.make_transparent_bg,
-            self.render_item_name,
+            self.render_inventory_item_name,
             self.get_scaled_image
         )
 
@@ -67,6 +68,8 @@ class UI:
             self.make_outline, 
             self.make_transparent_bg
         )
+
+        self.item_name_data = [] # stores the name/coordinates/timer
 
     def get_craft_window_height(self) -> int:
         inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
@@ -103,18 +106,38 @@ class UI:
         color: str|tuple[int, int, int] = 'black', 
         alpha: int = 100
     ) -> None:
-
         bg_image = pg.Surface(rect.size)
         bg_image.fill(color)
         bg_image.set_alpha(alpha)
         bg_rect = bg_image.get_rect(topleft = rect.topleft)
         self.screen.blit(bg_image, bg_rect)
 
-    def render_item_name(self, rect: pg.Rect, name: str) -> None:
+    def render_inventory_item_name(self, rect: pg.Rect, name: str) -> None:
         if rect.collidepoint(pg.mouse.get_pos()):
             font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
-            font_rect = font.get_rect(topleft = rect.bottomright)
-            self.screen.blit(font, font_rect)
+            self.screen.blit(font, font.get_rect(topleft = rect.bottomleft))
+
+    def render_new_item_name(self, item_name: str, item_rect: pg.Rect) -> None:
+        '''render the name of the item that was just picked up'''
+        timer = Timer(length = 2000)
+        timer.start()
+        color = self.assets['colors']['text']
+        self.item_name_data.append({
+            'name': item_name, 
+            'color': color,
+            'font': self.assets['fonts']['item label'].render(item_name, True, color),
+            'coords': item_rect.midtop - self.camera_offset,
+            'timer': timer
+        })
+
+    def update_item_name_data(self) -> None:
+        for data in self.item_name_data:
+            data['timer'].update()
+            if data['timer'].running: 
+                data['coords'][1] -= 2 # move north across the screen
+                self.screen.blit(data['font'], data['font'].get_rect(midbottom = data['coords']))
+        
+        self.item_name_data = [data for data in self.item_name_data if data['timer'].running]
 
     def get_scaled_image(self, image: pg.Surface, item_name: str, width: int, height: int, padding: int = 0) -> pg.Surface:
         '''returns an image scaled to a given size while accounting for its aspect ratio'''
@@ -123,18 +146,13 @@ class UI:
         scale = (min(bounding_box[0], image.width * aspect_ratio), min(bounding_box[1], image.height * aspect_ratio))
         return pg.transform.scale(self.assets['graphics'][item_name], scale)
 
-    def update(
-        self, 
-        mouse_coords: 
-        tuple[int, int], 
-        mouse_moving: bool, 
-        click_states: dict[str, dict[str, bool]],
-    ) -> None:
+    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, click_states: dict[str, dict[str, bool]]) -> None:
         self.mouse_grid.update(mouse_coords, mouse_moving, click_states)
         self.HUD.update()
         self.mini_map.update()
         self.craft_window.update(mouse_coords, click_states['left']) # keep above the inventory ui otherwise item names may be rendered behind the window
         self.inventory_ui.update(click_states, mouse_coords)
+        self.update_item_name_data()
         
 
 class MouseGrid:

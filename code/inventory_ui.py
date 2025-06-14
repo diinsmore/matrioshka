@@ -21,7 +21,7 @@ class InventoryUI:
         sprite_manager: SpriteManager,
         make_outline: callable,
         make_transparent_bg: callable,
-        render_item_name: callable,
+        render_inventory_item_name: callable,
         get_scaled_image: callable
     ):
         self.inventory = inventory
@@ -34,7 +34,7 @@ class InventoryUI:
         self.top = top + self.padding
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
-        self.render_item_name = render_item_name
+        self.render_inventory_item_name = render_inventory_item_name
         self.get_scaled_image = get_scaled_image
 
         self.graphics = self.assets['graphics']
@@ -95,7 +95,7 @@ class InventoryUI:
                 self.screen.blit(icon_image, icon_rect)
 
                 self.render_item_amount(item_data['amount'], (blit_x, blit_y))
-                self.render_item_name(icon_rect, item_name)
+                self.render_inventory_item_name(icon_rect, item_name)
             except KeyError:
                 pass
 
