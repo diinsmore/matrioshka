@@ -128,13 +128,11 @@ class CategoryGrid:
 
         self.selected_category = None
         self.open_subcategory = False
-
-        self.category_keys = list(self.categories.keys()) # just here to avoid calling .keys() every time they need to be referenced
+        self.category_keys = list(self.categories.keys())
         self.num_categories = len(self.category_keys)
 
         self.num_cols = 2
         self.num_rows = self.num_categories // self.num_cols
-
         self.col_width = self.window_outline.width // self.num_cols
         self.row_height = (self.window_outline.height // 2) // self.num_rows
 
@@ -169,7 +167,7 @@ class CategoryGrid:
 
     def render_category_images(self, category: str, col: int, row: int) -> None:
         '''render a graphic relating to a given crafting category'''
-        image = self.get_category_image(category)
+        image = self.graphics['icons'][category].copy()
         if category != self.selected_category:
             image.set_alpha(150)
         
@@ -195,33 +193,6 @@ class CategoryGrid:
         self.make_outline(border, color = 'black')
         text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
         self.screen.blit(text, text_rect)
-
-    def get_category_image(self, category: str) -> pg.Surface:
-        scale = 0.8
-        match category:
-            case 'tools':
-                image = self.graphics['pickaxe']['stone pickaxe']
-                scale = 1.2
-
-            case 'materials':
-                image = self.graphics['minerals']['bars']['iron bar']
-                scale = 1.3
-                
-            case 'machines':
-                image = self.graphics['steam engine']
-
-            case 'research':
-                image = self.graphics['research']['lab']
-
-            case 'decor':
-                image = self.graphics['decor']['paintings']['creation']
-
-            case 'storage':
-                image = self.graphics['storage']['wood chest']
-                scale = 1.2
-
-        image = pg.transform.scale(image, (image.width * scale, image.height * scale))
-        return image
 
     def select_category(self, mouse_coords: tuple[int, int], left_click: bool) -> None:
         if self.opened:

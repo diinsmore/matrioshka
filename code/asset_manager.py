@@ -61,9 +61,13 @@ class AssetManager:
     def load_material_graphics(self) -> None:
         self.assets['graphics']['materials'] = load_folder(join('..', 'graphics', 'materials'))
 
+    def load_icon_graphics(self) -> None:
+        self.assets['graphics']['icons'] = load_folder(join('..', 'graphics', 'ui', 'icons'))
+
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
         self.load_tile_graphics()
         self.load_tool_graphics()
         self.load_machine_graphics()
         self.load_material_graphics()
+        self.load_icon_graphics()
