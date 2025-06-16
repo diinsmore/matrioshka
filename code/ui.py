@@ -69,7 +69,7 @@ class UI:
             self.make_transparent_bg
         )
 
-        self.item_name_data = [] # stores the name/coordinates/timer
+        self.active_item_names = []
 
     def get_craft_window_height(self) -> int:
         inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
@@ -119,29 +119,27 @@ class UI:
 
     def render_new_item_name(self, item_name: str, item_rect: pg.Rect) -> None:
         '''render the name of the item that was just picked up'''
-        timer = Timer(length = 2000)
-        timer.start()
         color = self.assets['colors']['text']
-        self.item_name_data.append({
-            'name': item_name, 
-            'color': color,
-            'alpha': 255,
-            'font': self.assets['fonts']['item label'].render(item_name, True, color),
-            'coords': item_rect.midtop - self.camera_offset,
-            'timer': timer
-        })
+        item_total = self.inventory.contents[item_name]['amount']
+        world_coords = pg.Vector2(item_rect.midtop)
+        self.active_item_names.append(
+            ItemName(
+                name = item_name,
+                color = color,
+                alpha = 255,
+                font = self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
+                screen = self.screen,
+                camera_offset = self.camera_offset,
+                world_coords = world_coords,
+                timer = Timer(length = 2000)
+            )
+        )
 
     def update_item_name_data(self) -> None:
-        for index, data in enumerate(self.item_name_data):
-            data['timer'].update()
-            
-            if data['timer'].running: 
-                data['coords'][1] -= (index + 2) // 2 # move north across the screen
-                data['alpha'] = max(0, data['alpha'] - 2)
-                data['font'].set_alpha(data['alpha'])
-                self.screen.blit(data['font'], data['font'].get_rect(midbottom = data['coords']))
-
-        self.item_name_data = [data for data in self.item_name_data if data['timer'].running]
+        for index, cls in enumerate(self.active_item_names):
+            cls.update(index)
+        
+        self.active_item_names = [cls for cls in self.active_item_names if cls.timer.running]
 
     def get_scaled_image(self, image: pg.Surface, item_name: str, width: int, height: int, padding: int = 0) -> pg.Surface:
         '''returns an image scaled to a given size while accounting for its aspect ratio'''
@@ -264,3 +262,39 @@ class HUD:
     def update(self) -> None:
         if self.render:
             self.render_bg()
+
+
+class ItemName:
+    def __init__(
+        self, 
+        name: str, 
+        color: str, 
+        alpha: int,
+        font: pg.Font, 
+        screen: pg.Surface,
+        camera_offset: pg.Vector2,
+        world_coords: tuple[int, int],
+        screen_coords: pg.Vector2,
+        timer: Timer
+    ):
+        self.name = name
+        self.color = color
+        self.alpha = alpha
+        self.font = font
+        self.screen = screen
+        self.camera_offset = camera_offset
+        self.world_coords = world_coords
+        self.timer = timer
+
+    def update(self, index: int) -> None:
+        if not self.timer.running:
+            self.timer.start()
+            return
+            
+        self.timer.update()    
+        
+        self.alpha = max(0, self.alpha - 2)
+        self.font.set_alpha(self.alpha)
+        screen_coords = self.world_coords - self.camera_offset
+        self.screen.blit(self.font, self.font.get_rect(midbottom = screen_coords))
+        self.world_coords[1] -= index + 1 # move north across the screen
