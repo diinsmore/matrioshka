@@ -274,7 +274,6 @@ class ItemName:
         screen: pg.Surface,
         camera_offset: pg.Vector2,
         world_coords: tuple[int, int],
-        screen_coords: pg.Vector2,
         timer: Timer
     ):
         self.name = name
