@@ -4,7 +4,8 @@ if TYPE_CHECKING:
     import numpy as np
     
 import pygame as pg
-import math
+from math import ceil
+from collections import defaultdict
 
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
@@ -23,7 +24,7 @@ class CollisionMap:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
 
-        self.map = {}
+        self.map = defaultdict(list)
         self.generate_map()
 
     def generate_map(self) -> None:
@@ -32,9 +33,6 @@ class CollisionMap:
             for y in range(MAP_SIZE[1]):
                 if self.tile_map[x, y] != self.tile_IDs['air']: 
                     cell_coords = (x // CELL_SIZE, y // CELL_SIZE)
-                    if cell_coords not in self.map:
-                        self.map[cell_coords] = []  
-                    # store the rects that comprise the current cell
                     self.map[cell_coords].append(pg.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
     def search_map(self, sprite: pg.sprite.Sprite) -> list[pg.Rect]:
@@ -69,14 +67,11 @@ class CollisionMap:
                 self.map[cell_coords].append(rect)
             
             elif remove_tile and rect in self.map[cell_coords]:
-                self.remove_tile(rect, tile_coords, cell_coords)
-                
-    def remove_tile(self, rect: pg.Rect, tile_coords: tuple[int, int], cell_coords: tuple[int, int]) -> None:
-        # sprites could occasionally pass through tiles whose graphic was still being rendered
-        # removing the associated rectangle only after the tile ID update is confirmed appears to fix the issue
-        if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air']:
-            self.map[cell_coords].remove(rect)
-
+                # sprites could occasionally pass through tiles whose graphic was still being rendered
+                # removing the associated rectangle only after the tile ID update is confirmed appears to fix the issue
+                if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air']:
+                    self.map[cell_coords].remove(rect)
+        
 
 class CollisionDetection:
     def __init__(self, collision_map: CollisionMap):
@@ -85,7 +80,7 @@ class CollisionDetection:
     def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str, step_over_tile: callable) -> None:
         '''adjust movement/positioning upon detecting a tile collision'''
         tiles_near = self.collision_map.search_map(sprite)
-        if not tiles_near or (sprite.rect.collidelist(tiles_near) == -1 and int(sprite.direction.y) > 65): # surrounded by air/no tile below 
+        if not tiles_near: # surrounded by air/no tile below 
             sprite.grounded = False
             sprite.state = 'jumping' # the jumping graphic applies to both jumping/falling
             return
@@ -93,13 +88,10 @@ class CollisionDetection:
         for tile in tiles_near:
             if sprite.rect.colliderect(tile):
                 if axis == 'x' and sprite.direction.x:
-                    direction = 'right' if sprite.direction.x > 0 else 'left'
-                    self.tile_collision_x(sprite, tile, direction, step_over_tile)
+                    self.tile_collision_x(sprite, tile, 'right' if sprite.direction.x > 0 else 'left', step_over_tile)
 
                 elif axis == 'y' and sprite.direction.y:
-                    if sprite.direction.y > 0:
-                        direction = 'up' if sprite.direction.y < 0 else 'down'
-                        self.tile_collision_y(sprite, tile, direction)
+                    self.tile_collision_y(sprite, tile, 'up' if sprite.direction.y < 0 else 'down')
         
     @staticmethod
     def tile_collision_x(sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str, step_over_tile: callable) -> None:
@@ -113,7 +105,7 @@ class CollisionDetection:
         else:
             if sprite.grounded: # prevents some glitchy movement from landing on the side of a tile
                 if direction == 'right':
-                    sprite.rect.bottomright = tile.topleft - pg.Vector2(0, 1) # subtracting 1 from the y-axis seems to give slightly more fluid movement 
+                    sprite.rect.bottomright = tile.topleft
                 else:
                     sprite.rect.bottomleft = tile.topright
 
@@ -128,9 +120,6 @@ class CollisionDetection:
             sprite.rect.bottom = tile.top
             if hasattr(sprite, 'grounded') and not sprite.grounded:
                 sprite.grounded = True
-
-            if hasattr(sprite, 'spawned') and not sprite.spawned:
-                sprite.spawned = True 
             
             if sprite.state == 'jumping':
                 sprite.state = 'idle'
@@ -147,16 +136,16 @@ class SpriteMovement:
         self.active_states = {'jumping', 'mining', 'chopping'} # TODO: revisit this line in case more relevant states are added
 
     def move_sprite(self, sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
-        sprite.direction.x = 0
         if direction_x:
             self.update_movement_x(sprite, direction_x, dt)  
         else:
+            sprite.direction.x = 0
             if sprite.state not in self.active_states:
                 sprite.state = 'idle'
                 sprite.frame_index = 0
         
         self.collision_detection.tile_collision_update(sprite, 'x', self.step_over_tile)
-        self.update_movement_y(sprite, dt)
+        self.update_movement_y(sprite, dt) # always called since it handles gravity
         self.collision_detection.tile_collision_update(sprite, 'y', self.step_over_tile)
 
     @staticmethod
@@ -170,23 +159,18 @@ class SpriteMovement:
     
     @staticmethod
     def update_movement_y(sprite, dt: float) -> None:
-        if hasattr(sprite, 'spawned') and not sprite.spawned: 
-            # safeguard against a collision detection issue where the player falls through the map after being spawned
-            # downward velocity is severely limited until the 1st player/tile collision is detected 
-            sprite.direction.y = 10
-
         # getting the average of the downward velocity
-        sprite.direction.y += (sprite.gravity / 2 * dt)
+        sprite.direction.y += (sprite.gravity // 2) * dt
         sprite.rect.y += sprite.direction.y * dt
-        sprite.direction.y += (sprite.gravity / 2) * dt
-      
+        sprite.direction.y += (sprite.gravity // 2) * dt
+
         sprite.rect.y = min(sprite.rect.y, WORLD_EDGE_BOTTOM) # don't add a top limit until the space biome borders are set, if any
         
     def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
         '''determine if the sprite can step over the colliding tile'''
         if sprite.direction.y <= 0:
             above_tiles = []
-            for i in range(1, math.ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
+            for i in range(1, ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
                 above_tiles.append(self.tile_map[tile_x, tile_y - i])
             above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2]) # also check if the tile above the player's head is air
             return all(tile_id == self.tile_IDs['air'] for tile_id in above_tiles)

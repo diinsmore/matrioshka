@@ -32,9 +32,11 @@ class ItemPlacement:
 
     def place_item(self, player: Player, image: pg.Surface, tile_coords: tuple[int, int]) -> None:
         if image.get_size() == (TILE_SIZE, TILE_SIZE):
-            self.place_single_tile_object(tile_coords, player) 
+            self.place_single_tile_object(tile_coords, player)
+            self.collision_map.update_map(tile_coords, add_tile = True)
         else:
             self.place_multiple_tile_object(tile_coords, image, player)
+        
 
     def place_single_tile_object(self, tile_coords: tuple[int, int], player: Player) -> None:
         if self.valid_placement(tile_coords, player):
@@ -49,8 +51,10 @@ class ItemPlacement:
         if self.valid_placement(tile_coords_list, player):
             image_topleft = tile_coords_list[0]
             self.tile_map[image_topleft] = self.get_tile_id(player.item_holding) # only store the topleft to prevent rendering multiple images
+            self.collision_map.update_map(image_topleft, add_tile = True)
             for coord in tile_coords_list[1:]: 
                 self.tile_map[coord] = self.tile_IDs['obj extended'] # update the remaining tiles covered with a separate ID to be ignored by the renderer
+                self.collision_map.update_map(coord, add_tile = True)
 
             if player.item_holding in mech_sprite_dict.keys():
                 world_space_coords = pg.Vector2(image_topleft) * TILE_SIZE

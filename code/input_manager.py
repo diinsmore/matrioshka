@@ -77,8 +77,7 @@ class Keyboard:
         '''
         keys = pg.key.get_pressed()
 
-        direction_x = self.get_direction_x(keys)
-        self.physics_engine.sprite_movement.move_sprite(self.player, direction_x, dt)
+        self.physics_engine.sprite_movement.move_sprite(self.player, self.get_direction_x(keys), dt)
 
         if keys[pg.K_s]:
             self.sprite_manager.mining.start(self.player, self.tile_coords)
@@ -111,13 +110,7 @@ class Keyboard:
 
     @staticmethod
     def get_direction_x(keys: list[bool]) -> int:
-        direction = {'left': False, 'right': False}
-        if keys[pg.K_a]: 
-            direction['left'] = True
-
-        if keys[pg.K_d]: 
-            direction['right'] = True
-
+        direction = {'left': keys[pg.K_a], 'right': keys[pg.K_d]}
         return direction['right'] - direction['left']
 
     def update(self, updated_tile_coords: tuple[int, int], dt: float) -> None:
