@@ -9,13 +9,13 @@ if TYPE_CHECKING:
 
 import pygame as pg
 from os.path import join
-from random import choice
+from random import choice, randint
 
 from settings import TILE_SIZE, TILES, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
-from nature_sprites import Tree
+from nature_sprites import Tree, Cloud
 from item_placement import ItemPlacement
 
 class SpriteManager:
@@ -50,6 +50,8 @@ class SpriteManager:
         self.tree_sprites = pg.sprite.Group()
         self.item_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
+
+        self.player = None # not initialized until after the sprite manager
 
         self.active_items = {} # block/tool currently held by a given sprite
          
@@ -140,10 +142,26 @@ class SpriteManager:
                 wood_image = self.graphics['materials']['wood'],
                 wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
             )
+
+    def init_clouds(self) -> None:
+        if not self.cloud_sprites:
+            x, y = self.player.rect.midtop
+            image_folder = self.graphics['clouds']
+            for cloud in range(randint(10, 15)):
+                Cloud(
+                    coords = pg.Vector2(x, y) + pg.Vector2(randint(1000, 2000), randint(-2000, -1500)),
+                    image = image_folder[randint(0, len(image_folder) - 1)],
+                    z = Z_LAYERS['clouds'],
+                    sprite_groups = [self.all_sprites, self.nature_sprites, self.cloud_sprites],
+                    speed = randint(1, 3),
+                    player = self.player
+                )
             
     def update(self, dt) -> None:
         for sprite in self.all_sprites:
             sprite.update(dt)
+
+        self.init_clouds()
 
 
 class Mining:

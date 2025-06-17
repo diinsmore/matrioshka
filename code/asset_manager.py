@@ -8,11 +8,13 @@ class AssetManager:
         self.assets = {
             'graphics': {
                 'clouds': load_folder(join('..', 'graphics', 'weather', 'clouds')),
-                'minerals': load_subfolders(join('..', 'graphics', 'minerals')),
-                'decor': load_subfolders(join('..', 'graphics', 'decor')),
+                'materials': load_folder(join('..', 'graphics', 'materials')),
+                'icons': load_folder(join('..', 'graphics', 'ui', 'icons')),
                 'research': load_folder(join('..', 'graphics', 'research')),
                 'storage': load_folder(join('..', 'graphics', 'storage')),
-                'consumables': load_subfolders(join('..', 'graphics', 'consumables'))
+                'consumables': load_subfolders(join('..', 'graphics', 'consumables')),
+                'minerals': load_subfolders(join('..', 'graphics', 'minerals')),
+                'decor': load_subfolders(join('..', 'graphics', 'decor'))
             },
         
             'fonts': {
@@ -58,16 +60,8 @@ class AssetManager:
                 if machine in {'steam engine', 'burner furnace', 'burner drill', 'electric drill', 'inserter'}: # don't have the others yet
                     self.assets['graphics'][machine] = load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
 
-    def load_material_graphics(self) -> None:
-        self.assets['graphics']['materials'] = load_folder(join('..', 'graphics', 'materials'))
-
-    def load_icon_graphics(self) -> None:
-        self.assets['graphics']['icons'] = load_folder(join('..', 'graphics', 'ui', 'icons'))
-
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
         self.load_tile_graphics()
         self.load_tool_graphics()
         self.load_machine_graphics()
-        self.load_material_graphics()
-        self.load_icon_graphics()

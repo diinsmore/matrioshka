@@ -174,6 +174,7 @@ class GraphicsEngine:
         self.render_sprites(dt)
         
         self.ui.update(mouse_coords, mouse_moving, click_states)
+        self.camera.update(target_coords = pg.Vector2(self.player.rect.center))
 
 
 class Terrain:
@@ -197,6 +198,7 @@ class Terrain:
         
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
+        self.tile_name_ID_map = {v: k for k, v in self.tile_IDs.items() if k != 'air'}
 
     def render_bg_images(self, bg_type: str) -> None:
         '''render the current biome's landscape & underground graphics''' 
@@ -220,10 +222,7 @@ class Terrain:
                     self.screen.blit(image, (left, top) - self.camera_offset)
 
     def get_tile_type(self, x: int, y: int) -> str:
-        for tile in self.tile_IDs.keys():
-            if self.tile_IDs[tile] == self.tile_map[x, y]:
-                return tile
-        return 'obj extended'
+        return self.tile_name_ID_map.get(self.tile_map[x, y], 'obj extended')
 
     def get_terrain_type(self) -> str:
         '''just for getting a specific wall variant but could become more modular'''
@@ -266,6 +265,7 @@ class Terrain:
                         continue 
                     elif tile == 'tree base':
                         tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
+        
                     image = self.graphics[tile] if (x, y) not in self.mining_map.keys() else self.get_mined_tile_image(x, y)
                     self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
     
@@ -275,7 +275,7 @@ class Terrain:
             return pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)
         
         tile_size_offset = pg.Vector2(image_size[0] % TILE_SIZE, image_size[1] % TILE_SIZE) // 2
-        return pg.Vector2((x * TILE_SIZE) + tile_size_offset[0], (y * TILE_SIZE) + tile_size_offset[0])
+        return (pg.Vector2(x, y) * TILE_SIZE) + tile_size_offset
 
     def get_mined_tile_image(self, x: int, y: int) -> None:
         '''reduce the opacity of a given tile as it's mined away'''

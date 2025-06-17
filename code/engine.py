@@ -56,6 +56,7 @@ class Engine:
             physics_engine = self.physics_engine,
             inventory = self.inventory
         )
+        self.sprite_manager.player = self.player
 
         self.ui = UI(screen, self.camera.offset, self.asset_manager.assets, self.inventory, self.sprite_manager, self.player)
         self.sprite_manager.ui = self.ui
@@ -75,7 +76,7 @@ class Engine:
             self.input_manager,
             self.player
         )
-        # making an instance here since the sprite manager currently can't take parameters from the graphics engine
+    
         self.sprite_manager.init_active_items() # keep this line below the sprite instances
 
     def update(self, dt: float) -> None:

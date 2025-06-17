@@ -167,7 +167,7 @@ class CategoryGrid:
 
     def render_category_images(self, category: str, col: int, row: int) -> None:
         '''render a graphic relating to a given crafting category'''
-        image = self.graphics['icons'][category].copy()
+        image = self.graphics['icons'][category].copy() # updating the alpha when clicked only works with a copy
         if category != self.selected_category:
             image.set_alpha(150)
         
