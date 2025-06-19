@@ -80,7 +80,7 @@ class CollisionDetection:
     def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str, step_over_tile: callable) -> None:
         '''adjust movement/positioning upon detecting a tile collision'''
         tiles_near = self.collision_map.search_map(sprite)
-        if not tiles_near: # surrounded by air/no tile below 
+        if not tiles_near: # surrounded by air
             sprite.grounded = False
             sprite.state = 'jumping' # the jumping graphic applies to both jumping/falling
             return
@@ -121,7 +121,7 @@ class CollisionDetection:
             if hasattr(sprite, 'grounded') and not sprite.grounded:
                 sprite.grounded = True
             
-            if sprite.state == 'jumping':
+            if hasattr(sprite, 'state') and sprite.state == 'jumping':
                 sprite.state = 'idle'
 
         sprite.direction.y = 0
@@ -140,7 +140,7 @@ class SpriteMovement:
             self.update_movement_x(sprite, direction_x, dt)  
         else:
             sprite.direction.x = 0
-            if sprite.state not in self.active_states:
+            if hasattr(sprite, 'state') and sprite not in self.active_states:
                 sprite.state = 'idle'
                 sprite.frame_index = 0
         

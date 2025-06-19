@@ -40,8 +40,9 @@ class GraphicsEngine:
         self.input_manager = input_manager
         self.player = player
         
-        self.tile_map = proc_gen.tile_map
-        self.tile_IDs = proc_gen.tile_IDs
+        self.tile_map = self.proc_gen.tile_map
+        self.tile_IDs = self.proc_gen.tile_IDs
+        self.tile_IDs_to_names = self.proc_gen.tile_IDs_to_names
         self.biome_order = proc_gen.biome_order
         self.terrain = Terrain(
             self.screen, 
@@ -198,7 +199,7 @@ class Terrain:
         
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
-        self.tile_name_ID_map = {v: k for k, v in self.tile_IDs.items() if k != 'air'}
+        self.tile_IDs_to_names = self.proc_gen.tile_IDs_to_names
 
     def render_bg_images(self, bg_type: str) -> None:
         '''render the current biome's landscape & underground graphics''' 
@@ -222,7 +223,7 @@ class Terrain:
                     self.screen.blit(image, (left, top) - self.camera_offset)
 
     def get_tile_type(self, x: int, y: int) -> str:
-        return self.tile_name_ID_map.get(self.tile_map[x, y], 'obj extended')
+        return self.tile_IDs_to_names.get(self.tile_map[x, y], 'obj extended')
 
     def get_terrain_type(self) -> str:
         '''just for getting a specific wall variant but could become more modular'''

@@ -3,11 +3,15 @@ from collections import defaultdict
 from settings import TILES, TOOLS
 
 class Inventory:
-    def __init__(self):
+    def __init__(self, contents: dict[str, int] | None):
+        if contents is None:
+            self.contents = {'stone': {'amount': 100, 'index': 0}, 'wood': {'amount': 100, 'index': 1}, 'torch': {'amount': 100, 'index': 2}} # values are just for testing the crafting system
+        else:
+            self.contents = contents
+        
         self.num_slots = 50
         self.slot_capacity = defaultdict(lambda: 999)
         self.set_slot_capacity()
-        self.contents = {'stone': {'amount': 100, 'index': 0}, 'wood': {'amount': 100, 'index': 1}, 'torch': {'amount': 100, 'index': 2}} # values are just for testing the crafting system
         
     def add_item(self, item: str) -> None:
         if item not in self.contents.keys():

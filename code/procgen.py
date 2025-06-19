@@ -12,20 +12,30 @@ import camera
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 
 class ProcGen:
-    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2):
+    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2, saved_data: dict[str, any] | None):
         self.screen = screen
         self.camera_offset = camera_offset
+        self.saved_data = saved_data
 
-        self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
-        self.height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
-        self.tree_map = [] # store the coordinates of each tree's base to avoid looping through the entire tile map
-        self.biome_order = self.order_biomes()
-        self.current_biome = 'forest'
         self.tile_IDs = self.get_tile_IDs()
-        self.player_spawn_point = self.get_player_spawn_point()
-       
-        self.generate_terrain()
+        self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
+        self.biome_order = self.order_biomes()
         
+        if self.saved_data:
+            self.load_saved_data()
+        else:
+            self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
+            self.height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
+            self.tree_map = [] # store the coordinates of each tree's base to avoid looping through the entire tile map
+            self.current_biome = 'forest'
+            self.generate_terrain()
+    
+    def load_saved_data(self) -> None:
+        self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
+        self.tree_map = [tuple(coord) for coord in self.saved_data['tree map']]
+        self.player_spawn_point = self.saved_data['sprites']['player']['coords']
+        self.current_biome = self.saved_data['current biome']
+
     # TODO: randomize the sequence
     @staticmethod
     def order_biomes() -> dict[str, int]:

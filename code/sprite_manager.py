@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 import pygame as pg
 from os.path import join
 from random import choice, randint
+from file_import_functions import load_image
 
 from settings import TILE_SIZE, TILES, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES
 from player import Player
@@ -28,7 +29,8 @@ class SpriteManager:
         tile_IDs: dict[str, int],
         physics_engine: PhysicsEngine,
         tree_map: list[tuple[int, int]],
-        inventory: Inventory
+        inventory: Inventory,
+        tile_IDs_to_names: dict[str, int]
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -39,6 +41,7 @@ class SpriteManager:
         self.physics_engine = physics_engine
         self.collision_map = self.physics_engine.collision_map
         self.inventory = inventory
+        self.tile_IDs_to_names = tile_IDs_to_names
         
         self.all_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
@@ -84,7 +87,7 @@ class SpriteManager:
         self.graphics = self.asset_manager.assets['graphics']
         self.current_biome = 'forest'
         self.init_trees()
-
+                
     # not doing a list comprehension in __init__ since sprites aren't 
     # assigned their groups until after the class is initialized
     def init_active_items(self) -> None:
