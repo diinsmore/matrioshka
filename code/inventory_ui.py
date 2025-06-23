@@ -78,13 +78,12 @@ class InventoryUI:
         for item_name, item_data in contents:
             try:
                 icon_image = self.get_icon_image(item_name)
-                # determine the slot an item corresponds to
-                col = item_data['index'] % self.num_cols
-                row = item_data['index'] // self.num_cols
-        
+                
+                row, col = divmod(item_data['index'], self.num_cols) # determine the slot an item corresponds to
+                
                 left = self.outline.left + (col * self.box_width)
                 top = self.outline.top + (row * self.box_height)
-                # center the icon within the inventory slot
+                
                 padding_x = (self.box_width - icon_image.get_width()) // 2
                 padding_y = (self.box_height - icon_image.get_height()) // 2
 

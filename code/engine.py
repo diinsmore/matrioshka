@@ -2,7 +2,7 @@ import pygame as pg
 from os.path import join
 import json
 
-from settings import Z_LAYERS, MAP_SIZE
+from settings import Z_LAYERS, MAP_SIZE, MAP_SIZE, TILE_SIZE
 from procgen import ProcGen
 from camera import Camera
 from player import Player
@@ -21,9 +21,10 @@ class Engine:
         self.screen = screen
         self.saved_data = saved_data
 
-        self.camera = Camera()
+        self.camera = Camera(self.saved_data['sprites']['player']['coords'] if self.saved_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
 
         self.proc_gen = ProcGen(screen, self.camera.offset, self.saved_data)
+
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
         self.tree_map = self.proc_gen.tree_map
@@ -32,8 +33,7 @@ class Engine:
 
         self.asset_manager = AssetManager()
         
-        inv_contents = self.saved_data['sprites']['player']['inventory'] if self.saved_data else None # TODO: once other human sprites are introduced, they'll need their own data passed
-        self.inventory = Inventory(inv_contents)
+        self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
 
         self.sprite_manager = SpriteManager(
             self.screen,
@@ -44,21 +44,20 @@ class Engine:
             self.physics_engine,
             self.tree_map,
             self.inventory,
-            self.proc_gen.tile_IDs_to_names
+            self.proc_gen.tile_IDs_to_names,
+            self.saved_data
         )
 
-        player_coords = self.saved_data['sprites']['player']['coords'] if self.saved_data else self.proc_gen.get_player_spawn_point()
-        player_sprites = [
-            self.sprite_manager.all_sprites, 
-            self.sprite_manager.player_sprite, 
-            self.sprite_manager.human_sprites, 
-            self.sprite_manager.animated_sprites
-        ]
         self.player = Player( 
-            player_coords,
+            self.saved_data['sprites']['player']['coords'] if self.saved_data else self.proc_gen.get_player_spawn_point(),
             load_subfolders(join('..', 'graphics', 'player')), 
             Z_LAYERS['player'],
-            player_sprites,
+            [
+                self.sprite_manager.all_sprites, 
+                self.sprite_manager.player_sprite, 
+                self.sprite_manager.human_sprites, 
+                self.sprite_manager.animated_sprites
+            ],
             self.tile_map,
             self.tile_IDs,
             self.proc_gen.biome_order,

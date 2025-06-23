@@ -53,7 +53,6 @@ class Player(pg.sprite.Sprite):
         
         self.health = 100
         self.arm_strength = 4
-        self.spawned = False
         self.facing_left = True
         self.grounded = True
 

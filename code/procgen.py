@@ -7,7 +7,6 @@ from os.path import join
 from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE
 from timer import Timer
 from file_import_functions import load_image
-import camera
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 
@@ -16,7 +15,7 @@ class ProcGen:
         self.screen = screen
         self.camera_offset = camera_offset
         self.saved_data = saved_data
-
+        
         self.tile_IDs = self.get_tile_IDs()
         self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
         self.biome_order = self.order_biomes()
@@ -29,7 +28,7 @@ class ProcGen:
             self.tree_map = [] # store the coordinates of each tree's base to avoid looping through the entire tile map
             self.current_biome = 'forest'
             self.generate_terrain()
-    
+
     def load_saved_data(self) -> None:
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.tree_map = [tuple(coord) for coord in self.saved_data['tree map']]
@@ -80,6 +79,8 @@ class ProcGen:
                 # convert the range from -1/1 to 0/1 to keep values positive (or zero, but rarely)
                 range01 = (num + 1) / 2 
                 self.height_map[x] = elev_data['top'] + range01 * elev_range
+        
+        self.player_spawn_point = self.get_player_spawn_point()
 
     def generate_terrain(self) -> None:
         self.generate_height_map()

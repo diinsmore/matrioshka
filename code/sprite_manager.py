@@ -30,7 +30,8 @@ class SpriteManager:
         physics_engine: PhysicsEngine,
         tree_map: list[tuple[int, int]],
         inventory: Inventory,
-        tile_IDs_to_names: dict[str, int]
+        tile_IDs_to_names: dict[str, int],
+        saved_data: dict[str, any]
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -42,6 +43,7 @@ class SpriteManager:
         self.collision_map = self.physics_engine.collision_map
         self.inventory = inventory
         self.tile_IDs_to_names = tile_IDs_to_names
+        self.saved_data = saved_data
         
         self.all_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
@@ -131,11 +133,12 @@ class SpriteManager:
         ]
     
     def init_trees(self) -> None:
-        images = self.graphics[self.current_biome]['trees']
-        for xy in self.tree_map: 
+        image = self.graphics[self.current_biome]['trees'][1]
+        tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
+        for xy in tree_map: 
             Tree(
                 coords = (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
-                image = images[choice((0, 1))], 
+                image = image, 
                 z = Z_LAYERS['bg'],
                 camera_offset = self.camera_offset,
                 sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 
