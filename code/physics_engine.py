@@ -168,7 +168,7 @@ class SpriteMovement:
         
     def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
         '''determine if the sprite can step over the colliding tile'''
-        if sprite.direction.y <= 0:
+        if sprite.direction.y == 0:
             above_tiles = []
             for i in range(1, ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
                 above_tiles.append(self.tile_map[tile_x, tile_y - i])
