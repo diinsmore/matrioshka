@@ -43,7 +43,7 @@ class GraphicsEngine:
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
         self.tile_IDs_to_names = self.proc_gen.tile_IDs_to_names
-        self.biome_order = proc_gen.biome_order
+        self.biome_order = proc_gen.terrain_gen.biome_order
         self.terrain = Terrain(
             self.screen, 
             self.graphics, 

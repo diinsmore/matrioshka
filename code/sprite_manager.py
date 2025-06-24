@@ -133,12 +133,12 @@ class SpriteManager:
         ]
     
     def init_trees(self) -> None:
-        image = self.graphics[self.current_biome]['trees'][1]
+        image_folder = self.graphics[self.current_biome]['trees']
         tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
         for xy in tree_map: 
             Tree(
                 coords = (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
-                image = image, 
+                image = choice(image_folder), 
                 z = Z_LAYERS['bg'],
                 camera_offset = self.camera_offset,
                 sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 

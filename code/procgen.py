@@ -14,37 +14,30 @@ class ProcGen:
         self.screen = screen
         self.camera_offset = camera_offset
         self.saved_data = saved_data
-        
-        self.tile_IDs = self.get_tile_IDs()
-        self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
-        self.biome_order = self.order_biomes()
-        
         if self.saved_data:
             self.load_saved_data()
         else:
-            self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
-            self.height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
+            self.tile_IDs = self.get_tile_IDs()
+            self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
-            self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point)
+
+            self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
+            self.tile_map = self.terrain_gen.tile_map
+
+            self.tree_gen = TreeGen(self.terrain_gen.tile_map, self.tile_IDs, self.terrain_gen.height_map, self.terrain_gen.valid_spawn_point)
             self.tree_map = self.tree_gen.tree_map
-            self.gen_terrain()
+
+            self.gen_world()
+
+        self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
 
     def load_saved_data(self) -> None:
+        self.tile_IDs = self.saved_data['tile IDs']
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
+        self.biome_order = self.saved_data['biome order']
         self.player_spawn_point = self.saved_data['sprites']['player']['coords']
         self.current_biome = self.saved_data['current biome']
-
-    # TODO: randomize the sequence
-    @staticmethod
-    def order_biomes() -> dict[str, int]:
-        order = {}
-        # excluding the underworld since it spans the entire map width
-        biomes = [b for b in BIOMES.keys() if b != 'underworld']
-        for index, biome in enumerate(biomes):
-            order[biome] = index
-
-        return order
 
     @staticmethod
     def get_tile_IDs() -> dict[str, int]:
@@ -55,17 +48,37 @@ class ProcGen:
         id_map['obj extended'] = len(id_map)
         id_map['tree base'] = id_map['obj extended'] + 1
         return id_map
-    
-    def gen_height_map(self) -> None:
+
+    @staticmethod
+    def order_biomes() -> dict[str, int]:
+        # TODO: randomize this sequence
+        order = {'tundra': 0, 'taiga': 1, 'forest': 2, 'desert': 3, 'highlands': 4}
+        return order
+
+    def gen_world(self) -> None:
+        self.terrain_gen.run()
+        self.tree_gen.get_tree_locations()
+
+
+class TerrainGen:
+    def __init__(self, tile_IDs: dict[str, int], biome_order: dict[str, int], current_biome: str):
+        self.tile_IDs = tile_IDs
+        self.biome_order = biome_order
+        self.current_biome = current_biome
+
+        self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
+        self.height_map = self.gen_height_map()
+        self.player_spawn_point = self.get_player_spawn_point()
+
+    def gen_height_map(self) -> np.ndarray:
         '''generates a height map for every biome using 1d perlin noise'''
+        height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
         seed = 2285 # TODO: add the option to enter a custom seed
         # TODO: add more gradual transitions between biomes
         for biome, order_num in self.biome_order.items(): 
             elev_data = BIOMES[biome]['elevation']
             elev_range = elev_data['bottom'] - elev_data['top']
-            
             noise_params = BIOMES[biome]['noise params']
-            
             for x in range(order_num * BIOME_WIDTH, (order_num + 1) * BIOME_WIDTH):
                 # generates a random float between -1/1
                 num = noise.pnoise1(  
@@ -78,14 +91,8 @@ class ProcGen:
                 )
                 # convert the range from -1/1 to 0/1 to keep values positive (or zero, but rarely)
                 range01 = (num + 1) / 2 
-                self.height_map[x] = elev_data['top'] + range01 * elev_range
-        
-        self.player_spawn_point = self.get_player_spawn_point()
-
-    def gen_terrain(self) -> None:
-        self.gen_height_map()
-        self.place_tiles()
-        self.tree_gen.place_trees()
+                height_map[x] = elev_data['top'] + range01 * elev_range
+        return height_map
 
     def place_tiles(self) -> None:
         for x in range(MAP_SIZE[0]):
@@ -93,10 +100,8 @@ class ProcGen:
             for y in range(MAP_SIZE[1]): 
                 if y < surface_level: 
                     self.tile_map[x, y] = self.tile_IDs['air'] 
-
                 elif y == surface_level:
                     self.tile_map[x, y] = self.tile_IDs['dirt']
-
                 else:
                     # calculate the tile's depth relative to the height of the map
                     rel_depth = (y - surface_level) / MAP_SIZE[1]
@@ -113,17 +118,17 @@ class ProcGen:
                             self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) < 60 else 'dirt']  
                     
                     else:
-                        self.ore_distribution(x, y, self.current_biome)
+                        self.place_ores(x, y, self.current_biome)
 
-    def ore_distribution(self, x: int, y: int, biome: str) -> None:
+    def place_ores(self, x: int, y: int, biome: str) -> None:
         '''
         Distribute ore tiles based on the biome's probability of containing such a tile.
         If no ore is selected, fill the space with a tile common to the biome.
         '''
-        ores = [tile for tile in self.tile_IDs if self.tile_IDs['copper']  <= self.tile_IDs[tile]  <= self.tile_IDs['gold'] ]
+        ores = [tile for tile in self.tile_IDs if self.tile_IDs['copper'] <= self.tile_IDs[tile] <= self.tile_IDs['gold']]
         
-        non_ores = [tile for tile in self.tile_IDs if self.tile_IDs['dirt']  <= self.tile_IDs[tile]  <= self.tile_IDs[
-                    'obsidian' if biome != 'underworld' else 'hellstone'] ]
+        non_ores = [tile for tile in self.tile_IDs if self.tile_IDs['dirt'] <= self.tile_IDs[tile] <= self.tile_IDs[
+                    'obsidian' if biome != 'underworld' else 'hellstone']]
 
         if randint(1, 10) == 1:
             ore_selected = self.calc_tile_prob(ores, x, y, biome)
@@ -146,7 +151,7 @@ class ProcGen:
                 if index < len(tiles) - 1:
                     continue
                 return False
-        
+    
     def get_player_spawn_point(self) -> tuple[int, int]:
             '''spawn at the nearest flat surface (at least 3 solid tiles on the same y-axis) to the map's center-x'''
             center_x = MAP_SIZE[0] // 2
@@ -182,6 +187,10 @@ class ProcGen:
         return all(tile != air for tile in (left_tile, center_tile, right_tile)) and \
                all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
 
+    def run(self) -> None:
+        self.gen_height_map()
+        self.place_tiles()
+    
 
 class TreeGen:
     def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int], height_map: np.ndarray, valid_spawn_point: callable):
@@ -192,7 +201,7 @@ class TreeGen:
 
         self.tree_map = set()
 
-    def place_trees(self) -> None:
+    def get_tree_locations(self) -> None:
         biomes = list(BIOMES.keys())
         for x in range(1, MAP_SIZE[0] - 1):
             y = int(self.height_map[x]) # surface level
@@ -204,15 +213,6 @@ class TreeGen:
                 self.tree_map.add((x, y))
                 self.tile_map[x, y] = self.tile_IDs['tree base']
     
-    def get_tree_neighbors(self, x: int, y: int, sample_size: int, check_left: bool = True, check_right: bool = True) -> int:
-        num_neighbors = 0
-        if check_left: # search a given number of tiles left of the starting point
-            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x - dx, y) in self.tree_map)
-
-        if check_right:
-            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x + dx, y) in self.tree_map)
-        return num_neighbors
-
     def get_tree_prob(self, current_biome: str, x: int, y: int) -> int:
         '''
         checks the distribution of trees in the previous tiles.
@@ -222,3 +222,12 @@ class TreeGen:
         default_prob = BIOMES[current_biome]['tree prob']
         scale_factor = default_prob // 10
         return default_prob + scale_factor * self.get_tree_neighbors(x, y, 10, True, False)
+        
+    def get_tree_neighbors(self, x: int, y: int, sample_size: int, check_left: bool = True, check_right: bool = True) -> int:
+        num_neighbors = 0
+        if check_left: # search a given number of tiles left of the starting point
+            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x - dx, y) in self.tree_map)
+
+        if check_right:
+            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x + dx, y) in self.tree_map)
+        return num_neighbors
