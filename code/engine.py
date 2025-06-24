@@ -1,4 +1,5 @@
 import pygame as pg
+import os
 from os.path import join
 import json
 
@@ -17,9 +18,10 @@ from ui import UI
 from file_import_functions import load_subfolders
 
 class Engine:
-    def __init__(self, screen: pg.Surface, saved_data: dict[str, any] | None):
+    def __init__(self, screen: pg.Surface):
         self.screen = screen
-        self.saved_data = saved_data
+        
+        self.saved_data = self.get_saved_data()
 
         self.camera = Camera(self.saved_data['sprites']['player']['coords'] if self.saved_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
 
@@ -102,6 +104,13 @@ class Engine:
 
         with open(file, 'w') as f:
             json.dump(data, f)
+
+    def get_saved_data(self) -> dict[str, any] | None:
+        saved_data = None
+        if os.path.exists('save.json'):
+            with open('save.json', 'r') as f:
+                saved_data = json.load(f)
+        return saved_data
 
     def update(self, dt: float) -> None:
         self.input_manager.update(self.camera.offset, dt)
