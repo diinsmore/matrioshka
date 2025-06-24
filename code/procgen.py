@@ -14,25 +14,27 @@ class ProcGen:
         self.screen = screen
         self.camera_offset = camera_offset
         self.saved_data = saved_data
+        
+        self.tile_IDs = self.get_tile_IDs()
+        self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
+        
         if self.saved_data:
             self.load_saved_data()
         else:
-            self.tile_IDs = self.get_tile_IDs()
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
 
             self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
+            self.height_map = self.terrain_gen.height_map
 
-            self.tree_gen = TreeGen(self.terrain_gen.tile_map, self.tile_IDs, self.terrain_gen.height_map, self.terrain_gen.valid_spawn_point)
+            self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point)
             self.tree_map = self.tree_gen.tree_map
 
             self.gen_world()
-
-        self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
+            self.player_spawn_point = self.get_player_spawn_point()
 
     def load_saved_data(self) -> None:
-        self.tile_IDs = self.saved_data['tile IDs']
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
         self.biome_order = self.saved_data['biome order']
@@ -55,6 +57,41 @@ class ProcGen:
         order = {'tundra': 0, 'taiga': 1, 'forest': 2, 'desert': 3, 'highlands': 4}
         return order
 
+    def get_player_spawn_point(self) -> tuple[int, int]:
+            '''spawn at the nearest flat surface (at least 3 solid tiles on the same y-axis) to the map's center-x'''
+            center_x = MAP_SIZE[0] // 2
+            y = int(self.height_map[center_x])
+            # check for neighboring tiles being on the same y-axis and only having air tiles above them
+            if self.valid_spawn_point(center_x, y): 
+                return (center_x * TILE_SIZE, y * TILE_SIZE)
+            else:
+                valid_coords = []
+                for x in range(1, MAP_SIZE[0] - 1):
+                    xy = (x, int(self.height_map[x]))
+                    if self.valid_spawn_point(*xy):
+                        valid_coords.append(xy)
+
+                if valid_coords:
+                    # select the coordinate nearest to the map's center-x
+                    spawn_point = min(valid_coords, key = lambda coord: abs(coord[0] - center_x))
+                    return (spawn_point[0] * TILE_SIZE, spawn_point[1] * TILE_SIZE)
+                else:
+                    # default to the center-x
+                    return (center_x * TILE_SIZE, y * TILE_SIZE)
+
+    def valid_spawn_point(self, x: int, y: int) -> bool:
+        left_tile = self.tile_map[x - 1, y]
+        center_tile = self.tile_map[x, y]
+        right_tile = self.tile_map[x + 1, y]
+
+        topleft_tile = self.tile_map[x - 1, y - 1]
+        topcenter_tile = self.tile_map[x, y - 1]
+        topright_tile = self.tile_map[x + 1, y - 1]
+        
+        air = self.tile_IDs['air'] 
+        return all(tile != air for tile in (left_tile, center_tile, right_tile)) and \
+               all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
+
     def gen_world(self) -> None:
         self.terrain_gen.run()
         self.tree_gen.get_tree_locations()
@@ -68,7 +105,6 @@ class TerrainGen:
 
         self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
         self.height_map = self.gen_height_map()
-        self.player_spawn_point = self.get_player_spawn_point()
 
     def gen_height_map(self) -> np.ndarray:
         '''generates a height map for every biome using 1d perlin noise'''
@@ -151,41 +187,6 @@ class TerrainGen:
                 if index < len(tiles) - 1:
                     continue
                 return False
-    
-    def get_player_spawn_point(self) -> tuple[int, int]:
-            '''spawn at the nearest flat surface (at least 3 solid tiles on the same y-axis) to the map's center-x'''
-            center_x = MAP_SIZE[0] // 2
-            y = int(self.height_map[center_x])
-            # check for neighboring tiles being on the same y-axis and only having air tiles above them
-            if self.valid_spawn_point(center_x, y): 
-                return (center_x * TILE_SIZE, y * TILE_SIZE)
-            else:
-                valid_coords = []
-                for x in range(1, MAP_SIZE[0] - 1):
-                    xy = (x, int(self.height_map[x]))
-                    if self.valid_spawn_point(*xy):
-                        valid_coords.append(xy)
-
-                if valid_coords:
-                    # select the coordinate nearest to the map's center-x
-                    spawn_point = min(valid_coords, key = lambda coord: abs(coord[0] - center_x))
-                    return (spawn_point[0] * TILE_SIZE, spawn_point[1] * TILE_SIZE)
-                else:
-                    # default to the center-x
-                    return (center_x * TILE_SIZE, y * TILE_SIZE)
-
-    def valid_spawn_point(self, x: int, y: int) -> bool:
-        left_tile = self.tile_map[x - 1, y]
-        center_tile = self.tile_map[x, y]
-        right_tile = self.tile_map[x + 1, y]
-
-        topleft_tile = self.tile_map[x - 1, y - 1]
-        topcenter_tile = self.tile_map[x, y - 1]
-        topright_tile = self.tile_map[x + 1, y - 1]
-        
-        air = self.tile_IDs['air'] 
-        return all(tile != air for tile in (left_tile, center_tile, right_tile)) and \
-               all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
 
     def run(self) -> None:
         self.gen_height_map()

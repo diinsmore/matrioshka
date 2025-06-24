@@ -51,7 +51,7 @@ class Engine:
         )
 
         self.player = Player( 
-            self.saved_data['sprites']['player']['coords'] if self.saved_data else self.proc_gen.terrain_gen.get_player_spawn_point(),
+            self.saved_data['sprites']['player']['coords'] if self.saved_data else self.proc_gen.player_spawn_point,
             load_subfolders(join('..', 'graphics', 'player')), 
             Z_LAYERS['player'],
             [
@@ -62,7 +62,7 @@ class Engine:
             ],
             self.tile_map,
             self.tile_IDs,
-            self.proc_gen.terrain_gen.biome_order,
+            self.proc_gen.biome_order,
             self.physics_engine,
             self.inventory
         )
@@ -92,7 +92,6 @@ class Engine:
     def make_save(self, file: str) -> None:
         data = {
             'tile map': self.tile_map.tolist(),
-            'tile IDs': list(self.proc_gen.tile_IDs),
             'tree map': [list(coord) for coord in self.tree_map],
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,
