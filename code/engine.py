@@ -31,12 +31,11 @@ class Engine:
         self.tile_IDs = self.proc_gen.tile_IDs
         self.tree_map = self.proc_gen.tree_map
 
-        self.physics_engine = PhysicsEngine(self.tile_map, self.tile_IDs)
-
+        self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
         self.asset_manager = AssetManager()
         
-        self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
-
+        self.physics_engine = PhysicsEngine(self.tile_map, self.tile_IDs)
+        
         self.sprite_manager = SpriteManager(
             self.screen,
             self.camera.offset,
@@ -93,6 +92,7 @@ class Engine:
         data = {
             'tile map': self.tile_map.tolist(),
             'tree map': [list(coord) for coord in self.tree_map],
+            'cave map': self.proc_gen.terrain_gen.cave_map.tolist(),
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,
             'sprites': {}

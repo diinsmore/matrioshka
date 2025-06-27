@@ -103,35 +103,34 @@ class TerrainGen:
         self.biome_order = biome_order
         self.current_biome = current_biome
 
+        self.seed = 2285 # TODO: add the option to enter a custom seed
         self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
         self.height_map = self.gen_height_map()
+        self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed)
+        self.cave_map = self.cave_gen.map
 
     def gen_height_map(self) -> np.ndarray:
         '''generates a height map for every biome using 1d perlin noise'''
-        height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
-        seed = 2285 # TODO: add the option to enter a custom seed
+        height_map = np.zeros(MAP_SIZE[0], dtype = np.float32) 
         # TODO: add more gradual transitions between biomes
         for biome, order_num in self.biome_order.items(): 
             elev_data = BIOMES[biome]['elevation']
             elev_range = elev_data['bottom'] - elev_data['top']
-            noise_params = BIOMES[biome]['noise params']
+            params = BIOMES[biome]['height map']
             for x in range(order_num * BIOME_WIDTH, (order_num + 1) * BIOME_WIDTH):
-                # generates a random float between -1/1
-                num = noise.pnoise1(  
-                    x / noise_params['scale'], 
-                    octaves = noise_params['octaves'], 
-                    persistence = noise_params['persistence'],
-                    lacunarity = noise_params['lacunarity'],
-                    repeat = -1, # don't repeat
-                    base = seed
-                )
-                # convert the range from -1/1 to 0/1 to keep values positive (or zero, but rarely)
-                range01 = (num + 1) / 2 
-                height_map[x] = elev_data['top'] + range01 * elev_range
+                n = noise.pnoise1(  
+                        x / params['scale'], 
+                        octaves = params['octaves'], 
+                        persistence = params['persistence'],
+                        lacunarity = params['lacunarity'],
+                        repeat = -1, # don't repeat
+                        base = self.seed,
+                    )
+                height_map[x] = elev_data['top'] + n * elev_range
         return height_map
 
     def place_tiles(self) -> None:
-        for x in range(MAP_SIZE[0]):
+        for x in range(1000, 1500):
             surface_level = int(self.height_map[x])
             for y in range(MAP_SIZE[1]): 
                 if y < surface_level: 
@@ -139,22 +138,21 @@ class TerrainGen:
                 elif y == surface_level:
                     self.tile_map[x, y] = self.tile_IDs['dirt']
                 else:
-                    # calculate the tile's depth relative to the height of the map
-                    rel_depth = (y - surface_level) / MAP_SIZE[1]
-                    if rel_depth < 0.1:
-                        self.tile_map[x, y] = self.tile_IDs['dirt']
-
-                    elif rel_depth < 0.2:
-                        self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) <= 33 else 'dirt'] 
-                    
-                    elif rel_depth < 0.4:
-                        if randint(0, 100) <= 25:
-                            self.tile_map[x, y] = choice((self.tile_IDs['sandstone'], self.tile_IDs['ice']))
-                        else:
-                            self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) < 60 else 'dirt']  
-                    
+                    if self.cave_map[x, y]:
+                        self.tile_map[x, y] = self.tile_IDs['air']
                     else:
-                        self.place_ores(x, y, self.current_biome)
+                        rel_depth = (y - surface_level) / MAP_SIZE[1] # calculate the tile's depth relative to the height of the map
+                        if rel_depth < 0.1:
+                            self.tile_map[x, y] = self.tile_IDs['dirt']
+                        elif rel_depth < 0.2:
+                            self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) <= 33 else 'dirt'] 
+                        elif rel_depth < 0.4:
+                            if randint(0, 100) <= 25:
+                                self.tile_map[x, y] = choice((self.tile_IDs['sandstone'], self.tile_IDs['ice']))
+                            else:
+                                self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) < 60 else 'dirt']  
+                        else:
+                            self.place_ores(x, y, self.current_biome)
 
     def place_ores(self, x: int, y: int, biome: str) -> None:
         '''
@@ -191,7 +189,34 @@ class TerrainGen:
     def run(self) -> None:
         self.gen_height_map()
         self.place_tiles()
-    
+
+
+class CaveGen:
+    def __init__(self, tile_map: np.ndarray, height_map: np.ndarray, seed: int):
+        self.tile_map = tile_map
+        self.height_map = height_map
+        self.seed = seed
+        self.map = self.gen_map()
+
+    def gen_map(self) -> np.ndarray:
+        cave_map = np.zeros(MAP_SIZE, dtype = bool)
+        start_y = randint(25, 50)
+        for x in range(1000, 1500):
+            params = BIOMES['forest']['cave map']
+            surface_level = int(self.height_map[x])
+            for y in range(surface_level + start_y, MAP_SIZE[1]):
+                n = noise.pnoise2(
+                    x / params['scale'],
+                    y / params['scale'],
+                    params['octaves'],
+                    params['persistence'],
+                    params['lacunarity'],
+                    repeatx = -1,
+                    repeaty = -1,
+                    base = self.seed
+                )
+                cave_map[x, y] = (n + 1) / 2 > params['threshold'] # convert to a range of 0-1 before comparing
+        return cave_map
 
 class TreeGen:
     def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int], height_map: np.ndarray, valid_spawn_point: callable):
@@ -207,7 +232,7 @@ class TreeGen:
         for x in range(1, MAP_SIZE[0] - 1):
             y = int(self.height_map[x]) # surface level
             current_biome = biomes[x // BIOME_WIDTH]
-            if current_biome in {'forest', 'taiga', 'desert'} and \
+            if current_biome in {'forest', 'taiga'} and \
             self.valid_spawn_point(x, y) and \
             randint(0, 100) <= self.get_tree_prob(current_biome, x, y) and \
             not self.get_tree_neighbors(x, y, 1, True, True): # separate each tree by at least 1 tile to the left/right
@@ -220,7 +245,7 @@ class TreeGen:
         the probability of spawning a tree increases for every tree within the given range.
         i.e trees are more likely to spawn near existing trees
         '''
-        default_prob = BIOMES[current_biome]['tree prob']
+        default_prob = BIOMES[current_biome]['tree coverage']
         scale_factor = default_prob // 10
         return default_prob + scale_factor * self.get_tree_neighbors(x, y, 10, True, False)
         
@@ -231,4 +256,4 @@ class TreeGen:
 
         if check_right:
             num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x + dx, y) in self.tree_map)
-        return num_neighbors
+        return num_neighbors    

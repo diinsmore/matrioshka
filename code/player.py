@@ -44,7 +44,7 @@ class Player(pg.sprite.Sprite):
         self.physics_engine = physics_engine
 
         self.inventory = inventory
-        self.item_holding = 'stone axe' # TODO: change this back to None after the tree cutting logic is written
+        self.item_holding = 'stone pickaxe' # TODO: change this back to None after the tree cutting logic is written
         
         self.direction = pg.Vector2()
         self.speed = 200

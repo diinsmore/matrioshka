@@ -12,7 +12,7 @@ from os.path import join
 from random import choice, randint
 from file_import_functions import load_image
 
-from settings import TILE_SIZE, TILES, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
