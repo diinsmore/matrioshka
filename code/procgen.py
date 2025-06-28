@@ -26,6 +26,7 @@ class ProcGen:
             self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
             self.height_map = self.terrain_gen.height_map
+            self.cave_map = self.terrain_gen.cave_map
 
             self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point)
             self.tree_map = self.tree_gen.tree_map
@@ -36,6 +37,7 @@ class ProcGen:
     def load_saved_data(self) -> None:
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
+        self.cave_map = np.array(self.saved_data['cave map'], dtype = bool)
         self.biome_order = self.saved_data['biome order']
         self.player_spawn_point = self.saved_data['sprites']['player']['coords']
         self.current_biome = self.saved_data['current biome']
