@@ -2,7 +2,6 @@ import pygame as pg
 import numpy as np
 import noise
 from random import randint, choice
-from os.path import join
 
 from settings import TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE
 from timer import Timer
@@ -130,7 +129,7 @@ class TerrainGen:
         return height_map
 
     def place_tiles(self) -> None:
-        for x in range(1000, 1500):
+        for x in range(MAP_SIZE[0]):
             surface_level = int(self.height_map[x])
             for y in range(MAP_SIZE[1]): 
                 if y < surface_level: 
@@ -201,7 +200,7 @@ class CaveGen:
     def gen_map(self) -> np.ndarray:
         cave_map = np.zeros(MAP_SIZE, dtype = bool)
         start_y = randint(25, 50)
-        for x in range(1000, 1500):
+        for x in range(MAP_SIZE[0]):
             params = BIOMES['forest']['cave map']
             surface_level = int(self.height_map[x])
             for y in range(surface_level + start_y, MAP_SIZE[1]):
@@ -226,18 +225,18 @@ class TreeGen:
         self.valid_spawn_point = valid_spawn_point
 
         self.tree_map = set()
+        self.biomes_covered = [{'idx': idx, 'name': name} for idx, name in enumerate(BIOMES.keys()) if 'tree coverage' in BIOMES[name].keys()]
 
     def get_tree_locations(self) -> None:
-        biomes = list(BIOMES.keys())
-        for x in range(1, MAP_SIZE[0] - 1):
-            y = int(self.height_map[x]) # surface level
-            current_biome = biomes[x // BIOME_WIDTH]
-            if current_biome in {'forest', 'taiga'} and \
-            self.valid_spawn_point(x, y) and \
-            randint(0, 100) <= self.get_tree_prob(current_biome, x, y) and \
-            not self.get_tree_neighbors(x, y, 1, True, True): # separate each tree by at least 1 tile to the left/right
-                self.tree_map.add((x, y))
-                self.tile_map[x, y] = self.tile_IDs['tree base']
+        for data in self.biomes_covered:
+            start_x = data['idx'] * BIOME_WIDTH
+            for x in range(start_x, start_x + BIOME_WIDTH):
+                y = int(self.height_map[x]) # surface level
+                if self.valid_spawn_point(x, y) and \
+                not self.get_tree_neighbors(x, y, 1, True, True) and \
+                randint(0, 100) <= self.get_tree_prob(data['name'], x, y):
+                    self.tree_map.add((x, y))
+                    self.tile_map[x, y] = self.tile_IDs['tree base']
     
     def get_tree_prob(self, current_biome: str, x: int, y: int) -> int:
         '''

@@ -5,41 +5,9 @@ TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
 
-BIOME_WIDTH = 500
 MAP_SIZE = (2500, 200) 
 
-WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
-WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
-GRAVITY = 1200
-
-Z_LAYERS = {
-    'clouds': 0,
-    'bg': 1,
-    'main': 2,
-    'player': 3,
-}
-
-TILES = {
-    'air': {'hardness': 0},
-    'dirt': {'hardness': 100},
-    'stone': {'hardness': 400},
-    'sandstone': {'hardness': 500}, 
-    'ice': {'hardness': 200},
-    'coal': {'hardness': 450},
-    'obsidian': {'hardness': 1000},
-    'hellstone': {'hardness': 900},
-    'copper': {'ore': True, 'hardness': 350},
-    'iron': {'ore': True, 'hardness': 750},
-    'silver': {'ore': True, 'hardness': 550},
-    'gold': {'ore': True, 'hardness': 600},
-}
-
-TILE_REACH_RADIUS = 5
-
-# ordered from left-right
-# since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
-# TODO: the highlands & tundra noise parameters are especially in need of fine-tuning
-BIOMES = { # octaves: layers of noise (more layers = more detail), persistence: 
+BIOMES = {
     'highlands': {
         'height map': {'scale': 325, 'octaves': 5, 'persistence': 1.6, 'lacunarity': 2.1},
         'cave map': {'scale': 30.0, 'octaves': 5, 'persistence': 2.0, 'lacunarity': 2.3, 'threshold': 0.4},
@@ -91,6 +59,41 @@ BIOMES = { # octaves: layers of noise (more layers = more detail), persistence:
         'liquid probs': {'oil': 6, 'lava': 9},
     },
 }
+
+BIOME_WIDTH = MAP_SIZE[0] // (len(BIOMES) - 1) # -1 since the underworld spans the entire map
+
+WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
+WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
+GRAVITY = 1200
+
+Z_LAYERS = {
+    'clouds': 0,
+    'bg': 1,
+    'main': 2,
+    'player': 3,
+}
+
+TILES = {
+    'air': {'hardness': 0},
+    'dirt': {'hardness': 100},
+    'stone': {'hardness': 400},
+    'sandstone': {'hardness': 500}, 
+    'ice': {'hardness': 200},
+    'coal': {'hardness': 450},
+    'obsidian': {'hardness': 1000},
+    'hellstone': {'hardness': 900},
+    'copper': {'ore': True, 'hardness': 350},
+    'iron': {'ore': True, 'hardness': 750},
+    'silver': {'ore': True, 'hardness': 550},
+    'gold': {'ore': True, 'hardness': 600},
+}
+
+TILE_REACH_RADIUS = 5
+
+# ordered from left-right
+# since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
+# TODO: the highlands & tundra noise parameters are especially in need of fine-tuning
+
 
 # 'producers' specifies who/what can craft a given item
 TOOLS = {
