@@ -4,14 +4,14 @@ FPS = 60
 TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
-
-MAP_SIZE = (2500, 200) 
+# TODO: any value larger on the x-axis will cause a glitch where the physics engine doesn't detect the player's initial contact with the ground in time and ends up spawning in a cave
+MAP_SIZE = (1590, 200) 
 
 BIOMES = {
     'highlands': {
         'height map': {'scale': 325, 'octaves': 5, 'persistence': 1.6, 'lacunarity': 2.1},
         'cave map': {'scale': 30.0, 'octaves': 5, 'persistence': 2.0, 'lacunarity': 2.3, 'threshold': 0.4},
-        'elevation': {'top': 30, 'bottom': 130}, 
+        'elevation': {'top': 0, 'bottom': 70}, 
         'tile probs': {'obsidian': 2, 'coal': 5, 'copper': 7, 'iron': 8, 'silver': 8, 'gold': 5},
         'liquid probs': {'water': 3, 'lava': 5},
     }, 
@@ -19,16 +19,16 @@ BIOMES = {
     'desert': {
         'height map': {'scale': 400, 'octaves': 4, 'persistence': 0.9, 'lacunarity': 1.4},
         'cave map': {'scale': 60.0, 'octaves': 3, 'persistence': 0.7, 'lacunarity': 0.9, 'threshold': 0.6},
-        'elevation': {'top': 130, 'bottom': 180},
+        'elevation': {'top': 50, 'bottom': 90},
         'tile probs': {'coal': 3, 'copper': 7, 'iron': 6, 'silver': 6, 'gold': 2},
         'liquid probs': {'oil': 7, 'lava': 5},
         
     },
     
     'forest': {
-        'height map': {'scale': 450, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 2.0},
+        'height map': {'scale': 400, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 2.0},
         'cave map': {'scale': 30.0, 'octaves': 4, 'persistence': 1.6, 'lacunarity': 1.3, 'threshold': 0.55},
-        'elevation': {'top': 150, 'bottom': 190},
+        'elevation': {'top': 70, 'bottom': 110},
         'tile probs': {'coal': 7, 'copper': 4, 'iron': 5, 'silver': 3, 'gold': 3},
         'liquid probs': {'water': 7, 'lava': 2},
         'tree coverage': 40
@@ -37,16 +37,16 @@ BIOMES = {
     'taiga': {
         'height map': {'scale': 400, 'octaves': 4, 'persistence': 1.3, 'lacunarity': 1.6},
         'cave map': {'scale': 40.0, 'octaves': 4, 'persistence': 1.6, 'lacunarity': 1.9, 'threshold': 0.4},
-        'elevation': {'top': 110, 'bottom': 160},
+        'elevation': {'top': 35, 'bottom': 90},
         'tile probs': {'coal': 5, 'copper': 3, 'iron': 6, 'silver': 5, 'gold': 4},
         'liquid probs': {'water': 5, 'lava': 1},
         'tree coverage': 30
     },
     
     'tundra': {
-        'height map': {'scale': 500, 'octaves': 3, 'persistence': 0.8, 'lacunarity': 1.3},
+        'height map': {'scale': 450, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 1.5},
         'cave map': {'scale': 70.0, 'octaves': 2, 'persistence': 0.6, 'lacunarity': 1.8, 'threshold': 0.35},
-        'elevation': {'top': 170, 'bottom': 200},
+        'elevation': {'top': 90, 'bottom': 125},
         'tile probs': {'coal': 4, 'copper': 6, 'iron': 5, 'silver': 6, 'gold': 3},
         'liquid probs': {'water': 5, 'oil': 7},
     }, 
@@ -54,7 +54,7 @@ BIOMES = {
     'underworld': {
         'height map': {'scale': 300, 'octaves': 6, 'persistence': 1.7, 'lacunarity': 2.0},
         'cave map': {'scale': 90.0, 'octaves': 6, 'persistence': 2.5, 'lacunarity': 2.4, 'threshold': 0.3},
-        'elevation': {'top': 400, 'bottom': MAP_SIZE[1]},
+        'elevation': {'top': 160, 'bottom': MAP_SIZE[1]},
         'tile probs': {'hellstone': 7, 'obsidian': 6, 'coal': 8, 'copper': 8, 'iron': 8, 'silver': 5, 'gold': 4},
         'liquid probs': {'oil': 6, 'lava': 9},
     },
