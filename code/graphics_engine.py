@@ -257,19 +257,25 @@ class Terrain:
 
     def render_tiles(self) -> None:
         visible_chunks = self.chunk_manager.update()
+        air_ID = self.tile_IDs['air']
+        mining_map_keys = self.mining_map.keys()
         for coords in visible_chunks: # all visible tile coordinates
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
-                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != self.tile_IDs['air']:
+                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != air_ID:
                     tile = self.get_tile_type(x, y)
                     if tile == 'obj extended': # to be ignored as far as rendering is concerned
                         continue 
+
                     elif tile == 'tree base':
                         tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
-        
-                    image = self.graphics[tile] if (x, y) not in self.mining_map.keys() else self.get_mined_tile_image(x, y)
-                    self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
-    
+
+                    if (x, y) in mining_map_keys:
+                        image = self.get_mined_tile_image(x, y)
+                    else:
+                        image = self.graphics[tile] if 'ramp' not in tile else self.graphics['ramps'][tile]
+                        self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
+
     @staticmethod
     def tile_pixel_convert(image_size: tuple[int, int], x: int, y: int) -> pg.Vector2:
         if image_size == (TILE_SIZE, TILE_SIZE):

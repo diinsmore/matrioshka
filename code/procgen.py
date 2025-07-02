@@ -23,7 +23,7 @@ class ProcGen:
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
 
-            self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
+            self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome, self.tile_IDs_to_names)
             self.tile_map = self.terrain_gen.tile_map
             self.height_map = self.terrain_gen.height_map
             self.cave_map = self.terrain_gen.cave_map
@@ -50,6 +50,8 @@ class ProcGen:
         id_map.update((obj, index) for index, obj in enumerate(world_objects.keys()))
         id_map['obj extended'] = len(id_map)
         id_map['tree base'] = id_map['obj extended'] + 1
+        id_map['left ramp'] = id_map['tree base'] + 1
+        id_map['right ramp'] = id_map['left ramp'] + 1
         return id_map
 
     @staticmethod
@@ -99,10 +101,11 @@ class ProcGen:
 
 
 class TerrainGen:
-    def __init__(self, tile_IDs: dict[str, int], biome_order: dict[str, int], current_biome: str):
+    def __init__(self, tile_IDs: dict[str, int], biome_order: dict[str, int], current_biome: str, tile_IDs_to_names: dict[int, str]):
         self.tile_IDs = tile_IDs
         self.biome_order = biome_order
         self.current_biome = current_biome
+        self.tile_IDs_to_names = tile_IDs_to_names
         
         self.seed = 2285 # TODO: add the option to enter a custom seed
         self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
@@ -113,7 +116,7 @@ class TerrainGen:
     def gen_height_map(self) -> np.ndarray:
         '''generates a height map for every biome using 1d perlin noise'''
         height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
-        lerp_range = BIOME_WIDTH // 10 # how far to extend the linear interpolation on noise parameters when generating biome transitions
+        lerp_range = BIOME_WIDTH // 5 # how far to extend the linear interpolation on noise parameters when generating biome transitions
         biome_names = list(self.biome_order.keys())
         second_to_last_idx = len(biome_names) - 1
         for idx, biome in enumerate(biome_names):
@@ -166,12 +169,14 @@ class TerrainGen:
                     self.tile_map[x, y] = self.tile_IDs['air'] 
 
                 elif y == surface_level:
+                    # TODO: add sand tiles for the desert, snow for the taiga, etc.
                     self.tile_map[x, y] = self.tile_IDs['dirt']
-
+                    if 0 < x < MAP_SIZE[0] - 1:
+                        self.add_ramps(x, y, self.tile_IDs_to_names[self.tile_map[x, y]])
+                        
                 else:
                     if self.cave_map[x, y]:
                         self.tile_map[x, y] = self.tile_IDs['air']
-                    
                     else:
                         rel_depth = (y - surface_level) / MAP_SIZE[1] # calculate the tile's depth relative to the height of the map
                         if rel_depth < 0.1:
@@ -186,7 +191,15 @@ class TerrainGen:
                             else:
                                 self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) < 60 else 'dirt']  
                         else:
-                            self.place_ores(x, y, self.current_biome)
+                            self.place_ores(x, y, self.current_biome)          
+    
+    def add_ramps(self, x: int, y: int, tile_type: str) -> None: # TODO: implement the tile types once more ramp graphics are uploaded
+        air = self.tile_IDs['air']
+        if self.tile_map[x - 1, y] == air:
+            self.tile_map[x - 1, y] = self.tile_IDs['left ramp']
+        
+        if self.tile_map[x + 1, y] == air:
+            self.tile_map[x + 1, y] = self.tile_IDs['right ramp']
 
     def place_ores(self, x: int, y: int, biome: str) -> None:
         '''

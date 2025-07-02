@@ -12,6 +12,7 @@ class AssetManager:
                 'icons': load_folder(join('..', 'graphics', 'ui', 'icons')),
                 'research': load_folder(join('..', 'graphics', 'research')),
                 'storage': load_folder(join('..', 'graphics', 'storage')),
+                'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')),
                 'consumables': load_subfolders(join('..', 'graphics', 'consumables')),
                 'minerals': load_subfolders(join('..', 'graphics', 'minerals')),
                 'decor': load_subfolders(join('..', 'graphics', 'decor'))

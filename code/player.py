@@ -18,7 +18,7 @@ class Player(pg.sprite.Sprite):
         coords: tuple[int, int], 
         frames: dict[str, pg.Surface],
         z: dict[str, int],
-        sprite_groups: list[pg.sprite.Group], 
+        sprite_groups: list[pg.sprite.Group],
         tile_map: np.ndarray,
         tile_IDs: dict[str, dict[str, any]],
         biome_order: dict[str, int],
@@ -54,7 +54,7 @@ class Player(pg.sprite.Sprite):
         self.health = 100
         self.arm_strength = 4
         self.facing_left = True
-        self.grounded = True
+        self.grounded = False
 
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH

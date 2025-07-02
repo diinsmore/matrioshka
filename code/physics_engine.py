@@ -15,7 +15,7 @@ class PhysicsEngine:
         self.tile_IDs = tile_IDs
         
         self.collision_map = CollisionMap(self.tile_map, self.tile_IDs)
-        self.collision_detection = CollisionDetection(self.collision_map)
+        self.collision_detection = CollisionDetection(self.collision_map, self.tile_map, self.tile_IDs)
         self.sprite_movement = SpriteMovement(self.collision_detection, self.tile_map, self.tile_IDs)
 
 
@@ -74,10 +74,14 @@ class CollisionMap:
         
 
 class CollisionDetection:
-    def __init__(self, collision_map: CollisionMap):
+    def __init__(self, collision_map: CollisionMap, tile_map: np.ndarray, tile_IDs: dict[str, int]):
         self.collision_map = collision_map
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
 
-    def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str, step_over_tile: callable) -> None:
+        self.l_ramp_ID, self.r_ramp_ID = self.tile_IDs['left ramp'], self.tile_IDs['right ramp']
+
+    def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str) -> None:
         '''adjust movement/positioning upon detecting a tile collision'''
         tiles_near = self.collision_map.search_map(sprite)
         if not tiles_near: # surrounded by air
@@ -87,28 +91,24 @@ class CollisionDetection:
         
         for tile in tiles_near:
             if sprite.rect.colliderect(tile):
-                if axis == 'x' and sprite.direction.x:
-                    self.tile_collision_x(sprite, tile, 'right' if sprite.direction.x > 0 else 'left', step_over_tile)
+                tile_ID = self.tile_map[tile.x // TILE_SIZE, tile.y // TILE_SIZE]
+                if tile_ID in {self.l_ramp_ID, self.r_ramp_ID}:
+                    self.ramp_collision(sprite, tile, 'left' if tile_ID == self.l_ramp_ID else 'right')
+                else:
+                    if axis == 'x' and sprite.direction.x:
+                        self.tile_collision_x(sprite, tile, 'right' if sprite.direction.x > 0 else 'left')
 
-                elif axis == 'y' and sprite.direction.y:
-                    self.tile_collision_y(sprite, tile, 'up' if sprite.direction.y < 0 else 'down')
+                    elif axis == 'y' and sprite.direction.y:
+                        self.tile_collision_y(sprite, tile, 'up' if sprite.direction.y < 0 else 'down')
         
     @staticmethod
-    def tile_collision_x(sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str, step_over_tile: callable) -> None:
-        if not step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):
-            if direction == 'right':
-                sprite.rect.right = tile.left
-            else:
-                sprite.rect.left = tile.right
-
-            sprite.state = 'idle'
+    def tile_collision_x(sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
+        if direction == 'right':
+            sprite.rect.right = tile.left
         else:
-            if sprite.grounded: # prevents some glitchy movement from landing on the side of a tile
-                if direction == 'right':
-                    sprite.rect.bottomright = tile.topleft
-                else:
-                    sprite.rect.bottomleft = tile.topright
+            sprite.rect.left = tile.right
 
+        sprite.state = 'idle'
         sprite.direction.x = 0
 
     @staticmethod
@@ -125,7 +125,25 @@ class CollisionDetection:
                 sprite.state = 'idle'
 
         sprite.direction.y = 0
+    
+    @staticmethod
+    def ramp_collision(sprite: pg.sprite.Sprite, tile: pg.Rect, ramp_direction: str) -> None:
+        rel_x = max(0, min(sprite.rect.centerx - tile.left, TILE_SIZE)) # sprite coords relative to the ramp
+        ramp_y = tile.top + (rel_x if ramp_direction == 'right' else TILE_SIZE - rel_x) # descend/ascend the further you move along
+    
+        if sprite.direction.y > 0:
+            if sprite.rect.bottom > ramp_y:
+                sprite.rect.bottom = ramp_y
+                sprite.grounded = True
+                sprite.direction.y = 0
+                sprite.state = 'idle'
 
+        elif sprite.direction.y < 0:
+            sprite.rect.top = tile.bottom
+            sprite.direction.y = 0
+        
+        sprite.direction.x = 0 # otherwise the player paused midway through ascending the ramp
+        
 
 class SpriteMovement:
     def __init__(self, collision_detection: CollisionDetection, tile_map: np.ndarray, tile_IDs: dict[str, int]) -> None:
@@ -144,9 +162,9 @@ class SpriteMovement:
                 sprite.state = 'idle'
                 sprite.frame_index = 0
         
-        self.collision_detection.tile_collision_update(sprite, 'x', self.step_over_tile)
+        self.collision_detection.tile_collision_update(sprite, 'x')
         self.update_movement_y(sprite, dt) # always called since it handles gravity
-        self.collision_detection.tile_collision_update(sprite, 'y', self.step_over_tile)
+        self.collision_detection.tile_collision_update(sprite, 'y')
 
     @staticmethod
     def update_movement_x(sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
@@ -165,16 +183,6 @@ class SpriteMovement:
         sprite.direction.y += (sprite.gravity // 2) * dt
 
         sprite.rect.y = min(sprite.rect.y, WORLD_EDGE_BOTTOM) # don't add a top limit until the space biome borders are set, if any
-        
-    def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
-        '''determine if the sprite can step over the colliding tile'''
-        if sprite.direction.y == 0:
-            above_tiles = []
-            for i in range(1, ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
-                above_tiles.append(self.tile_map[tile_x, tile_y - i])
-            above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2]) # also check if the tile above the player's head is air
-            return all(tile_id == self.tile_IDs['air'] for tile_id in above_tiles)
-        return False
 
     @staticmethod
     def jump(sprite: pg.sprite.Sprite) -> None:

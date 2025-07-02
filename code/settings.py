@@ -7,6 +7,9 @@ CELL_SIZE = 10
 # TODO: any value larger on the x-axis will cause a glitch where the physics engine doesn't detect the player's initial contact with the ground in time and ends up spawning in a cave
 MAP_SIZE = (1590, 200) 
 
+# ordered from left-right
+# since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
+# TODO: the highlands & tundra noise parameters are especially in need of fine-tuning
 BIOMES = {
     'highlands': {
         'height map': {'scale': 325, 'octaves': 5, 'persistence': 1.6, 'lacunarity': 2.1},
@@ -85,15 +88,10 @@ TILES = {
     'copper': {'ore': True, 'hardness': 350},
     'iron': {'ore': True, 'hardness': 750},
     'silver': {'ore': True, 'hardness': 550},
-    'gold': {'ore': True, 'hardness': 600},
+    'gold': {'ore': True, 'hardness': 600}
 }
 
 TILE_REACH_RADIUS = 5
-
-# ordered from left-right
-# since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
-# TODO: the highlands & tundra noise parameters are especially in need of fine-tuning
-
 
 # 'producers' specifies who/what can craft a given item
 TOOLS = {
