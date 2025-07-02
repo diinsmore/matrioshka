@@ -128,8 +128,13 @@ class CollisionDetection:
     
     @staticmethod
     def ramp_collision(sprite: pg.sprite.Sprite, tile: pg.Rect, ramp_direction: str) -> None:
-        rel_x = max(0, min(sprite.rect.centerx - tile.left, TILE_SIZE)) # sprite coords relative to the ramp
-        ramp_y = tile.top + (rel_x if ramp_direction == 'right' else TILE_SIZE - rel_x) # descend/ascend the further you move along
+        if ramp_direction == 'left':
+            rel_x = max(0, min(sprite.rect.centerx - tile.left, TILE_SIZE)) # sprite coords relative to the ramp
+            ramp_y = tile.top + (TILE_SIZE - rel_x)
+        
+        elif ramp_direction == 'right':
+            rel_x = max(0, min(sprite.rect.centerx - tile.right, TILE_SIZE))
+            ramp_y = tile.top + rel_x
     
         if sprite.direction.y > 0:
             if sprite.rect.bottom > ramp_y:

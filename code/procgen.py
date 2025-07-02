@@ -162,25 +162,25 @@ class TerrainGen:
         return top + half_elev + (n * half_elev)
 
     def place_tiles(self) -> None:
+        air, dirt = self.tile_IDs['air'], self.tile_IDs['dirt']
+        l_ramp, r_ramp = self.tile_IDs['left ramp'], self.tile_IDs['right ramp']
         for x in range(MAP_SIZE[0]):
             surface_level = int(self.height_map[x])
             for y in range(MAP_SIZE[1]): 
                 if y < surface_level: 
-                    self.tile_map[x, y] = self.tile_IDs['air'] 
+                    self.tile_map[x, y] = air 
 
                 elif y == surface_level:
-                    # TODO: add sand tiles for the desert, snow for the taiga, etc.
-                    self.tile_map[x, y] = self.tile_IDs['dirt']
+                    self.tile_map[x, y] = dirt
                     if 0 < x < MAP_SIZE[0] - 1:
-                        self.add_ramps(x, y, self.tile_IDs_to_names[self.tile_map[x, y]])
-                        
+                        self.add_left_ramp(x, y, self.tile_IDs_to_names[self.tile_map[x, y]], l_ramp, air)
                 else:
                     if self.cave_map[x, y]:
-                        self.tile_map[x, y] = self.tile_IDs['air']
+                        self.tile_map[x, y] = air
                     else:
                         rel_depth = (y - surface_level) / MAP_SIZE[1] # calculate the tile's depth relative to the height of the map
                         if rel_depth < 0.1:
-                            self.tile_map[x, y] = self.tile_IDs['dirt']
+                            self.tile_map[x, y] = dirt
                         
                         elif rel_depth < 0.2:
                             self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) <= 33 else 'dirt'] 
@@ -191,15 +191,22 @@ class TerrainGen:
                             else:
                                 self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) < 60 else 'dirt']  
                         else:
-                            self.place_ores(x, y, self.current_biome)          
+                            self.place_ores(x, y, self.current_biome) 
+
+        self.add_right_ramps(r_ramp, air)         
     
-    def add_ramps(self, x: int, y: int, tile_type: str) -> None: # TODO: implement the tile types once more ramp graphics are uploaded
-        air = self.tile_IDs['air']
+    def add_left_ramp(self, x: int, y: int, tile_type: str, l_ramp: int, air: int) -> None: # TODO: implement the tile types once more ramp graphics are uploaded
         if self.tile_map[x - 1, y] == air:
-            self.tile_map[x - 1, y] = self.tile_IDs['left ramp']
-        
-        if self.tile_map[x + 1, y] == air:
-            self.tile_map[x + 1, y] = self.tile_IDs['right ramp']
+            self.tile_map[x - 1, y] = l_ramp
+
+    def add_right_ramps(self, r_ramp: int, air: int) -> None:
+        for x in range(MAP_SIZE[0] - 1): # looping again since otherwise no tile to the right will have been placed yet
+            surface_level = int(self.height_map[x])
+            for y in range(MAP_SIZE[1]):
+                if y > surface_level:
+                    continue
+                if y == surface_level and self.tile_map[x + 1, y] == air:
+                    self.tile_map[x, y] = r_ramp
 
     def place_ores(self, x: int, y: int, biome: str) -> None:
         '''
