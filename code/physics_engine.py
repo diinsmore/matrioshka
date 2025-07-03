@@ -10,12 +10,13 @@ from collections import defaultdict
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
 class PhysicsEngine:
-    def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int]):
+    def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int], tile_IDs_to_names: dict[int, str]):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
+        self.tile_IDs_to_names = tile_IDs_to_names
         
         self.collision_map = CollisionMap(self.tile_map, self.tile_IDs)
-        self.collision_detection = CollisionDetection(self.collision_map, self.tile_map, self.tile_IDs)
+        self.collision_detection = CollisionDetection(self.collision_map, self.tile_map, self.tile_IDs, self.tile_IDs_to_names)
         self.sprite_movement = SpriteMovement(self.collision_detection, self.tile_map, self.tile_IDs)
 
 
@@ -74,12 +75,13 @@ class CollisionMap:
         
 
 class CollisionDetection:
-    def __init__(self, collision_map: CollisionMap, tile_map: np.ndarray, tile_IDs: dict[str, int]):
+    def __init__(self, collision_map: CollisionMap, tile_map: np.ndarray, tile_IDs: dict[str, int], tile_IDs_to_names: dict[int, str]):
         self.collision_map = collision_map
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
+        self.tile_IDs_to_names = tile_IDs_to_names
 
-        self.l_ramp_ID, self.r_ramp_ID = self.tile_IDs['left ramp'], self.tile_IDs['right ramp']
+        self.ramp_IDs = {self.tile_IDs[tile] for tile in self.tile_IDs.keys() if 'ramp' in tile}
 
     def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str) -> None:
         '''adjust movement/positioning upon detecting a tile collision'''
@@ -92,8 +94,8 @@ class CollisionDetection:
         for tile in tiles_near:
             if sprite.rect.colliderect(tile):
                 tile_ID = self.tile_map[tile.x // TILE_SIZE, tile.y // TILE_SIZE]
-                if tile_ID in {self.l_ramp_ID, self.r_ramp_ID}:
-                    self.ramp_collision(sprite, tile, 'left' if tile_ID == self.l_ramp_ID else 'right')
+                if tile_ID in self.ramp_IDs:
+                    self.ramp_collision(sprite, tile, 'left' if 'left' in self.tile_IDs_to_names[tile_ID] else 'right')
                 else:
                     if axis == 'x' and sprite.direction.x:
                         self.tile_collision_x(sprite, tile, 'right' if sprite.direction.x > 0 else 'left')

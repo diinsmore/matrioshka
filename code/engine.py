@@ -28,13 +28,14 @@ class Engine:
         self.proc_gen = ProcGen(screen, self.camera.offset, self.saved_data)
         self.tile_map = self.proc_gen.tile_map
         self.tile_IDs = self.proc_gen.tile_IDs
+        self.tile_IDs_to_names = self.proc_gen.tile_IDs_to_names
         self.tree_map = self.proc_gen.tree_map
         self.cave_map = self.proc_gen.cave_map
 
         self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
         self.asset_manager = AssetManager()
         
-        self.physics_engine = PhysicsEngine(self.tile_map, self.tile_IDs)
+        self.physics_engine = PhysicsEngine(self.tile_map, self.tile_IDs, self.tile_IDs_to_names)
         
         self.sprite_manager = SpriteManager(
             self.screen,

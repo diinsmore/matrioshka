@@ -80,6 +80,7 @@ TILES = {
     'air': {'hardness': 0},
     'dirt': {'hardness': 100},
     'stone': {'hardness': 400},
+    'sand': {'hardness': 50},
     'sandstone': {'hardness': 500}, 
     'ice': {'hardness': 200},
     'coal': {'hardness': 450},
@@ -90,6 +91,8 @@ TILES = {
     'silver': {'ore': True, 'hardness': 550},
     'gold': {'ore': True, 'hardness': 600}
 }
+
+RAMP_TILES = ['dirt', 'sand', 'stone', 'ice']
 
 TILE_REACH_RADIUS = 5
 
