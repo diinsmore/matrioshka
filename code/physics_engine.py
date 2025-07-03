@@ -16,9 +16,26 @@ class PhysicsEngine:
         self.tile_IDs_to_names = tile_IDs_to_names
         
         self.collision_map = CollisionMap(self.tile_map, self.tile_IDs)
-        self.collision_detection = CollisionDetection(self.collision_map, self.tile_map, self.tile_IDs, self.tile_IDs_to_names)
+
+        self.collision_detection = CollisionDetection(
+            self.collision_map, 
+            self.tile_map, 
+            self.tile_IDs, 
+            self.tile_IDs_to_names, 
+            self.step_over_tile
+        )
+        
         self.sprite_movement = SpriteMovement(self.collision_detection, self.tile_map, self.tile_IDs)
 
+    def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
+        '''determine if the sprite can step over the colliding tile'''
+        if sprite.direction.y == 0:
+            above_tiles = []
+            for i in range(1, ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
+                above_tiles.append(self.tile_map[tile_x, tile_y - i])
+            above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2]) # also check if the tile above the player's head is air
+            return all(tile_id == self.tile_IDs['air'] for tile_id in above_tiles)
+        return False
 
 class CollisionMap:
     def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int]):
@@ -75,11 +92,19 @@ class CollisionMap:
         
 
 class CollisionDetection:
-    def __init__(self, collision_map: CollisionMap, tile_map: np.ndarray, tile_IDs: dict[str, int], tile_IDs_to_names: dict[int, str]):
+    def __init__(
+        self, 
+        collision_map: CollisionMap, 
+        tile_map: np.ndarray, 
+        tile_IDs: dict[str, int], 
+        tile_IDs_to_names: dict[int, str],
+        step_over_tile: callable
+    ):
         self.collision_map = collision_map
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
+        self.step_over_tile = step_over_tile
 
         self.ramp_IDs = {self.tile_IDs[tile] for tile in self.tile_IDs.keys() if 'ramp' in tile}
 
@@ -102,15 +127,22 @@ class CollisionDetection:
 
                     elif axis == 'y' and sprite.direction.y:
                         self.tile_collision_y(sprite, tile, 'up' if sprite.direction.y < 0 else 'down')
-        
-    @staticmethod
-    def tile_collision_x(sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
-        if direction == 'right':
-            sprite.rect.right = tile.left
-        else:
-            sprite.rect.left = tile.right
+ 
+    def tile_collision_x(self, sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
+        if not self.step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):
+            if direction == 'right':
+                sprite.rect.right = tile.left
+            else:
+                sprite.rect.left = tile.right
 
-        sprite.state = 'idle'
+            sprite.state = 'idle'
+        else:
+            if sprite.grounded: # prevents some glitchy movement from landing on the side of a tile
+                if direction == 'right':
+                    sprite.rect.bottomright = tile.topleft
+                else:
+                    sprite.rect.bottomleft = tile.topright
+
         sprite.direction.x = 0
 
     @staticmethod
