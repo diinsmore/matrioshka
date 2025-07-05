@@ -179,7 +179,7 @@ class TerrainGen:
 
                 elif y == surface_level:
                     self.tile_map[x, y] = self.tile_IDs[self.get_biome_tile(x, current_biome)]
-                    if self.tile_map[x, y] != air and 0 < x < MAP_SIZE[0] - 1:
+                    if 0 < x < MAP_SIZE[0] - 1:
                         self.add_left_ramp(x, y, self.tile_IDs_to_names[self.tile_map[x, y]], air) 
                 
                 else:
