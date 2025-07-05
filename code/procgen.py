@@ -175,12 +175,12 @@ class TerrainGen:
                 if y < surface_level: 
                     self.tile_map[x, y] = air  
                     if y == surface_level - 1: # going up a surface level to check previous tiles, since those to the right of the current coordinate aren't yet determined
-                        self.add_right_ramp(x, y, self.tile_IDs_to_names[self.tile_map[x - 1, y]], air)   
+                        self.add_ramp(x, y, 'right', self.tile_map[x - 1, y], air)   
 
                 elif y == surface_level:
                     self.tile_map[x, y] = self.tile_IDs[self.get_biome_tile(x, current_biome)]
                     if 0 < x < MAP_SIZE[0] - 1:
-                        self.add_left_ramp(x, y, self.tile_IDs_to_names[self.tile_map[x, y]], air) 
+                        self.add_ramp(x, y, 'left', self.tile_map[x - 1, y], air) 
                 
                 else:
                     if self.cave_map[x, y]:
@@ -220,13 +220,10 @@ class TerrainGen:
             case 'tundra':
                 return 'ice'
 
-    def add_left_ramp(self, x: int, y: int, tile_name: str, air: int) -> None:
-        if self.tile_map[x - 1, y] == air:
-            self.tile_map[x - 1, y] = self.tile_IDs[f'{tile_name} ramp left']
-        
-    def add_right_ramp(self, x: int, y: int, tile_name: str, air: int) -> None:
-        if self.tile_map[x - 1, y] != air:
-            self.tile_map[x - 1, y] = self.tile_IDs[f'{tile_name} ramp right']
+    def add_ramp(self, x: int, y: int, direction: str, prev_tile_ID: int, air_ID: int) -> None:
+        if (direction == 'left' and prev_tile_ID == air_ID) or (direction == 'right' and prev_tile_ID != air_ID):
+            tile_type = self.tile_map[x, y] if direction == 'left' else prev_tile_ID
+            self.tile_map[x - 1, y] = self.tile_IDs[f'{self.tile_IDs_to_names[tile_type]} ramp {direction}']
             
     def place_ores(self, x: int, y: int, biome: str) -> None:
         '''
