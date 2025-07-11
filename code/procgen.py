@@ -23,7 +23,7 @@ class ProcGen:
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
 
-            self.terrain_gen = TerrainGen(self.tile_IDs, self.tile_IDs_to_names, self.biome_order, self.current_biome)
+            self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
             self.height_map = self.terrain_gen.height_map
             self.cave_map = self.terrain_gen.cave_map
@@ -105,35 +105,46 @@ class ProcGen:
 
 
 class TerrainGen:
-    def __init__(self, tile_IDs: dict[str, int], tile_IDs_to_names: dict[int, str], biome_order: dict[str, int], current_biome: str):
+    def __init__(self, tile_IDs: dict[str, int], biome_order: dict[str, int], current_biome: str):
         self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
         self.biome_order = biome_order
         self.current_biome = current_biome
         
         self.seed = 2285 # TODO: add the option to enter a custom seed
-        self.tile_map = np.zeros((MAP_SIZE[0], MAP_SIZE[1]), dtype = np.uint8)
+        self.tile_map = np.full(MAP_SIZE, self.tile_IDs['air'], dtype = np.uint8)
         self.height_map = self.gen_height_map()
+        
+        self.surface_lvls = np.array(self.height_map).astype(int)
+        # limits what tiles may appear per each depth level by only slicing the tile probs dictionary up to a given index
+        self.tile_probs_max_idxs = {
+            'highlands': {'depth 0': 2, 'depth 1': 4, 'depth 2': 6, 'depth 3': 8},
+            'desert':    {'depth 0': 3, 'depth 1': 4, 'depth 2': 6, 'depth 3': 7},
+            'forest':    {'depth 0': 2, 'depth 1': 3, 'depth 2': 8, 'depth 3': 9},
+            'taiga':     {'depth 0': 3, 'depth 1': 4, 'depth 2': 7, 'depth 3': 8},
+            'tundra':    {'depth 0': 3, 'depth 1': 5, 'depth 2': 7, 'depth 3': 8},
+        } 
+        for biome in self.tile_probs_max_idxs.keys():
+            self.tile_probs_max_idxs[biome]['depth 4'] = len(BIOMES[biome]['tile probs']) # all biome-specific tiles are available at this level
+           
         self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed)
         self.cave_map = self.cave_gen.map
-        
+
     def gen_height_map(self) -> np.ndarray:
         '''generates a height map for every biome using 1d perlin noise'''
         height_map = np.zeros(MAP_SIZE[0], dtype = np.float32)
         lerp_range = BIOME_WIDTH // 5 # how far to extend the linear interpolation on noise parameters when generating biome transitions
         biome_names = list(self.biome_order.keys())
-        second_to_last_idx = len(biome_names) - 1
+        last_biome_bordered_right = len(biome_names) - 1
         for idx, biome in enumerate(biome_names):
             start = idx * BIOME_WIDTH
             end = start + BIOME_WIDTH
-            map_slice = np.arange(start, end) # represents the section of the height map local to the current biome
-            elevs = self.get_biome_elevations(map_slice, biome)
+            map_slice = np.arange(start, end)
             
-            if idx < second_to_last_idx: # another biome lies to the right
+            elevs = self.get_biome_elevations(map_slice, biome)
+            next_biome_elevs = None
+            if idx < last_biome_bordered_right:
                 next_biome_elevs = self.get_biome_elevations(map_slice, biome_names[idx + 1])
-            else:
-                next_biome_elevs = None
-
+            
             for biome_x, world_x in enumerate(map_slice):
                 if biome_x < BIOME_WIDTH - lerp_range or next_biome_elevs is None: # outside the transition zone
                     height_map[world_x] = elevs[biome_x]
@@ -145,8 +156,7 @@ class TerrainGen:
 
     def get_biome_elevations(self, map_slice: np.ndarray, biome: str) -> np.ndarray:
         biome_data = BIOMES[biome]
-        noise_params = biome_data['height map']
-        elev_params = biome_data['elevation']
+        noise_params, elev_params = biome_data['height map'], biome_data['elevation']
         top, bottom = elev_params['top'], elev_params['bottom']
         elev_range = bottom - top
 
@@ -164,44 +174,7 @@ class TerrainGen:
 
         half_elev = elev_range // 2
         return top + half_elev + (n * half_elev)
-
-    def place_tiles(self) -> None:
-        air = self.tile_IDs['air']
-        biomes = list(self.biome_order.keys())
-        for x in range(MAP_SIZE[0]):
-            current_biome = biomes[x // BIOME_WIDTH]
-            surface_level = int(self.height_map[x])
-            for y in range(MAP_SIZE[1]): 
-                if y < surface_level: 
-                    self.tile_map[x, y] = air  
-                    if y == surface_level - 1: # going up a surface level to check previous tiles, since those to the right of the current coordinate aren't yet determined
-                        self.add_ramp(x, y, 'right', self.tile_map[x - 1, y], air)   
-
-                elif y == surface_level:
-                    self.tile_map[x, y] = self.tile_IDs[self.get_biome_tile(x, current_biome)]
-                    if 0 < x < MAP_SIZE[0] - 1:
-                        self.add_ramp(x, y, 'left', self.tile_map[x - 1, y], air) 
-                
-                else:
-                    if self.cave_map[x, y]:
-                        self.tile_map[x, y] = air
-                    else:
-                        if self.tile_map[x, y] == 0:
-                            rel_depth = (y - surface_level) / MAP_SIZE[1] # calculate the tile's depth relative to the height of the map
-                            if rel_depth < 0.1:
-                                self.tile_map[x, y] = self.tile_IDs[self.get_biome_tile(x, current_biome)]
-                            
-                            elif rel_depth < 0.2:
-                                self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) <= 33 else 'dirt'] 
-                            
-                            elif rel_depth < 0.4:
-                                if randint(0, 100) <= 25:
-                                    self.tile_map[x, y] = choice((self.tile_IDs['sandstone'], self.tile_IDs['ice']))
-                                else:
-                                    self.tile_map[x, y] = self.tile_IDs['stone' if randint(0, 100) < 60 else 'dirt']  
-                            else:
-                                self.place_ores(x, y, self.current_biome)   
-
+    
     @staticmethod
     def get_biome_tile(x: int, current_biome: str) -> str:
         match current_biome:
@@ -209,53 +182,84 @@ class TerrainGen:
                 return 'dirt'
 
             case 'taiga':
-                return 'dirt' if randint(0, 100) < 60 else 'stone'
+                return 'dirt'
 
             case 'desert':
                 return 'sand'
 
             case 'highlands':
-                return 'stone' if randint(0, 100) < 65 else 'dirt'
+                return 'stone'
 
             case 'tundra':
                 return 'ice'
 
-    def add_ramp(self, x: int, y: int, direction: str, prev_tile_ID: int, air_ID: int) -> None:
-        if (direction == 'left' and prev_tile_ID == air_ID) or (direction == 'right' and prev_tile_ID != air_ID):
-            tile_type = self.tile_map[x, y] if direction == 'left' else prev_tile_ID
-            self.tile_map[x - 1, y] = self.tile_IDs[f'{self.tile_IDs_to_names[tile_type]} ramp {direction}']
-            
-    def place_ores(self, x: int, y: int, biome: str) -> None:
-        '''
-        Distribute ore tiles based on the biome's probability of containing such a tile.
-        If no ore is selected, fill the space with a tile common to the biome.
-        '''
-        ores = [tile for tile in self.tile_IDs if self.tile_IDs['copper'] <= self.tile_IDs[tile] <= self.tile_IDs['gold']]
-        
-        non_ores = [tile for tile in self.tile_IDs if self.tile_IDs['dirt'] <= self.tile_IDs[tile] <= self.tile_IDs[
-                    'obsidian' if biome != 'underworld' else 'hellstone']]
+    def place_tiles(self) -> None:
+        biomes = list(self.biome_order.keys())
+        surface_tiles = np.array([self.tile_IDs[self.get_biome_tile(x, biomes[x // BIOME_WIDTH])] for x in range(MAP_SIZE[0])])
+        self.tile_map[np.arange(MAP_SIZE[0]), self.surface_lvls] = surface_tiles
+        self.place_ramps(biomes)
+        self.place_underground_tiles(surface_tiles) 
 
-        if randint(1, 10) == 1:
-            ore_selected = self.calc_tile_prob(ores, x, y, biome)
-            if not ore_selected:
-                # select a random non-ore tile
-                tile = choice(non_ores)
-                self.tile_map[x, y] = self.tile_IDs[tile] 
-        else:
-            tile = choice(non_ores)
-            self.tile_map[x, y] = self.tile_IDs[tile] 
-                        
-    def calc_tile_prob(self, tiles: list[str], x: int, y: int, biome: str) -> bool:
-        '''randomly determine which tile (if any) should be placed at the given coordinate'''
-        tiles = sorted(tiles, key = lambda tile: BIOMES[biome]['tile probs'][tile], reverse=True)
-        for index, tile in enumerate(tiles):
-            if randint(0, 10) <= BIOMES[biome]['tile probs'][tile]:
-                self.tile_map[x, y] = self.tile_IDs[tile] 
-                return True
-            else:
-                if index < len(tiles) - 1:
+    def place_ramps(self, biomes: list[str]) -> None:
+        elev_diffs = np.diff(self.surface_lvls)
+        r_ramp_x = np.where(elev_diffs > 0)[0]
+        l_ramp_x = np.where(elev_diffs < 0)[0] + 1
+
+        self.tile_map[r_ramp_x, self.surface_lvls[r_ramp_x]] = np.array([
+            self.tile_IDs[f'{self.get_biome_tile(x, biomes[x // BIOME_WIDTH])} ramp right'] for x in r_ramp_x
+        ])
+
+        self.tile_map[l_ramp_x, self.surface_lvls[l_ramp_x]] = np.array([
+            self.tile_IDs[f'{self.get_biome_tile(x, biomes[x // BIOME_WIDTH])} ramp left'] for x in l_ramp_x
+        ])
+
+    def place_underground_tiles(self, surface_tiles: np.ndarray) -> None:
+        w, h = MAP_SIZE[0], MAP_SIZE[1]
+        x_axs = np.arange(w).reshape(w, 1)
+        y_axs = np.arange(h).reshape(1, h)
+        surface_lvls = self.surface_lvls.reshape(w, 1)
+        rel_depth = (y_axs.astype(float) - surface_lvls) / float(h)
+        underground_mask = y_axs > surface_lvls
+        
+        biome_names = self.biome_order.keys()
+        tile_probs = {biome: BIOMES[biome]['tile probs'] for biome in biome_names}
+        tile_names = {biome: np.array([self.tile_IDs[tile] for tile in tile_probs[biome].keys()]) for biome in biome_names}
+        
+        depth_vals = [0.1, 0.2, 0.3, 0.4]
+        max_depth_val = len(depth_vals)
+
+        for biome, idx in self.biome_order.items(): 
+            biome_cols = (x_axs // BIOME_WIDTH == idx)
+            for depth_idx, mask in enumerate(self.get_depth_masks(depth_vals, rel_depth, underground_mask)):
+                depth_mask = mask & biome_cols
+                if not depth_mask.any(): # doesn't represent the current depth
                     continue
-                return False
+                
+                biome_tile_probs = list(tile_probs[biome].values())
+                biome_tile_names = tile_names[biome]
+                if depth_idx != max_depth_val: # certain tiles will be excluded
+                    max_idx = self.tile_probs_max_idxs[biome][f'depth {depth_idx}']
+                    biome_tile_probs = biome_tile_probs[:max_idx]
+                    biome_tile_names = biome_tile_names[:max_idx]
+                biome_tile_probs = [p / sum(biome_tile_probs) for p in biome_tile_probs] # scale the values to sum to 1, otherwise np.random.choice() will throw an error
+                self.tile_map[depth_mask] = np.random.choice(
+                    biome_tile_names, 
+                    size = depth_mask.sum(),
+                    p = biome_tile_probs
+                )
+                
+    @staticmethod
+    def get_depth_masks(depth_vals: list[float], rel_depth: np.ndarray, underground_tiles: np.ndarray) -> list[np.ndarray]:
+        masks = []
+        for i, v in enumerate(depth_vals):
+            below_max = rel_depth < v
+            above_min = rel_depth >= (0 if i == 0 else depth_vals[i - 1])
+            masks.append(below_max & above_min & underground_tiles)
+        return masks
+
+    @staticmethod
+    def scale_tile_probs(probs: list[int], biome: str, max_idx: int) -> list[float]:
+        return [p / sum(probs) for p in probs] # default values increase with fewer available tiles to select from
 
     def run(self) -> None:
         self.gen_height_map()
