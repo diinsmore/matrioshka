@@ -25,7 +25,7 @@ class Sky:
         self.tint_update = 1
         
         self.timers = {
-            'day/night cycle': Timer(length = 100, function = self.day_night_cycle, auto_start = True, loop = True),
+            'day/night cycle': Timer(length = 10_000, function = self.day_night_cycle, auto_start = True, loop = True),
             'tint update': Timer(length = 1000, function = self.update_tint, auto_start = False, loop = True)
         }
 
