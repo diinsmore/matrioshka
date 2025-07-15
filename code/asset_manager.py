@@ -1,6 +1,6 @@
 import pygame as pg
 
-from settings import BIOMES, TILES, TOOLS, MACHINES
+from settings import BIOMES, TREE_BIOMES, TILES, TOOLS, MACHINES
 from file_import_functions import *
 
 class AssetManager:
@@ -36,17 +36,15 @@ class AssetManager:
     def load_biome_graphics(self) -> None:
         for biome in BIOMES:
             self.assets['graphics'][biome] = {
-                'landscape': load_image(join('..', 'graphics', 'backgrounds', f'{biome} landscape.png')), 
-                'underground': load_image(join('..', 'graphics', 'backgrounds', f'{biome} underground.png'))
+                'landscapes': load_folder(join('..', 'graphics', 'backgrounds', biome, 'landscapes')), 
+                'underground': load_folder(join('..', 'graphics', 'backgrounds', biome, 'underground'))
             }
-            
-            if biome in ('forest', 'taiga', 'desert'):
+            if biome in TREE_BIOMES:
                 self.assets['graphics'][biome]['trees'] = load_folder(join('..', 'graphics', 'terrain', 'trees', biome))
 
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
-            if tile != 'air':
-                self.assets['graphics'][tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
+            self.assets['graphics'][tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
 
     def load_tool_graphics(self) -> None:
         for tool in TOOLS.keys():

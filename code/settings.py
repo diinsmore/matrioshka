@@ -9,7 +9,7 @@ MAP_SIZE = (3000, 200)
 
 # ordered from left-right
 # since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
-# TODO: the highlands & tundra noise parameters are especially in need of fine-tuning
+# TODO: the highlands & snow noise parameters are especially in need of fine-tuning
 BIOMES = {
     'highlands': {
         'height map': {'scale': 325, 'octaves': 5, 'persistence': 1.6, 'lacunarity': 2.1},
@@ -27,13 +27,13 @@ BIOMES = {
         'liquid probs': {'oil': 7, 'lava': 5},
     },
     
-    'forest': {
+    'defiled': {
         'height map': {'scale': 400, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 2.0},
         'cave map': {'scale': 30.0, 'octaves': 4, 'persistence': 1.6, 'lacunarity': 1.3, 'threshold': 0.55},
         'elevation': {'top': 70, 'bottom': 110},
-        'tile probs': {'dirt': 40, 'mud': 5, 'stone': 25, 'clay': 5, 'tin': 2, 'coal': 7, 'iron': 5, 'copper': 4, 'silver': 3, 'gold': 3, 'platinum': 1},
+        'tile probs': {'defiled stone': 35,  'dirt': 30, 'tin': 2, 'coal': 7, 'iron': 5, 'copper': 4, 'silver': 3, 'gold': 3, 'platinum': 1},
         'liquid probs': {'water': 7, 'lava': 2},
-        'tree coverage': 40
+        'tree coverage': 15
     },
     
     'taiga': {
@@ -45,12 +45,12 @@ BIOMES = {
         'tree coverage': 30
     },
     
-    'tundra': {
+    'snow': {
         'height map': {'scale': 450, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 1.5},
         'cave map': {'scale': 70.0, 'octaves': 2, 'persistence': 0.6, 'lacunarity': 1.8, 'threshold': 0.35},
         'elevation': {'top': 90, 'bottom': 125},
         'tile probs': {'ice': 30, 'stone': 25, 'dirt': 5, 'lead': 2, 'tin': 2, 'coal': 4, 'copper': 6, 'iron': 5, 'silver': 6, 'gold': 3},
-        'liquid probs': {'water': 5, 'oil': 7},
+        'liquid probs': {'water': 5, 'oil': 7}
     }, 
 
     'underworld': {
@@ -62,27 +62,26 @@ BIOMES = {
     },
 }
 
+# 'defiled': {'height map': {'scale': 400, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 2.0}, 'cave map': {'scale': 30.0, 'octaves': 4, 'persistence': 1.6, 'lacunarity': 1.3, 'threshold': 0.55}, 'elevation': {'top': 70, 'bottom': 110}, 'tile probs': {'dirt': 40, 'mud': 5, 'stone': 25, 'clay': 5, 'tin': 2, 'coal': 7, 'iron': 5, 'copper': 4, 'silver': 3, 'gold': 3, 'platinum': 1}, 'liquid probs': {'water': 7, 'lava': 2}, 'tree coverage': 40},}
+
 BIOME_WIDTH = MAP_SIZE[0] // (len(BIOMES) - 1) # -1 since the underworld spans the entire map
+
+TREE_BIOMES = ['taiga', 'snow', 'defiled']
 
 WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
 WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
 GRAVITY = 1200
 
-Z_LAYERS = {
-    'clouds': 0,
-    'bg': 1,
-    'main': 2,
-    'player': 3,
-}
+Z_LAYERS = {'clouds': 0, 'bg': 1, 'main': 2, 'player': 3}
 
 TILES = {
-    'air': {'hardness': 0},
     'dirt': {'hardness': 100},
     'ice': {'hardness': 200},
     'sand': {'hardness': 100},
     'mud': {'hardness': 100},
     'clay': {'hardness': 150},
     'tin': {'ore': True, 'hardness': 200},
+    'defiled stone': {'hardness': 250},
     'stone': {'hardness': 300},
     'desert fossil': {'hardness': 400},
     'coal': {'hardness': 450},

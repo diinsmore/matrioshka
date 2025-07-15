@@ -35,6 +35,7 @@ class Cloud(SpriteBase):
     def update(self, dt: float) -> None:
         self.move(dt)
 
+
 class Tree(SpriteBase):
     def __init__(
         self, 

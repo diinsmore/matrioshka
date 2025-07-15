@@ -16,7 +16,7 @@ class Sky:
         self.screen = screen
 
         self.image = pg.Surface(RES)
-        self.rgb = np.array([150, 200, 255], dtype = int)
+        self.rgb = np.array([185, 193, 240], dtype = int)
         self.max_rgb = self.rgb.copy()
         self.min_rgb = np.array([0, 0, 20], dtype = int)
         self.rgb_update = -1
@@ -31,10 +31,14 @@ class Sky:
 
     def day_night_cycle(self) -> None:
         '''update the sky's rgb values as time passes'''
-        new_rgb = np.clip(self.rgb + self.rgb_update, self.min_rgb, self.max_rgb)
-        if np.array_equal(new_rgb, self.max_rgb) or np.array_equal(new_rgb, self.min_rgb):
+        np.clip(
+            np.add(self.rgb, self.rgb_update, out = self.rgb), 
+            self.min_rgb, 
+            self.max_rgb, 
+            out = self.rgb
+        )
+        if np.array_equal(self.rgb, self.max_rgb) or np.array_equal(self.rgb, self.min_rgb):
             self.rgb_update *= -1
-        self.rgb = new_rgb
 
     def render_tint(self) -> None:
         '''add a pinkish tint to the sky during twilight/dawn'''

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from asset_manager import AssetManager
     import numpy as np
     from inventory import Inventory
     from player import Player
@@ -12,7 +11,7 @@ from os.path import join
 from random import choice, randint
 from file_import_functions import load_image
 
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
@@ -24,10 +23,11 @@ class SpriteManager:
         self,
         screen: pg.Surface,
         camera_offset: pg.Vector2,
-        asset_manager: AssetManager,
+        graphics: dict[str, pg.Surface],
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         physics_engine: PhysicsEngine,
+        current_biome: str,
         tree_map: list[tuple[int, int]],
         inventory: Inventory,
         tile_IDs_to_names: dict[str, int],
@@ -35,11 +35,12 @@ class SpriteManager:
     ):
         self.screen = screen
         self.camera_offset = camera_offset
-        self.asset_manager = asset_manager
+        self.graphics = graphics
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tree_map = tree_map
         self.physics_engine = physics_engine
+        self.current_biome = current_biome
         self.collision_map = self.physics_engine.collision_map
         self.inventory = inventory
         self.tile_IDs_to_names = tile_IDs_to_names
@@ -86,8 +87,6 @@ class SpriteManager:
         )
         
         self.ui = None # passed in engine.py after the UI class is initialized
-        self.graphics = self.asset_manager.assets['graphics']
-        self.current_biome = 'forest'
         self.init_trees()
                 
     # not doing a list comprehension in __init__ since sprites aren't 
@@ -131,23 +130,6 @@ class SpriteManager:
             abs(sprite.rect.centerx - target.centerx) < x_dist and \
             abs(sprite.rect.centery - target.centery) < y_dist
         ]
-    
-    def init_trees(self) -> None:
-        image_folder = self.graphics[self.current_biome]['trees']
-        tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
-        for xy in tree_map: 
-            Tree(
-                coords = (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
-                image = choice(image_folder), 
-                z = Z_LAYERS['bg'],
-                camera_offset = self.camera_offset,
-                sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 
-                tree_map = self.tree_map, 
-                tree_map_coords = xy,
-                physics_engine = self.physics_engine,
-                wood_image = self.graphics['materials']['wood'],
-                wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
-            )
 
     def init_clouds(self) -> None:
         if not self.cloud_sprites:
@@ -161,6 +143,24 @@ class SpriteManager:
                     sprite_groups = [self.all_sprites, self.nature_sprites, self.cloud_sprites],
                     speed = randint(1, 3),
                     player = self.player
+                )
+    
+    def init_trees(self) -> None:
+        if self.current_biome in TREE_BIOMES:
+            image_folder = self.graphics[self.current_biome]['trees']
+            tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
+            for xy in tree_map: 
+                Tree(
+                    coords = (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
+                    image = choice(image_folder), 
+                    z = Z_LAYERS['bg'],
+                    camera_offset = self.camera_offset,
+                    sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 
+                    tree_map = self.tree_map, 
+                    tree_map_coords = xy,
+                    physics_engine = self.physics_engine,
+                    wood_image = self.graphics['materials']['wood'],
+                    wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
                 )
             
     def update(self, dt) -> None:

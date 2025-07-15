@@ -21,41 +21,40 @@ class Player(pg.sprite.Sprite):
         sprite_groups: list[pg.sprite.Group],
         tile_map: np.ndarray,
         tile_IDs: dict[str, dict[str, any]],
+        current_biome: str,
         biome_order: dict[str, int],
         physics_engine: PhysicsEngine,
         inventory: Inventory
     ):
         super().__init__(*sprite_groups)
+        self.coords = coords
         self.frames = frames
+        self.z = z
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
+        self.current_biome = current_biome
+        self.biome_order = biome_order
+        self.physics_engine = physics_engine
+        self.inventory = inventory
+
         self.frame_index = 0
         self.state = 'idle'
         self.image = self.frames[self.state][self.frame_index]
-        self.rect = self.image.get_rect(midbottom = coords)
-        self.z = z
-        # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
-        self.animation_speed = {'walking': 6, 'mining': 4, 'jumping': 0}
-
-        self.tile_map = tile_map
-        self.tile_IDs =  tile_IDs
-
-        self.biome_order = biome_order
-        self.current_biome = 'forest'
-
-        self.physics_engine = physics_engine
-
-        self.inventory = inventory
-        self.item_holding = 'stone pickaxe' # TODO: change this back to None after the tree cutting logic is written
+        self.rect = self.image.get_rect(midbottom = self.coords)
         
         self.direction = pg.Vector2()
-        self.speed = 200
-        self.gravity = GRAVITY
-        self.jump_height = 350
-        
-        self.health = 100
-        self.arm_strength = 4
         self.facing_left = True
+        self.speed = 200
         self.grounded = False
-
+        self.gravity = GRAVITY
+        self.jump_height = 350 
+        self.health = 100
+        self.item_holding = 'stone pickaxe'
+        self.arm_strength = 4
+        
+        # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
+        self.animation_speed = {'walking': 6, 'mining': 4, 'jumping': 0}
+        
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH
         if self.biome_order[self.current_biome] != biome_index:

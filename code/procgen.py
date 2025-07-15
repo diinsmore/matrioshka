@@ -21,7 +21,7 @@ class ProcGen:
             self.load_saved_data()
         else:
             self.biome_order = self.order_biomes()
-            self.current_biome = 'forest'
+            self.current_biome = 'defiled'
 
             self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
@@ -45,10 +45,10 @@ class ProcGen:
     @staticmethod
     def get_tile_IDs() -> dict[str, int]:
         '''give each tile a unique number to store at its locations within the tile map'''
-        id_map = {}
+        id_map = {'air': 0}
         
         world_objects = {**TILES, **MACHINES, **STORAGE}
-        id_map.update((obj, index) for index, obj in enumerate(world_objects.keys()))
+        id_map.update((obj, index + 1) for index, obj in enumerate(world_objects.keys()))
         
         id_map['obj extended'] = len(id_map)
         id_map['tree base'] = id_map['obj extended'] + 1
@@ -61,7 +61,7 @@ class ProcGen:
     @staticmethod
     def order_biomes() -> dict[str, int]:
         # TODO: randomize this sequence
-        order = {'highlands': 0, 'desert': 1, 'forest': 2, 'taiga': 3, 'tundra': 4}
+        order = {'highlands': 0, 'desert': 1, 'defiled': 2, 'taiga': 3, 'snow': 4}
         return order
 
     def get_player_spawn_point(self) -> tuple[int, int]:
@@ -119,9 +119,9 @@ class TerrainGen:
         self.tile_probs_max_idxs = {
             'highlands': {'depth 0': 2, 'depth 1': 4, 'depth 2': 6, 'depth 3': 8},
             'desert':    {'depth 0': 3, 'depth 1': 4, 'depth 2': 6, 'depth 3': 7},
-            'forest':    {'depth 0': 2, 'depth 1': 3, 'depth 2': 8, 'depth 3': 9},
+            'defiled':    {'depth 0': 2, 'depth 1': 3, 'depth 2': 8, 'depth 3': 9},
             'taiga':     {'depth 0': 3, 'depth 1': 4, 'depth 2': 7, 'depth 3': 8},
-            'tundra':    {'depth 0': 3, 'depth 1': 5, 'depth 2': 7, 'depth 3': 8},
+            'snow':    {'depth 0': 3, 'depth 1': 5, 'depth 2': 7, 'depth 3': 8},
         } 
         for biome in self.tile_probs_max_idxs.keys():
             self.tile_probs_max_idxs[biome]['depth 4'] = len(BIOMES[biome]['tile probs']) # all biome-specific tiles are available at this level
@@ -178,7 +178,7 @@ class TerrainGen:
     @staticmethod
     def get_biome_tile(x: int, current_biome: str) -> str:
         match current_biome:
-            case 'forest':
+            case 'defiled':
                 return 'dirt'
 
             case 'taiga':
@@ -190,7 +190,7 @@ class TerrainGen:
             case 'highlands':
                 return 'stone'
 
-            case 'tundra':
+            case 'snow':
                 return 'ice'
 
     def place_tiles(self) -> None:
@@ -277,7 +277,7 @@ class CaveGen:
         cave_map = np.zeros(MAP_SIZE, dtype = bool)
         start_y = randint(25, 50)
         for x in range(MAP_SIZE[0]):
-            params = BIOMES['forest']['cave map']
+            params = BIOMES['defiled']['cave map']
             surface_level = int(self.height_map[x])
             for y in range(surface_level + start_y, MAP_SIZE[1]):
                 n = noise.pnoise2(
