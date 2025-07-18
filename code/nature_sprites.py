@@ -42,22 +42,20 @@ class Tree(SpriteBase):
         coords: pg.Vector2,
         image: pg.Surface,
         z: dict[str, int],
-        camera_offset: pg.Vector2,
         sprite_groups: list[pg.sprite.Group],
         tree_map: list[tuple[int, int]],
         tree_map_coords: tuple[int, int], # the coords value before it was adjusted by the camera offset & tile size
         # passing to the Wood class
-        physics_engine: PhysicsEngine,
+        sprite_movement: callable,
         wood_image: pg.Surface,
         wood_sprites: list[pg.sprite.Group]
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.image = self.image.copy()
         self.rect = self.image.get_rect(midbottom = self.coords) # SpriteBase uses the topleft
-        self.camera_offset = camera_offset
         self.tree_map = tree_map
         self.tree_map_coords = tree_map_coords
-        self.physics_engine = physics_engine
+        self.sprite_movement = sprite_movement
         self.wood_image = wood_image
         self.wood_sprites = wood_sprites
 
@@ -115,19 +113,19 @@ class Wood(SpriteBase):
         sprite_groups: list[pg.sprite.Group],
         direction: pg.Vector2,
         speed: int,
-        physics_engine: PhysicsEngine,
+        sprite_movement: callable,
         pick_up_item: callable
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.direction = direction
         self.speed = speed
-        self.physics_engine = physics_engine
+        self.sprite_movement = sprite_movement
         self.pick_up_item = pick_up_item
 
         self.gravity = GRAVITY
 
     def update(self, dt: float) -> None:
-        self.physics_engine.sprite_movement.move_sprite(self, self.direction.x, dt)
+        self.sprite_movement.move_sprite(self, self.direction.x, dt)
         if self.direction.x and int(self.direction.y) == 0:
             self.direction.x = 0
         

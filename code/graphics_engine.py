@@ -21,8 +21,7 @@ class GraphicsEngine:
     def __init__(
         self, 
         screen: pg.Surface,
-        camera: Camera,
-        cam_offset: pg.Vector2,
+        cam: Camera,
         graphics: dict[str, list[pg.Surface]],
         ui: UI,
         sprite_manager: SpriteManager,
@@ -36,8 +35,7 @@ class GraphicsEngine:
         biome_order: dict[str, int],
     ):
         self.screen = screen
-        self.camera = camera
-        self.cam_offset = cam_offset
+        self.cam = cam
         self.graphics = graphics
         self.ui = ui
         self.sprite_manager = sprite_manager
@@ -53,7 +51,7 @@ class GraphicsEngine:
         self.terrain = Terrain(
             self.screen, 
             self.graphics, 
-            self.cam_offset, 
+            self.cam.offset, 
             self.chunk_manager,
             self.tile_map,
             self.tile_IDs,
@@ -63,6 +61,19 @@ class GraphicsEngine:
             self.biome_order,
             self.player
         )
+
+        self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
+        self.weather = Weather(self.screen)
+
+        # only render an equipped item while the sprite is in a given state
+        self.item_render_states = {
+            'pickaxe': {'mining', 'fighting'},
+            'axe': {'chopping', 'fighting'}
+        }
+
+        # self.sprite_manager.<sprite group> -> self.<sprite_group>
+        for name, group in self.sprite_manager.all_groups.items():
+            setattr(self, name, group)
 
         self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
         self.weather = Weather(screen)
@@ -101,7 +112,7 @@ class GraphicsEngine:
     def render_sprites(self, dt: float) -> None:
         all_sprites = self.sprite_manager.all_sprites
         for sprite in sorted(self.sprite_manager.get_sprites_in_radius(self.player.rect, all_sprites), key = lambda sprite: sprite.z):
-            self.screen.blit(sprite.image, sprite.rect.topleft - self.cam_offset)
+            self.screen.blit(sprite.image, sprite.rect.topleft - self.cam.offset)
             groups = self.get_sprite_groups(sprite) 
             if groups: # the sprite isn't just a member of all_sprites
                 self.render_group_action(groups, sprite, dt)
@@ -140,7 +151,7 @@ class GraphicsEngine:
                     if item_category in self.item_render_states.keys() and sprite.state in self.item_render_states[item_category]:
                         image = pg.transform.flip(self.graphics[item_category][sprite.item_holding], sprite.facing_left, False)
                         image_frame = self.get_item_animation(sprite, item_category, image, dt) # get the item's animation when in use
-                        coords = sprite.rect.center - self.cam_offset + self.get_item_offset(item_category, sprite.facing_left)
+                        coords = sprite.rect.center - self.cam.offset + self.get_item_offset(item_category, sprite.facing_left)
                         rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
                         self.screen.blit(image_frame if image_frame else image, rect)
 
@@ -186,7 +197,7 @@ class GraphicsEngine:
         self.render_sprites(dt)
         
         self.ui.update(mouse_coords, mouse_moving, click_states)
-        self.camera.update(target_coords = pg.Vector2(self.player.rect.center))
+        self.cam.update(target_coords = pg.Vector2(self.player.rect.center))
 
 
 class Terrain:
@@ -194,7 +205,7 @@ class Terrain:
         self, 
         screen: pg.Surface, 
         graphics: dict[str, list[pg.Surface]], 
-        camera_offset: pg.Vector2, 
+        cam_offset: pg.Vector2, 
         chunk_manager: ChunkManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
@@ -206,7 +217,7 @@ class Terrain:
     ):
         self.screen = screen
         self.graphics = graphics
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.chunk_manager = chunk_manager
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
@@ -217,38 +228,7 @@ class Terrain:
         self.player = player
 
         self.biome_offsets = {biome: self.biome_order[biome] * BIOME_WIDTH * TILE_SIZE for biome in self.biome_order.keys()}
-    
-    def render_backgrounds(self, bg_type: str) -> None:
-        elev_data = self.get_elevation_data()
-        landscape_base = elev_data['landscape base']
-
-        imgs_folder = self.graphics[self.current_biome][bg_type]
-        num_imgs = len(imgs_folder) 
-
-        x_offset = self.biome_offsets[self.current_biome]
-
-        for i in range(num_imgs):
-            img = imgs_folder[i]
-            img_width, img_height = img.get_width(), img.get_height()
-            img_span_x = ceil((BIOME_WIDTH * TILE_SIZE) / img_width) # how many images are needed to cover the biome's x-axis
-            
-            if bg_type == 'landscapes':
-                y_offset = 50 * (num_imgs - i - 1) # move up the layers furthest back
-                top = landscape_base - img_height - y_offset
-                for x in range(img_span_x):
-                    left = (img_width * x) + x_offset
-                    self.screen.blit(img, (left, top) - self.camera_offset)
-            
-            elif bg_type == 'underground':
-                underground_span = elev_data['underground span']
-                layer_span = ceil(underground_span / num_imgs)
-                img_span_y = ceil(layer_span / img_height)
-                for x in range(img_span_x):
-                    left = (img_width * x) + x_offset
-                    for y in range(img_span_y):
-                        y_offset = img_height * y
-                        top = landscape_base + y_offset
-                        self.screen.blit(img, (left, top) - self.camera_offset)
+        self.elev_data = self.get_elevation_data()
         
     def get_tile_type(self, x: int, y: int) -> str:
         return self.tile_IDs_to_names.get(self.tile_map[x, y], 'obj extended')
@@ -278,8 +258,38 @@ class Terrain:
             'range': (bottom - top) * TILE_SIZE,
             'underground span': (MAP_SIZE[1] * TILE_SIZE) - (bottom * TILE_SIZE), # minimum number of tiles from the bottom of the map to the surface
         }
-        elev_data['landscape base'] = (bottom * TILE_SIZE) - (elev_data['range'] // 2)  # approximate midpoint between the biome's highest/lowest elevation
+        elev_data['landscape base'] = (bottom * TILE_SIZE) - (elev_data['range'] // 2.5)
         return elev_data
+
+    def render_backgrounds(self, bg_type: str) -> None:
+        landscape_base = self.elev_data['landscape base']
+        imgs_folder = self.graphics[self.current_biome][bg_type]
+        num_imgs = len(imgs_folder)
+        biome_offset = self.biome_offsets[self.current_biome]
+        min_parallax, max_parallax = 0.5, 1.0
+        for i in range(num_imgs):
+            img = imgs_folder[i]
+            img_width, img_height = img.get_width(), img.get_height()
+            img_span_x = ceil((BIOME_WIDTH * TILE_SIZE) / img_width) # how many images are needed to cover the biome's x-axis
+            
+            if bg_type == 'landscape':
+                layer_idx = num_imgs - i - 1
+                y_offset = ((img_height // 4) * layer_idx) - (20 * layer_idx) # move up the layers furthest back
+                top = landscape_base - img_height - y_offset
+                parallax_factor = min_parallax + (max_parallax - min_parallax) * (1.0 if num_imgs < 2 else (i + 1) / num_imgs)
+                for x in range(img_span_x):
+                    left = max(biome_offset, min((img_width * x) + biome_offset, biome_offset + (BIOME_WIDTH * TILE_SIZE) - img_width))
+                    self.screen.blit(img, ((left, top) - self.cam_offset) * parallax_factor)
+            else:
+                underground_span = self.elev_data['underground span']
+                layer_span = ceil(underground_span / num_imgs)
+                img_span_y = ceil(layer_span / img_height)
+                for x in range(img_span_x):
+                    left = (img_width * x) + biome_offset
+                    for y in range(img_span_y):
+                        y_offset = img_height * y
+                        top = landscape_base + y_offset
+                        self.screen.blit(img, (left, top) - self.cam_offset)
 
     def render_tiles(self) -> None:
         visible_chunks = self.chunk_manager.update()
@@ -300,7 +310,7 @@ class Terrain:
                         image = self.get_mined_tile_image(x, y)
                     else:
                         image = self.graphics[tile] if 'ramp' not in tile else self.graphics['ramps'][tile]
-                        self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.camera_offset)
+                        self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.cam_offset)
 
     @staticmethod
     def tile_pixel_convert(image_size: tuple[int, int], x: int, y: int) -> pg.Vector2:
@@ -319,7 +329,7 @@ class Terrain:
 
     def update(self, current_biome: str) -> None:
         self.current_biome = current_biome
-        self.render_backgrounds('landscapes')
+        self.render_backgrounds('landscape')
         self.render_backgrounds('underground')
         self.render_tiles()
 

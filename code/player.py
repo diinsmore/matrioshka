@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
-    from physics_engine import PhysicsEngine
     from inventory import Inventory
 
 import pygame as pg
@@ -23,7 +22,6 @@ class Player(pg.sprite.Sprite):
         tile_IDs: dict[str, dict[str, any]],
         current_biome: str,
         biome_order: dict[str, int],
-        physics_engine: PhysicsEngine,
         inventory: Inventory
     ):
         super().__init__(*sprite_groups)
@@ -34,7 +32,6 @@ class Player(pg.sprite.Sprite):
         self.tile_IDs = tile_IDs
         self.current_biome = current_biome
         self.biome_order = biome_order
-        self.physics_engine = physics_engine
         self.inventory = inventory
 
         self.frame_index = 0
@@ -44,7 +41,7 @@ class Player(pg.sprite.Sprite):
         
         self.direction = pg.Vector2()
         self.facing_left = True
-        self.speed = 200
+        self.speed = 425
         self.grounded = False
         self.gravity = GRAVITY
         self.jump_height = 350 
@@ -53,7 +50,7 @@ class Player(pg.sprite.Sprite):
         self.arm_strength = 4
         
         # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
-        self.animation_speed = {'walking': 6, 'mining': 4, 'jumping': 0}
+        self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0}
         
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH

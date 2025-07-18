@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     import numpy as np
     from inventory import Inventory
     from player import Player
-    from physics_engine import PhysicsEngine
+    from collision_map import CollisionMap
 
 import pygame as pg
 from os.path import join
@@ -22,30 +22,31 @@ class SpriteManager:
     def __init__(
         self,
         screen: pg.Surface,
-        camera_offset: pg.Vector2,
+        cam_offset: pg.Vector2,
         graphics: dict[str, pg.Surface],
+        sprite_movement: callable,
+        collision_map: CollisionMap,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
-        physics_engine: PhysicsEngine,
-        current_biome: str,
-        tree_map: list[tuple[int, int]],
-        inventory: Inventory,
         tile_IDs_to_names: dict[str, int],
+        tree_map: list[tuple[int, int]],
+        current_biome: str,
+        inventory: Inventory,
         saved_data: dict[str, any]
     ):
         self.screen = screen
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.graphics = graphics
+        self.sprite_movement = sprite_movement
+        self.collision_map = collision_map
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
-        self.tree_map = tree_map
-        self.physics_engine = physics_engine
-        self.current_biome = current_biome
-        self.collision_map = self.physics_engine.collision_map
-        self.inventory = inventory
         self.tile_IDs_to_names = tile_IDs_to_names
+        self.tree_map = tree_map
+        self.current_biome = current_biome
+        self.inventory = inventory
         self.saved_data = saved_data
-        
+
         self.all_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
         self.player_sprite = pg.sprite.GroupSingle()
@@ -67,7 +68,7 @@ class SpriteManager:
 
         self.item_placement = ItemPlacement(
             self.screen,
-            self.camera_offset,
+            self.cam_offset,
             self.tile_map,
             self.tile_IDs,
             self.collision_map,
@@ -81,12 +82,13 @@ class SpriteManager:
             self.tile_IDs, 
             self.tree_sprites, 
             self.tree_map, 
-            self.camera_offset, 
+            self.cam_offset, 
             self.get_tool_strength,
             self.pick_up_item
         )
         
         self.ui = None # passed in engine.py after the UI class is initialized
+
         self.init_trees()
                 
     # not doing a list comprehension in __init__ since sprites aren't 
@@ -151,14 +153,13 @@ class SpriteManager:
             tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
             for xy in tree_map: 
                 Tree(
-                    coords = (pg.Vector2(xy) * TILE_SIZE) - self.camera_offset, 
+                    coords = (pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, 
                     image = choice(image_folder), 
                     z = Z_LAYERS['bg'],
-                    camera_offset = self.camera_offset,
                     sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 
                     tree_map = self.tree_map, 
                     tree_map_coords = xy,
-                    physics_engine = self.physics_engine,
+                    sprite_movement = self.sprite_movement,
                     wood_image = self.graphics['materials']['wood'],
                     wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
                 )
@@ -258,7 +259,7 @@ class WoodGathering:
         tile_IDs: dict[str, int],
         tree_sprites: pg.sprite.Group(),
         tree_map: list[tuple[int, int]],
-        camera_offset: pg.Vector2,
+        cam_offset: pg.Vector2,
         get_tool_strength: callable,
         pick_up_item: callable
     ):
@@ -266,7 +267,7 @@ class WoodGathering:
         self.tile_IDs = tile_IDs
         self.tree_sprites = tree_sprites
         self.tree_map = tree_map
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
 
@@ -275,7 +276,7 @@ class WoodGathering:
             if sprite.item_holding and sprite.item_holding.split()[-1] == 'axe':
                 nearby_trees = [tree for tree in self.tree_sprites if self.in_reach(sprite, tree.rect)]
                 for tree in nearby_trees:
-                    if tree.rect.collidepoint(pg.mouse.get_pos() + self.camera_offset):
+                    if tree.rect.collidepoint(pg.mouse.get_pos() + self.cam_offset):
                         tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
                         break # avoid cutting multiple trees at once
         else:

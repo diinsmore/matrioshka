@@ -36,7 +36,7 @@ class AssetManager:
     def load_biome_graphics(self) -> None:
         for biome in BIOMES:
             self.assets['graphics'][biome] = {
-                'landscapes': load_folder(join('..', 'graphics', 'backgrounds', biome, 'landscapes')), 
+                'landscape': load_folder(join('..', 'graphics', 'backgrounds', biome, 'landscape')), 
                 'underground': load_folder(join('..', 'graphics', 'backgrounds', biome, 'underground'))
             }
             if biome in TREE_BIOMES:

@@ -9,9 +9,9 @@ from file_import_functions import load_image
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 class ProcGen:
-    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2, saved_data: dict[str, any] | None):
+    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any] | None):
         self.screen = screen
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.saved_data = saved_data
         
         self.tile_IDs = self.get_tile_IDs()
@@ -21,7 +21,7 @@ class ProcGen:
             self.load_saved_data()
         else:
             self.biome_order = self.order_biomes()
-            self.current_biome = 'defiled'
+            self.current_biome = 'forest'
 
             self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
@@ -61,8 +61,8 @@ class ProcGen:
     @staticmethod
     def order_biomes() -> dict[str, int]:
         # TODO: randomize this sequence
-        order = {'highlands': 0, 'desert': 1, 'defiled': 2, 'taiga': 3, 'snow': 4}
-        return order
+        surface_biomes = list(BIOMES.keys())[:-1]
+        return {biome: i for i, biome in enumerate(surface_biomes)}
 
     def get_player_spawn_point(self) -> tuple[int, int]:
         '''spawn at the nearest flat surface (at least 3 solid tiles on the same y-axis) to the map's center-x'''
@@ -117,14 +117,14 @@ class TerrainGen:
         self.surface_lvls = np.array(self.height_map).astype(int)
         # limits what tiles may appear per each depth level by only slicing the tile probs dictionary up to a given index
         self.tile_probs_max_idxs = {
-            'highlands': {'depth 0': 2, 'depth 1': 4, 'depth 2': 6, 'depth 3': 8},
-            'desert':    {'depth 0': 3, 'depth 1': 4, 'depth 2': 6, 'depth 3': 7},
-            'defiled':    {'depth 0': 2, 'depth 1': 3, 'depth 2': 8, 'depth 3': 9},
-            'taiga':     {'depth 0': 3, 'depth 1': 4, 'depth 2': 7, 'depth 3': 8},
-            'snow':    {'depth 0': 3, 'depth 1': 5, 'depth 2': 7, 'depth 3': 8},
+            'highlands': {'depth 0': 2, 'depth 1': 5, 'depth 2': 6},
+            'desert': {'depth 0': 2, 'depth 1': 5, 'depth 2': 6},
+            'forest': {'depth 0': 2, 'depth 1': 3, 'depth 2': 5},
+            'taiga': {'depth 0': 2, 'depth 1': 3, 'depth 2': 4},
+            'tundra': {'depth 0': 2, 'depth 1': 3, 'depth 2': 5},
         } 
         for biome in self.tile_probs_max_idxs.keys():
-            self.tile_probs_max_idxs[biome]['depth 4'] = len(BIOMES[biome]['tile probs']) # all biome-specific tiles are available at this level
+            self.tile_probs_max_idxs[biome]['depth 3'] = len(BIOMES[biome]['tile probs']) # all biome-specific tiles are available at this level
            
         self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed)
         self.cave_map = self.cave_gen.map
@@ -178,20 +178,20 @@ class TerrainGen:
     @staticmethod
     def get_biome_tile(x: int, current_biome: str) -> str:
         match current_biome:
-            case 'defiled':
-                return 'dirt'
+            case 'forest':
+                return 'dirt' if randint(0, 10) < 8 else 'stone'
 
             case 'taiga':
-                return 'dirt'
+                return 'stone' if randint(0, 10) < 6 else 'dirt'
 
             case 'desert':
                 return 'sand'
 
             case 'highlands':
-                return 'stone'
+                return 'stone' if randint(0, 10) < 7 else 'dirt'
 
-            case 'snow':
-                return 'ice'
+            case 'tundra':
+                return 'ice' if randint(0, 10) < 6 else 'dirt'
 
     def place_tiles(self) -> None:
         biomes = list(self.biome_order.keys())
@@ -277,7 +277,7 @@ class CaveGen:
         cave_map = np.zeros(MAP_SIZE, dtype = bool)
         start_y = randint(25, 50)
         for x in range(MAP_SIZE[0]):
-            params = BIOMES['defiled']['cave map']
+            params = BIOMES['forest']['cave map']
             surface_level = int(self.height_map[x])
             for y in range(surface_level + start_y, MAP_SIZE[1]):
                 n = noise.pnoise2(
@@ -340,4 +340,4 @@ class TreeGen:
 
         if check_right:
             num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x + dx, y) in self.tree_map)
-        return num_neighbors    
+        return num_neighbors 

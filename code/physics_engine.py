@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    import numpy as np
+    import procgen as ProcGen
     
 import pygame as pg
 from math import ceil
@@ -10,10 +10,10 @@ from collections import defaultdict
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
 class PhysicsEngine:
-    def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int], tile_IDs_to_names: dict[int, str]):
-        self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+    def __init__(self, proc_gen: ProcGen):
+        self.tile_map = proc_gen.tile_map
+        self.tile_IDs = proc_gen.tile_IDs
+        self.tile_IDs_to_names = proc_gen.tile_IDs_to_names
         
         self.collision_map = CollisionMap(self.tile_map, self.tile_IDs)
 
@@ -225,7 +225,7 @@ class SpriteMovement:
 
     @staticmethod
     def jump(sprite: pg.sprite.Sprite) -> None:
-        if sprite.grounded and sprite.state != 'jumping':
+        #if sprite.grounded and sprite.state != 'jumping':
             sprite.direction.y -= sprite.jump_height
             sprite.grounded = False
             sprite.state = 'jumping'
