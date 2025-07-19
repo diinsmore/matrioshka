@@ -227,7 +227,7 @@ class Terrain:
         self.biome_order = biome_order
         self.player = player
 
-        self.biome_offsets = {biome: self.biome_order[biome] * BIOME_WIDTH * TILE_SIZE for biome in self.biome_order.keys()}
+        self.biome_x_offsets = {biome: self.biome_order[biome] * BIOME_WIDTH * TILE_SIZE for biome in self.biome_order.keys()}
         self.elev_data = self.get_elevation_data()
         
     def get_tile_type(self, x: int, y: int) -> str:
@@ -265,7 +265,7 @@ class Terrain:
         landscape_base = self.elev_data['landscape base']
         imgs_folder = self.graphics[self.current_biome][bg_type]
         num_imgs = len(imgs_folder)
-        biome_offset = self.biome_offsets[self.current_biome]
+        start_x = self.biome_x_offsets[self.current_biome]
         min_parallax, max_parallax = 0.5, 1.0
         for i in range(num_imgs):
             img = imgs_folder[i]
@@ -275,17 +275,17 @@ class Terrain:
             if bg_type == 'landscape':
                 layer_idx = num_imgs - i - 1
                 y_offset = ((img_height // 4) * layer_idx) - (20 * layer_idx) # move up the layers furthest back
-                top = landscape_base - img_height - y_offset
                 parallax_factor = min_parallax + (max_parallax - min_parallax) * (1.0 if num_imgs < 2 else (i + 1) / num_imgs)
+                top = (landscape_base - img_height - y_offset - self.cam_offset.y) * parallax_factor
                 for x in range(img_span_x):
-                    left = max(biome_offset, min((img_width * x) + biome_offset, biome_offset + (BIOME_WIDTH * TILE_SIZE) - img_width))
-                    self.screen.blit(img, ((left, top) - self.cam_offset) * parallax_factor)
+                    left = start_x + (img_width * x) - self.cam_offset.x
+                    self.screen.blit(img, (left, top))
             else:
                 underground_span = self.elev_data['underground span']
                 layer_span = ceil(underground_span / num_imgs)
                 img_span_y = ceil(layer_span / img_height)
                 for x in range(img_span_x):
-                    left = (img_width * x) + biome_offset
+                    left = (img_width * x) + start_x
                     for y in range(img_span_y):
                         y_offset = img_height * y
                         top = landscape_base + y_offset
