@@ -16,7 +16,7 @@ class Sky:
         self.screen = screen
 
         self.image = pg.Surface(RES)
-        self.rgb = np.array([185, 193, 240], dtype = int)
+        self.rgb = np.array([150, 200, 255], dtype = int)
         self.max_rgb = self.rgb.copy()
         self.min_rgb = np.array([0, 0, 20], dtype = int)
         self.rgb_update = -1

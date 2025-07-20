@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 import pygame as pg
 from os import walk
 from os.path import join
-from math import ceil, sin
+from math import ceil, floor, sin
 from random import randint
 
 from settings import *
@@ -262,34 +262,30 @@ class Terrain:
         return elev_data
 
     def render_backgrounds(self, bg_type: str) -> None:
-        landscape_base = self.elev_data['landscape base']
+        base_y = self.elev_data['landscape base']
         imgs_folder = self.graphics[self.current_biome][bg_type]
-        num_imgs = len(imgs_folder)
-        start_x = self.biome_x_offsets[self.current_biome]
-        min_parallax, max_parallax = 0.5, 1.0
-        for i in range(num_imgs):
+        num_layers = len(imgs_folder)
+        biome_x_offset = self.biome_x_offsets[self.current_biome]
+        for i in range(num_layers):
             img = imgs_folder[i]
             img_width, img_height = img.get_width(), img.get_height()
-            img_span_x = ceil((BIOME_WIDTH * TILE_SIZE) / img_width) # how many images are needed to cover the biome's x-axis
-            
+            num_imgs_x = ceil(RES[0] / img_width) + 2
             if bg_type == 'landscape':
-                layer_idx = num_imgs - i - 1
-                y_offset = ((img_height // 4) * layer_idx) - (20 * layer_idx) # move up the layers furthest back
-                parallax_factor = min_parallax + (max_parallax - min_parallax) * (1.0 if num_imgs < 2 else (i + 1) / num_imgs)
-                top = (landscape_base - img_height - y_offset - self.cam_offset.y) * parallax_factor
-                for x in range(img_span_x):
-                    left = start_x + (img_width * x) - self.cam_offset.x
-                    self.screen.blit(img, (left, top))
-            else:
-                underground_span = self.elev_data['underground span']
-                layer_span = ceil(underground_span / num_imgs)
-                img_span_y = ceil(layer_span / img_height)
-                for x in range(img_span_x):
-                    left = (img_width * x) + start_x
-                    for y in range(img_span_y):
-                        y_offset = img_height * y
-                        top = landscape_base + y_offset
-                        self.screen.blit(img, (left, top) - self.cam_offset)
+                layer_idx = num_layers - i - 1
+                layer_offset_y = ((img_height // 4) * layer_idx) + img_height
+                parallax_factor = 1.0 if num_layers < 2 else (i + 1) / num_layers
+                scroll_x = self.cam_offset.x * parallax_factor
+                start_x = floor((scroll_x - biome_x_offset) / img_width)
+                for x in range(start_x, start_x + num_imgs_x):
+                    self.screen.blit(img, ((biome_x_offset + x * img_width) - scroll_x, base_y - layer_offset_y - self.cam_offset.y))  
+            else: # underground
+                start_x = floor((self.cam_offset.x - biome_x_offset) / img_width)
+                dist_y = self.elev_data['underground span']
+                layer_dist_y = ceil(dist_y / num_layers)
+                num_imgs_y = ceil(layer_dist_y / img_height)
+                for x in range(start_x, start_x + num_imgs_x):
+                    for y in range(num_imgs_y):
+                        self.screen.blit(img, (biome_x_offset + (img_width * x), base_y + (img_height * y)) - self.cam_offset)
 
     def render_tiles(self) -> None:
         visible_chunks = self.chunk_manager.update()
