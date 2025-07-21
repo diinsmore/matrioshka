@@ -225,7 +225,7 @@ class SpriteMovement:
 
     @staticmethod
     def jump(sprite: pg.sprite.Sprite) -> None:
-       # if sprite.grounded and sprite.state != 'jumping':
+        if sprite.grounded and sprite.state != 'jumping':
             sprite.direction.y -= sprite.jump_height
             sprite.grounded = False
             sprite.state = 'jumping'

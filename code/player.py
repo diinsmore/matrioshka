@@ -41,7 +41,7 @@ class Player(pg.sprite.Sprite):
         
         self.direction = pg.Vector2()
         self.facing_left = True
-        self.speed = 425
+        self.speed = 225
         self.grounded = False
         self.gravity = GRAVITY
         self.jump_height = 350 

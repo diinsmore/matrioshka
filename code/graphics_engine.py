@@ -263,15 +263,18 @@ class Terrain:
         elev_data['landscape base'] = (bottom * TILE_SIZE) - (elev_data['range'] // 2.5)
         return elev_data
 
-    def render_bg_imgs(self, bg_type: str) -> None:
+    def render_bg_imgs(self, bg_type: str, imgs_folder: dict[int, pg.Surface] = None) -> None:
         base_y = self.elev_data['landscape base']
-        imgs_folder = self.graphics[self.current_biome][bg_type]
+        if not imgs_folder: # only provided for biome transitions
+            imgs_folder = self.graphics[self.current_biome][bg_type]
         num_layers = len(imgs_folder)
         biome_x_offset = self.biome_x_offsets[self.current_biome]
+
         for i in range(num_layers):
             img = imgs_folder[i]
             img_width, img_height = img.get_width(), img.get_height()
             num_imgs_x = ceil(RES[0] / img_width) + 2
+
             if bg_type == 'landscape':
                 layer_idx = num_layers - i - 1
                 layer_offset_y = ((img_height // 4) * layer_idx) + img_height
@@ -333,23 +336,28 @@ class Terrain:
 
     def run_biome_transition(self) -> None:
         bg_types = ('landscape', 'underground')
-        current_biome_min_alpha = 75 # not starting from 0 to avoid a bright flash with lighter background colors
         if not self.biome_transition_init:
-            self.init_biome_transition(bg_types, current_biome_min_alpha)
+            self.init_biome_transition(bg_types, 75)
             return
         alpha_factor = 5
         active = False 
-
+        
         for bg_type in bg_types:
-            for img in self.graphics[self.previous_biome][bg_type].values():
+            prev_biome_imgs = list(self.graphics[self.previous_biome][bg_type].values())
+            cur_biome_imgs = list(self.graphics[self.current_biome][bg_type].values())
+
+            for img in prev_biome_imgs:
                 new_alpha = max(0, img.get_alpha() - alpha_factor)
                 img.set_alpha(new_alpha)
                 active = new_alpha > 0 
 
-            for img in self.graphics[self.current_biome][bg_type].values():
+            for img in cur_biome_imgs:
                 new_alpha = min(255, img.get_alpha() + alpha_factor)
                 img.set_alpha(new_alpha)
                 active = new_alpha < 255
+            
+            self.render_bg_imgs(bg_type, prev_biome_imgs)
+            self.render_bg_imgs(bg_type, cur_biome_imgs)
 
         if not active:
             self.biome_transition = False
@@ -369,8 +377,9 @@ class Terrain:
         self.get_biome_status(current_biome)
         if self.biome_transition:
             self.run_biome_transition()
-        self.render_bg_imgs('landscape')
-        self.render_bg_imgs('underground')
+        else:
+            self.render_bg_imgs('landscape')
+            self.render_bg_imgs('underground')
         self.render_tiles()
 
 
