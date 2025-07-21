@@ -219,18 +219,20 @@ class Terrain:
         self.graphics = graphics
         self.cam_offset = cam_offset
         self.chunk_manager = chunk_manager
+
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
         self.mining_map = mining_map
+
         self.current_biome = current_biome
-        self.previous_biome = None
         self.biome_order = biome_order
+
         self.player = player
 
         self.biome_x_offsets = {biome: self.biome_order[biome] * BIOME_WIDTH * TILE_SIZE for biome in self.biome_order.keys()}
         self.elev_data = self.get_elevation_data()
-        self.biome_transition, self.biome_transition_init = False, False
+        self.biome_transition = BiomeTransition(self.graphics, self.render_bg_imgs)
 
     def get_tile_type(self, x: int, y: int) -> str:
         return self.tile_IDs_to_names.get(self.tile_map[x, y], 'obj extended')
@@ -330,57 +332,67 @@ class Terrain:
 
     def get_biome_status(self, current_biome: str) -> None:
         if current_biome != self.current_biome:
-            self.previous_biome = self.current_biome
+            self.biome_transition.previous_biome = self.current_biome
             self.current_biome = current_biome
-            self.biome_transition = True
-
-    def run_biome_transition(self) -> None:
-        bg_types = ('landscape', 'underground')
-        if not self.biome_transition_init:
-            self.init_biome_transition(bg_types, 75)
-            return
-        alpha_factor = 5
-        active = False 
-        
-        for bg_type in bg_types:
-            prev_biome_imgs = list(self.graphics[self.previous_biome][bg_type].values())
-            cur_biome_imgs = list(self.graphics[self.current_biome][bg_type].values())
-
-            for img in prev_biome_imgs:
-                new_alpha = max(0, img.get_alpha() - alpha_factor)
-                img.set_alpha(new_alpha)
-                active = new_alpha > 0 
-
-            for img in cur_biome_imgs:
-                new_alpha = min(255, img.get_alpha() + alpha_factor)
-                img.set_alpha(new_alpha)
-                active = new_alpha < 255
-            
-            self.render_bg_imgs(bg_type, prev_biome_imgs)
-            self.render_bg_imgs(bg_type, cur_biome_imgs)
-
-        if not active:
-            self.biome_transition = False
-            self.biome_transition_init = False
-
-    def init_biome_transition(self, bg_types: tuple[str], current_biome_min_alpha: int) -> None:
-        for bg_type in bg_types:
-            for img in self.graphics[self.previous_biome][bg_type].values():
-                img.set_alpha(255) 
-
-            for img in self.graphics[self.current_biome][bg_type].values():
-                img.set_alpha(current_biome_min_alpha) 
-            
-            self.biome_transition_init = True
+            self.biome_transition.active = True
 
     def update(self, current_biome: str) -> None:
         self.get_biome_status(current_biome)
-        if self.biome_transition:
-            self.run_biome_transition()
+        if self.biome_transition.active:
+            self.biome_transition.run(current_biome)
         else:
             self.render_bg_imgs('landscape')
             self.render_bg_imgs('underground')
         self.render_tiles()
+
+
+class BiomeTransition:
+    '''fade the new/old graphics in/out when crossing the border between biomes'''
+    def __init__(self, graphics: dict[str, list[pg.Surface]], render_bg_imgs: callable):
+        self.graphics = graphics
+        self.render_bg_imgs = render_bg_imgs
+
+        self.active = False
+        self.previous_biome = None
+        self.bg_types = ('landscape', 'underground')
+        self.alphas_init = False
+        self.alpha_factor = 3
+        self.current_biome_min_alpha = 50
+        
+    def init_alphas(self, current_biome: str) -> None:
+        for bg_type in self.bg_types:
+            for img in self.graphics[self.previous_biome][bg_type].values():
+                img.set_alpha(255) 
+
+            for img in self.graphics[current_biome][bg_type].values():
+                img.set_alpha(self.current_biome_min_alpha) 
+            
+            self.alphas_init = True
+
+    def run(self, current_biome: str) -> None:
+        if not self.alphas_init:
+            self.init_alphas(current_biome)
+            return
+        
+        for bg_type in self.bg_types:
+            previous_biome_imgs = list(self.graphics[self.previous_biome][bg_type].values())
+            current_biome_imgs = list(self.graphics[current_biome][bg_type].values())
+
+            for img in previous_biome_imgs:
+                new_alpha = max(0, img.get_alpha() - self.alpha_factor)
+                img.set_alpha(new_alpha)
+                self.active = new_alpha > 0 
+
+            for img in current_biome_imgs:
+                new_alpha = min(255, img.get_alpha() + self.alpha_factor)
+                img.set_alpha(new_alpha)
+                self.active = new_alpha < 255
+            
+            self.render_bg_imgs(bg_type, previous_biome_imgs)
+            self.render_bg_imgs(bg_type, current_biome_imgs)
+
+        if not self.active:
+            self.alphas_init = False
 
 
 class ToolAnimation:
