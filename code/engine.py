@@ -27,7 +27,7 @@ class Engine:
 
         self.proc_gen = ProcGen(screen, self.cam.offset, self.saved_data)
     
-        self.inventory = Inventory(self.saved_data['sprites']['player']['coords'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
+        self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
         
         self.asset_mgr = AssetManager()
         
@@ -47,7 +47,7 @@ class Engine:
             self.inventory, 
             self.saved_data
         )
-
+      
         self.player = Player( 
             self.saved_data['sprites']['player']['coords'] if self.saved_data else self.proc_gen.player_spawn_point,
             load_subfolders(join('..', 'graphics', 'player')), 
