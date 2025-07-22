@@ -309,9 +309,10 @@ class Terrain:
                     elif tile == 'tree base':
                         tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
 
-                   # if (x, y) in mining_map_keys:
-                       # image = self.get_mined_tile_image(x, y)
-                    image = self.graphics[tile] if 'ramp' not in tile else self.graphics['ramps'][tile]
+                    if (x, y) in mining_map_keys:
+                        image = self.get_mined_tile_image(x, y)
+                    else:
+                        image = self.graphics[tile] if 'ramp' not in tile else self.graphics['ramps'][tile]
                     self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.cam_offset)
 
     @staticmethod
@@ -322,12 +323,12 @@ class Terrain:
         tile_size_offset = pg.Vector2(image_size[0] % TILE_SIZE, image_size[1] % TILE_SIZE) // 2
         return (pg.Vector2(x, y) * TILE_SIZE) + tile_size_offset
 
-    #def get_mined_tile_image(self, x: int, y: int) -> None:
-        #'''reduce the opacity of a given tile as it's mined away'''
-        #tile = self.get_tile_type(x, y)
-        #tile_image = self.graphics[tile].copy()
-        #tile_image.set_alpha(170) 
-        #return tile_image
+    def get_mined_tile_image(self, x: int, y: int) -> None:
+        '''reduce the opacity of a given tile as it's mined away'''
+        tile = self.get_tile_type(x, y)
+        tile_image = self.graphics[tile].copy()
+        tile_image.set_alpha(170) 
+        return tile_image
 
     def get_biome_status(self, current_biome: str) -> None:
         if current_biome != self.current_biome:
