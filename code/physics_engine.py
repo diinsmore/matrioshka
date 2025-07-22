@@ -87,7 +87,7 @@ class CollisionMap:
             elif remove_tile and rect in self.map[cell_coords]:
                 # sprites could occasionally pass through tiles whose graphic was still being rendered
                 # removing the associated rectangle only after the tile ID update is confirmed appears to fix the issue
-                if self.tile_map[tile_coords[0], tile_coords[1]] == self.tile_IDs['air']:
+                if self.tile_map[tile_coords] == self.tile_IDs['air']:
                     self.map[cell_coords].remove(rect)
         
 

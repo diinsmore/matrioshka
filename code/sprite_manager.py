@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     import numpy as np
     from inventory import Inventory
     from player import Player
-    from collision_map import CollisionMap
+    from physics_engine import CollisionMap
 
 import pygame as pg
 from os.path import join
@@ -198,37 +198,18 @@ class Mining:
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
         self.invalid_IDs = {self.tile_IDs['air'], self.tile_IDs['tree base']} # can't be mined
-        self.ramp_IDs = [self.tile_IDs[name] for name, id in self.tile_IDs.items() if 'ramp' in name]
+        self.ramp_IDs = [self.tile_IDs[name] for name in self.tile_IDs.keys() if 'ramp' in name]
     
-    def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> None:
+    def run(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
-            if isinstance(sprite, Player): 
-                if self.valid_tile(sprite, tile_coords):
-                    sprite.state = 'mining'
-
-                    if tile_coords not in self.mining_map:
-                        self.init_tile(tile_coords)
-
-                    self.update_tile(sprite, tile_coords) 
-                    self.collision_map.update_map(tile_coords, remove_tile = True)
-            else:
-                pass
-       
-    def init_tile(self, tile_coords: tuple[int, int]) -> None:
-        '''initialize a new key/value pair in the mining map'''
-        ID = self.tile_map[tile_coords]
-        if ID in self.ramp_IDs: # ramp tiles take the hardness value of the tile they're composed of
-            tile_type = self.tile_IDs_to_names[ID].split(' ')[0]
-        else:
-            tile_type = self.get_tile_name(ID)
-        
-        self.mining_map[tile_coords] = {'hardness': TILES[tile_type]['hardness'], 'hits': 0}
-
-    @staticmethod
-    def get_tile_name(tile_index: int) -> str:
-        for index, name in enumerate(TILES):
-            if index == tile_index:
-                return name
+            if self.valid_tile(sprite, tile_coords):
+                sprite.state = 'mining'
+                if tile_coords not in self.mining_map:
+                    self.mining_map[tile_coords] = {
+                        'hardness': TILES[self.get_tile_material(self.tile_map[tile_coords])]['hardness'], 
+                        'hits': 0
+                    }
+                self.update_tile(sprite, tile_coords) 
 
     def valid_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
@@ -239,12 +220,18 @@ class Mining:
     def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:   
         data = self.mining_map[tile_coords]
         data['hits'] += 1 / FPS
-        data['hardness'] -= self.get_tool_strength(sprite) * data['hits'] 
-        
-        if self.mining_map[tile_coords]['hardness'] <= 0:
-            sprite.inventory.add_item(self.get_tile_name(self.tile_map[tile_coords]))
+        data['hardness'] = max(0, data['hardness'] - (self.get_tool_strength(sprite) * data['hits']))
+        if self.mining_map[tile_coords]['hardness'] == 0:
+            sprite.inventory.add_item(self.get_tile_material(self.tile_map[tile_coords]))
             self.tile_map[tile_coords] = self.tile_IDs['air']
+            self.collision_map.update_map(tile_coords, remove_tile = True)
             del self.mining_map[tile_coords]
+    
+    def get_tile_material(self, tile_ID: int) -> str:
+        if tile_ID in self.ramp_IDs:
+            return self.tile_IDs_to_names[tile_ID].split(' ')[0] # just extract the material name
+        else:
+            return self.tile_IDs_to_names[tile_ID]
 
 
 class Crafting:

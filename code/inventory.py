@@ -15,7 +15,7 @@ class Inventory:
         
     def add_item(self, item: str) -> None:
         if item not in self.contents.keys():
-            num_slots_taken = len([k for k in self.contents.keys()])
+            num_slots_taken = len(self.contents.keys())
             if num_slots_taken < self.num_slots:
                 self.contents[item] = {'amount': 1, 'index': num_slots_taken}
         else:

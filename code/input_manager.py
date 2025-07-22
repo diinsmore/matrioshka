@@ -80,7 +80,7 @@ class Keyboard:
         self.physics_engine.sprite_movement.move_sprite(self.player, self.get_direction_x(keys), dt)
 
         if keys[pg.K_s]:
-            self.sprite_manager.mining.start(self.player, self.tile_coords)
+            self.sprite_manager.mining.run(self.player, self.tile_coords)
         else:
             if self.player.state == 'mining':
                 self.sprite_manager.end_action(self.player)
