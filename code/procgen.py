@@ -26,7 +26,7 @@ class ProcGen:
             self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
             self.height_map = self.terrain_gen.height_map
-            self.cave_map = self.terrain_gen.cave_map
+            self.cave_maps = self.terrain_gen.cave_maps
 
             self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point, self.biome_order)
             self.tree_map = self.tree_gen.tree_map
@@ -37,7 +37,7 @@ class ProcGen:
     def load_saved_data(self) -> None:
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
-        self.cave_map = np.array(self.saved_data['cave map'], dtype = bool)
+        self.cave_maps = self.saved_data['cave maps']
         self.biome_order = self.saved_data['biome order']
         self.player_spawn_point = self.saved_data['sprites']['player']['coords']
         self.current_biome = self.saved_data['current biome']
@@ -115,6 +115,9 @@ class TerrainGen:
         self.height_map = self.gen_height_map()
         
         self.surface_lvls = np.array(self.height_map).astype(int)
+        self.depth_vals = [0.1, 0.2, 0.3, 0.4]
+        self.max_depth_val = len(self.depth_vals)
+
         # limits what tiles may appear per each depth level by only slicing the tile probs dictionary up to a given index
         self.tile_probs_max_idxs = {
             'highlands': {'depth 0': 2, 'depth 1': 5, 'depth 2': 6},
@@ -126,8 +129,8 @@ class TerrainGen:
         for biome in self.tile_probs_max_idxs.keys():
             self.tile_probs_max_idxs[biome]['depth 3'] = len(BIOMES[biome]['tile probs']) # all biome-specific tiles are available at this level
            
-        self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed)
-        self.cave_map = self.cave_gen.map
+        self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed, self.current_biome)
+        self.cave_maps = self.cave_gen.maps
 
     def gen_height_map(self) -> np.ndarray:
         '''generates a height map for every biome using 1d perlin noise'''
@@ -214,30 +217,26 @@ class TerrainGen:
         ])
 
     def place_underground_tiles(self, surface_tiles: np.ndarray) -> None:
-        w, h = MAP_SIZE[0], MAP_SIZE[1]
-        x_axs = np.arange(w).reshape(w, 1)
-        y_axs = np.arange(h).reshape(1, h)
-        surface_lvls = self.surface_lvls.reshape(w, 1)
-        rel_depth = (y_axs.astype(float) - surface_lvls) / float(h)
+        x_axs = np.arange(MAP_SIZE[0]).reshape(MAP_SIZE[0], 1)
+        y_axs = np.arange(MAP_SIZE[1]).reshape(1, MAP_SIZE[1])
+        surface_lvls = self.surface_lvls.reshape(MAP_SIZE[0], 1)
+        rel_depth = (y_axs.astype(float) - surface_lvls) / float(MAP_SIZE[1])
         underground_mask = y_axs > surface_lvls
         
         biome_names = self.biome_order.keys()
         tile_probs = {biome: BIOMES[biome]['tile probs'] for biome in biome_names}
         tile_names = {biome: np.array([self.tile_IDs[tile] for tile in tile_probs[biome].keys()]) for biome in biome_names}
-        
-        depth_vals = [0.1, 0.2, 0.3, 0.4]
-        max_depth_val = len(depth_vals)
 
         for biome, idx in self.biome_order.items(): 
             biome_cols = (x_axs // BIOME_WIDTH == idx)
-            for depth_idx, mask in enumerate(self.get_depth_masks(depth_vals, rel_depth, underground_mask)):
+            for depth_idx, mask in enumerate(self.get_depth_masks(rel_depth, underground_mask)):
                 depth_mask = mask & biome_cols
                 if not depth_mask.any(): # doesn't represent the current depth
                     continue
                 
                 biome_tile_probs = list(tile_probs[biome].values())
                 biome_tile_names = tile_names[biome]
-                if depth_idx != max_depth_val: # certain tiles will be excluded
+                if depth_idx != self.max_depth_val: # certain tiles will be excluded
                     max_idx = self.tile_probs_max_idxs[biome][f'depth {depth_idx}']
                     biome_tile_probs = biome_tile_probs[:max_idx]
                     biome_tile_names = biome_tile_names[:max_idx]
@@ -248,13 +247,17 @@ class TerrainGen:
                     p = biome_tile_probs
                 )
                 
-    @staticmethod
-    def get_depth_masks(depth_vals: list[float], rel_depth: np.ndarray, underground_tiles: np.ndarray) -> list[np.ndarray]:
+    def get_depth_masks(self, rel_depth: np.ndarray, underground_tiles: np.ndarray) -> list[np.ndarray]:
         masks = []
-        for i, v in enumerate(depth_vals):
+
+        if self.current_biome not in self.cave_maps.keys():
+            self.cave_gen.gen_map(self.current_biome)
+
+        for i, v in enumerate(self.depth_vals):
             below_max = rel_depth < v
-            above_min = rel_depth >= (0 if i == 0 else depth_vals[i - 1])
-            masks.append(below_max & above_min & underground_tiles)
+            above_min = rel_depth >= (0 if i == 0 else self.depth_vals[i - 1])
+            cave_mask = self.cave_maps[self.current_biome]
+            masks.append(below_max & above_min & underground_tiles & ~cave_mask)
         return masks
 
     @staticmethod
@@ -267,17 +270,20 @@ class TerrainGen:
 
 
 class CaveGen:
-    def __init__(self, tile_map: np.ndarray, height_map: np.ndarray, seed: int):
+    def __init__(self, tile_map: np.ndarray, height_map: np.ndarray, seed: int, current_biome: str):
         self.tile_map = tile_map
         self.height_map = height_map
         self.seed = seed
-        self.map = self.gen_map()
+        self.current_biome = current_biome
 
-    def gen_map(self) -> np.ndarray:
+        self.maps = {}
+        self.gen_map(self.current_biome)
+
+    def gen_map(self, biome: str) -> None:
         cave_map = np.zeros(MAP_SIZE, dtype = bool)
-        start_y = randint(25, 50)
+        start_y = randint(15, 30)
+        params = BIOMES[biome]['cave map']
         for x in range(MAP_SIZE[0]):
-            params = BIOMES['forest']['cave map']
             surface_level = int(self.height_map[x])
             for y in range(surface_level + start_y, MAP_SIZE[1]):
                 n = noise.pnoise2(
@@ -291,7 +297,7 @@ class CaveGen:
                     base = self.seed
                 )
                 cave_map[x, y] = (n + 1) / 2 > params['threshold'] # convert to a range of 0-1 before comparing
-        return cave_map
+        self.maps[biome] = cave_map
 
 
 class TreeGen:
@@ -310,7 +316,7 @@ class TreeGen:
         self.biome_order = biome_order
 
         self.tree_map = set()
-        self.biomes_covered = [{'name': name, 'idx': idx} for name, idx in self.biome_order.items() if 'tree coverage' in BIOMES[name].keys()]
+        self.biomes_covered = [{'name': name, 'idx': idx} for name, idx in self.biome_order.items() if 'tree probs' in BIOMES[name].keys()]
         
     def get_tree_locations(self) -> None:
         for data in self.biomes_covered:
@@ -329,7 +335,7 @@ class TreeGen:
         the probability of spawning a tree increases for every tree within the given range.
         i.e trees are more likely to spawn near existing trees
         '''
-        default_prob = BIOMES[current_biome]['tree coverage']
+        default_prob = BIOMES[current_biome]['tree probs']
         scale_factor = default_prob // 10
         return default_prob + scale_factor * self.get_tree_neighbors(x, y, 10, True, False)
         

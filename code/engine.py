@@ -90,7 +90,7 @@ class Engine:
         data = {
             'tile map': self.proc_gen.tile_map.tolist(),
             'tree map': [list(coord) for coord in self.proc_gen.tree_map],
-            'cave map': self.proc_gen.cave_map.tolist(),
+            'cave maps': {biome: cave_map.tolist() for biome, cave_map in self.proc_gen.cave_maps.items()},
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,
             'sprites': {}

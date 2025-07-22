@@ -17,7 +17,7 @@ BIOMES = {
         'elevation': {'top': 0, 'bottom': 70}, 
         'tile probs': {'stone': 40, 'dirt': 20, 'coal': 15, 'tin': 3, 'iron': 13, 'copper': 10},
         'liquid probs': {'water': 3, 'lava': 5},
-        'tree coverage': 10
+        'tree probs': 10
     }, 
 
     'desert': {
@@ -34,7 +34,7 @@ BIOMES = {
         'elevation': {'top': 70, 'bottom': 110},
         'tile probs': {'dirt': 35, 'stone': 25, 'clay': 7, 'tin': 5, 'coal': 9, 'iron': 11, 'copper': 8},
         'liquid probs': {'water': 7, 'lava': 2},
-        'tree coverage': 30
+        'tree probs': 30
     },
     
     'taiga': {
@@ -43,7 +43,7 @@ BIOMES = {
         'elevation': {'top': 35, 'bottom': 90},
         'tile probs': {'stone': 35, 'dirt': 25, 'clay': 4, 'ice': 15, 'coal': 13, 'iron': 8},
         'liquid probs': {'water': 5},
-        'tree coverage': 20
+        'tree probs': 20
     },
     
     'tundra': {
@@ -67,7 +67,7 @@ BIOMES = {
             #0.5: ['defiled stone', 'dirt', 'tin', 'coal', 'copper', 'iron'],  
         #},
         #'liquid probs': {'oil': 9, 'lava': 6},
-        #'tree coverage': 20
+        #'tree probs': 20
     #},
 
     'underworld': {

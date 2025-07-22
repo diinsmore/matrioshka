@@ -325,8 +325,7 @@ class Terrain:
 
     def get_mined_tile_image(self, x: int, y: int) -> None:
         '''reduce the opacity of a given tile as it's mined away'''
-        tile = self.get_tile_type(x, y)
-        tile_image = self.graphics[tile].copy()
+        tile_image = self.graphics[self.get_tile_type(x, y)].copy()
         tile_image.set_alpha(170) 
         return tile_image
 
