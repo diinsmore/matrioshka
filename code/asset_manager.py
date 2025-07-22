@@ -1,6 +1,6 @@
 import pygame as pg
 
-from settings import BIOMES, TREE_BIOMES, TILES, TOOLS, MACHINES
+from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES
 from file_import_functions import *
 
 class AssetManager:
@@ -45,6 +45,12 @@ class AssetManager:
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
             self.assets['graphics'][tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
+
+        for tile in RAMP_TILES:
+            for direction in ('right', 'left'):
+                self.assets['graphics'][f'{tile} ramp {direction}'] = load_image(
+                    join('..', 'graphics', 'terrain', 'tiles', 'ramps', f'{tile} ramp {direction}.png')
+                )
 
     def load_tool_graphics(self) -> None:
         for tool in TOOLS.keys():

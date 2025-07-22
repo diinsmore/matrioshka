@@ -44,6 +44,7 @@ class SpriteManager:
         self.tile_IDs_to_names = tile_IDs_to_names
         self.tree_map = tree_map
         self.current_biome = current_biome
+        
         self.inventory = inventory
         self.saved_data = saved_data
 
@@ -62,7 +63,14 @@ class SpriteManager:
 
         self.active_items = {} # block/tool currently held by a given sprite
          
-        self.mining = Mining(self.tile_map, self.tile_IDs, self.collision_map, self.get_tool_strength, self.pick_up_item)
+        self.mining = Mining(
+            self.tile_map, 
+            self.tile_IDs,
+            self.tile_IDs_to_names,
+            self.collision_map, 
+            self.get_tool_strength, 
+            self.pick_up_item 
+        )
 
         self.crafting = Crafting(self.tile_map, self.tile_IDs, self.collision_map)
 
@@ -124,7 +132,7 @@ class SpriteManager:
     def get_sprites_in_radius(
         target: pg.Rect, 
         group: pg.sprite.Group, 
-        x_dist: int = (RES[0] // 2) + 100,
+        x_dist: int = (RES[0] // 2) + 100, 
         y_dist: int = (RES[1] // 2) + 100
     ) -> list[pg.sprite.Group]:
         return [
@@ -176,18 +184,22 @@ class Mining:
         self, 
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
+        tile_IDs_to_names: dict[int, str],
         collision_map: dict[tuple[int, int], pg.Rect],
         get_tool_strength: callable,
         pick_up_item: callable
     ):
         self.tile_map = tile_map
-        self.tile_IDs =  tile_IDs
+        self.tile_IDs = tile_IDs
+        self.tile_IDs_to_names = tile_IDs_to_names
         self.collision_map = collision_map
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
-
+        self.invalid_IDs = {self.tile_IDs['air'], self.tile_IDs['tree base']} # can't be mined
+        self.ramp_IDs = [self.tile_IDs[name] for name, id in self.tile_IDs.items() if 'ramp' in name]
+    
     def start(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
             if isinstance(sprite, Player): 
@@ -204,7 +216,13 @@ class Mining:
        
     def init_tile(self, tile_coords: tuple[int, int]) -> None:
         '''initialize a new key/value pair in the mining map'''
-        self.mining_map[tile_coords] = {'hardness': TILES[self.get_tile_name(self.tile_map[tile_coords])]['hardness'], 'hits': 0}
+        ID = self.tile_map[tile_coords]
+        if ID in self.ramp_IDs: # ramp tiles take the hardness value of the tile they're composed of
+            tile_type = self.tile_IDs_to_names[ID].split(' ')[0]
+        else:
+            tile_type = self.get_tile_name(ID)
+        
+        self.mining_map[tile_coords] = {'hardness': TILES[tile_type]['hardness'], 'hits': 0}
 
     @staticmethod
     def get_tile_name(tile_index: int) -> str:
@@ -215,7 +233,7 @@ class Mining:
     def valid_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
         tile_distance = sprite_coords.distance_to(tile_coords)
-        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[tile_coords] != self.tile_IDs['air']
+        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[tile_coords] not in self.invalid_IDs
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
     def update_tile(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> bool:   
