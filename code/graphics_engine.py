@@ -183,7 +183,7 @@ class GraphicsEngine:
 
     def update(
         self, 
-        mouse_coords: tuple[int, int], 
+        mouse_xy: tuple[int, int], 
         mouse_moving: bool, 
         click_states: dict[str, bool],
         current_biome: str,
@@ -196,7 +196,7 @@ class GraphicsEngine:
         self.terrain.update(current_biome)
         self.render_sprites(dt)
         
-        self.ui.update(mouse_coords, mouse_moving, click_states)
+        self.ui.update(mouse_xy, mouse_moving, click_states)
         self.cam.update(target_coords = pg.Vector2(self.player.rect.center))
 
 

@@ -31,7 +31,7 @@ class UI:
 
         self.mini_map = MiniMap(self.screen, self.assets, self.make_outline)
         
-        self.mouse_grid = MouseGrid(self.screen, self.camera_offset)
+        self.mouse_grid = MouseGrid(self.screen, self.camera_offset, self.get_grid_xy)
 
         self.inventory_ui = InventoryUI(
             self.inventory,
@@ -44,7 +44,8 @@ class UI:
             self.make_outline,
             self.make_transparent_bg,
             self.render_inventory_item_name,
-            self.get_scaled_image
+            self.get_scaled_image,
+            self.get_grid_xy
         )
 
         self.craft_window = CraftWindow(
@@ -148,42 +149,48 @@ class UI:
         scale = (min(bounding_box[0], image.width * aspect_ratio), min(bounding_box[1], image.height * aspect_ratio))
         return pg.transform.scale(self.assets['graphics'][item_name], scale)
 
-    def update(self, mouse_coords: tuple[int, int], mouse_moving: bool, click_states: dict[str, dict[str, bool]]) -> None:
-        self.mouse_grid.update(mouse_coords, mouse_moving, click_states)
+    def get_grid_xy(self, mouse_coords: tuple[int, int], item_size: tuple[int, int], multi_tile: bool = False) -> pg.Vector2:
+        x, y = (mouse_coords[0] // TILE_SIZE) * TILE_SIZE, (mouse_coords[1] // TILE_SIZE) * TILE_SIZE
+        
+        if multi_tile:
+            x_offset, y_offset = (item_size[0] // 2) * TILE_SIZE, (item_size[1] // 2) * TILE_SIZE
+        else:
+            x_offset, y_offset = 0, 0
+        
+        topleft = pg.Vector2(x - x_offset, y - y_offset)
+        return topleft - self.camera_offset
+
+    def update(self, mouse_xy: tuple[int, int], mouse_moving: bool, click_states: dict[str, dict[str, bool]]) -> None:
+        self.mouse_grid.update(mouse_xy, mouse_moving, click_states)
         self.HUD.update()
         self.mini_map.update()
-        self.craft_window.update(mouse_coords, click_states['left']) # keep above the inventory ui otherwise item names may be rendered behind the window
-        self.inventory_ui.update(click_states, mouse_coords)
+        self.craft_window.update(mouse_xy, click_states['left']) # keep above the inventory ui otherwise item names may be rendered behind the window
+        self.inventory_ui.update(click_states, mouse_xy)
         self.update_item_name_data()
         
 
 class MouseGrid:
     '''a grid around the mouse position to guide block placement'''
-    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2):
+    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2, get_grid_xy: callable):
         self.screen = screen
         self.camera_offset = camera_offset
-        self.tile_w, self.tile_h = 3, 3
-        self.px_w, self.px_h = self.tile_w * TILE_SIZE, self.tile_h * TILE_SIZE 
+        self.get_grid_xy = get_grid_xy
 
-    def render_grid(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
+        self.tile_w, self.tile_h = 3, 3
+
+    def render_grid(self, mouse_xy: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         if mouse_moving or left_click:
-            topleft = self.get_grid_coords(mouse_coords)
+            topleft = self.get_grid_xy(mouse_xy, (self.tile_w, self.tile_h), True)
             for x in range(self.tile_w):
                 for y in range(self.tile_h):
                     cell_surf = pg.Surface((TILE_SIZE, TILE_SIZE), pg.SRCALPHA)
                     cell_surf.fill((0, 0, 0, 0))
-                    pg.draw.rect(cell_surf, (255, 255, 255, 10), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf
-                    self.screen.blit(cell_surf, cell_surf.get_rect(topleft = (topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE))))
+                    pg.draw.rect(cell_surf, (255, 255, 255, 10), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf 
+                    cell_rect = cell_surf.get_rect(topleft = topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE))
+                    self.screen.blit(cell_surf, cell_rect)
 
-    def get_grid_coords(self, mouse_coords: tuple[int, int]) -> pg.Vector2:
-        '''align the grid with the tile map and return its topleft point'''
-        half_tile_w, half_tile_h = (self.tile_w // 2) * TILE_SIZE, (self.tile_h // 2) * TILE_SIZE
-        x, y = (mouse_coords[0] // TILE_SIZE) * TILE_SIZE, (mouse_coords[1] // TILE_SIZE) * TILE_SIZE
-        topleft = pg.Vector2(x - half_tile_w, y - half_tile_h)
-        return topleft - self.camera_offset
-
-    def update(self, mouse_coords: tuple[int, int], mouse_moving, left_click: bool) -> None:
-        self.render_grid(mouse_coords, mouse_moving, left_click)
+    def update(self, mouse_xy: tuple[int, int], mouse_moving, left_click: bool) -> None:
+        self.render_grid(mouse_xy, mouse_moving, left_click)
 
 
 class MiniMap:
