@@ -112,7 +112,7 @@ class InventoryUI:
         self.make_transparent_bg(rect)
         self.screen.blit(image, rect)
     
-    def check_drag(self, left_click: bool) -> None:
+    def check_drag(self, mouse_coords: pg.Vector2, left_click: bool) -> None:
         if left_click:
             if not self.drag:
                 item = self.get_clicked_item()
@@ -125,7 +125,7 @@ class InventoryUI:
         else:
             if self.drag: 
                 # continue dragging
-                self.rect_to_drag.center = self.get_grid_aligned_coords(self.rect_to_drag.size)
+                self.rect_to_drag.topleft = self.get_grid_coords(mouse_coords, self.rect_to_drag.size)
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
                 tile_coords = (self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE # assigning the rect's center results in an off by 1 error on the y-axis for objects >1 tile tall
                 tile_coords = (int(tile_coords[0]), int(tile_coords[1])) # previously vector2 floats
@@ -164,19 +164,16 @@ class InventoryUI:
         self.image_to_drag, self.rect_to_drag = None, None
         self.player.item_holding = None
         
-    @staticmethod
-    def get_grid_aligned_coords(item_size: tuple[int, int]) -> tuple[int, int]:
-        x = round(pg.mouse.get_pos()[0] / TILE_SIZE) * TILE_SIZE 
-        y = round(pg.mouse.get_pos()[1] / TILE_SIZE) * TILE_SIZE
-        return (
-            x + (item_size[0] % TILE_SIZE) + 2, # +2 to not overlap with the mouse grid outline
-            y + (item_size[1] % TILE_SIZE) + 2, 
-        )
+    def get_grid_coords(self, mouse_coords: pg.Vector2, item_size: tuple[int, int]) -> tuple[int, int]:
+        x, y = (mouse_coords[0] // TILE_SIZE) * TILE_SIZE, (mouse_coords[1] // TILE_SIZE) * TILE_SIZE
+        half_tile_w, half_tile_h = (item_size[0] // 2) // TILE_SIZE, (item_size[1] // 2) // TILE_SIZE
+        topleft = pg.Vector2(x - half_tile_w, y - half_tile_h)
+        return topleft - self.camera_offset
 
-    def update(self, click_states: dict[str, bool], mouse_coords: tuple[int, int]) -> None:
+    def update(self, click_states: dict[str, bool], mouse_coords: pg.Vector2) -> None:
         if self.render:
             self.update_dimensions()
             self.render_bg()
             self.render_slots()
             self.render_icons()
-            self.check_drag(click_states['left'])
+            self.check_drag(mouse_coords, click_states['left'])

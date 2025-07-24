@@ -3,7 +3,7 @@ import numpy as np
 import noise
 from random import randint, choice
 
-from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE
+from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE
 from timer import Timer
 from file_import_functions import load_image
 
@@ -276,16 +276,18 @@ class CaveGen:
         self.seed = seed
         self.current_biome = current_biome
 
+        self.screen_tiles_y = RES[0] // TILE_SIZE
+        self.half_screen_tiles_y = self.screen_tiles_y // 2
         self.maps = {}
         self.gen_map(self.current_biome)
 
     def gen_map(self, biome: str) -> None:
         cave_map = np.zeros(MAP_SIZE, dtype = bool)
-        start_y = randint(15, 30)
         params = BIOMES[biome]['cave map']
+        min_y = randint(self.half_screen_tiles_y, self.screen_tiles_y) 
         for x in range(MAP_SIZE[0]):
             surface_level = int(self.height_map[x])
-            for y in range(surface_level + start_y, MAP_SIZE[1]):
+            for y in range(surface_level + min_y, MAP_SIZE[1]):
                 n = noise.pnoise2(
                     x / params['scale'],
                     y / params['scale'],

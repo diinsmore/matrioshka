@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 import pygame as pg
-import math
+from math import ceil
 
 from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, Z_LAYERS
 from mech_sprites import mech_sprite_dict
@@ -31,26 +31,21 @@ class ItemPlacement:
         self.mech_sprites = mech_sprites
 
     def place_item(self, player: Player, image: pg.Surface, tile_coords: tuple[int, int]) -> None:
-        if image.get_size() == (TILE_SIZE, TILE_SIZE):
-            self.place_single_tile_object(tile_coords, player)
-            self.collision_map.update_map(tile_coords, add_tile = True)
-        else:
-            self.place_multiple_tile_object(tile_coords, image, player)
+        self.place_single_tile_obj(tile_coords, player) if image.get_size() == (TILE_SIZE, TILE_SIZE) else self.place_multi_tile_obj(tile_coords, image, player)
         
-
-    def place_single_tile_object(self, tile_coords: tuple[int, int], player: Player) -> None:
+    def place_single_tile_obj(self, tile_coords: tuple[int, int], player: Player) -> None:
         if self.valid_placement(tile_coords, player):
-            self.tile_map[tile_coords] = self.get_tile_id(player.item_holding)
+            self.tile_map[tile_coords] = self.tile_IDs[player.item_holding]
             self.collision_map.update_map(tile_coords, add_tile = True)
             
             self.inventory.remove_item(player.item_holding, 1)
             player.item_holding = None
 
-    def place_multiple_tile_object(self, tile_coords: tuple[int, int], image: pg.Surface, player: Player) -> None:
+    def place_multi_tile_obj(self, tile_coords: tuple[int, int], image: pg.Surface, player: Player) -> None:
         tile_coords_list = self.get_tile_coords_list(tile_coords, image)
         if self.valid_placement(tile_coords_list, player):
             image_topleft = tile_coords_list[0]
-            self.tile_map[image_topleft] = self.get_tile_id(player.item_holding) # only store the topleft to prevent rendering multiple images
+            self.tile_map[image_topleft] = self.tile_IDs[player.item_holding] # only store the topleft to prevent rendering multiple images
             self.collision_map.update_map(image_topleft, add_tile = True)
             for coord in tile_coords_list[1:]: 
                 self.tile_map[coord] = self.tile_IDs['obj extended'] # update the remaining tiles covered with a separate ID to be ignored by the renderer
@@ -88,8 +83,8 @@ class ItemPlacement:
     def get_tile_coords_list(self, tile_coords: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
         '''return a list of tile map coordinates to update when placing items that cover >1 tile'''
         coords = []
-        tile_span_x = math.ceil(image.get_width() / TILE_SIZE)
-        tile_span_y = math.ceil(image.get_height() / TILE_SIZE)
+        tile_span_x = ceil(image.get_width() / TILE_SIZE)
+        tile_span_y = ceil(image.get_height() / TILE_SIZE)
         for x in range(tile_span_x):
             for y in range(tile_span_y):
                 coords.append((tile_coords[0] + x, tile_coords[1] + y))
@@ -100,8 +95,7 @@ class ItemPlacement:
         single tile objects: check for any solid tile bordering the tile selected
         multi-tile objects: check the bottom row of tiles to ensure the object is grounded
         '''
-        tile_names = list(TILES.keys())[1:] # excluding air (stored in a list to convert from a dict_keys object)
-        tile_IDs = {self.tile_IDs[name] for name in tile_names}
+        tile_IDs = {self.tile_IDs[name] for name in list(TILES.keys())}
         if single_tile_obj:
             border_coords = [
                 (tile_coords[0], tile_coords[1] - 1), # north
@@ -116,7 +110,7 @@ class ItemPlacement:
     def render_placement_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, tile_coords: tuple[int, int], player: Player) -> None:
         '''add a slight tinge of color to the image to signal whether it can be placed at the current location'''
         mouse_world_coords = pg.mouse.get_pos() + self.camera_offset
-        tiles_covered = math.ceil(icon_image.width / TILE_SIZE)
+        tiles_covered = ceil(icon_image.width / TILE_SIZE)
         if tiles_covered == 1:
             valid = self.valid_placement(tile_coords, player)
         else:
@@ -140,8 +134,3 @@ class ItemPlacement:
         item_class = mech_sprite_dict[item]
         sprite_groups = [self.all_sprites, self.mech_sprites]
         item = item_class(coords, image, Z_LAYERS['main'], sprite_groups, self.camera_offset)
-        
-    def get_tile_id(self, tile_name: str) -> int:
-        for name, id_num in self.tile_IDs.items():
-            if name == tile_name:
-                return id_num

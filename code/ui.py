@@ -162,27 +162,24 @@ class MouseGrid:
     def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2):
         self.screen = screen
         self.camera_offset = camera_offset
-        self.tile_width_x, self.tile_width_y = 3, 3
+        self.tile_w, self.tile_h = 3, 3
+        self.px_w, self.px_h = self.tile_w * TILE_SIZE, self.tile_h * TILE_SIZE 
 
     def render_grid(self, mouse_coords: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
         if mouse_moving or left_click:
             topleft = self.get_grid_coords(mouse_coords)
-            for x in range(self.tile_width_x):
-                for y in range(self.tile_width_y):
+            for x in range(self.tile_w):
+                for y in range(self.tile_h):
                     cell_surf = pg.Surface((TILE_SIZE, TILE_SIZE), pg.SRCALPHA)
                     cell_surf.fill((0, 0, 0, 0))
                     pg.draw.rect(cell_surf, (255, 255, 255, 10), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf
-                    cell_rect = cell_surf.get_rect(topleft = (topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)))
-                    self.screen.blit(cell_surf, cell_rect)
+                    self.screen.blit(cell_surf, cell_surf.get_rect(topleft = (topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE))))
 
     def get_grid_coords(self, mouse_coords: tuple[int, int]) -> pg.Vector2:
         '''align the grid with the tile map and return its topleft point'''
-        width, height = self.tile_width_x // 2, self.tile_width_y // 2
-
-        x = int(mouse_coords[0] // TILE_SIZE) * TILE_SIZE
-        y = int(mouse_coords[1] // TILE_SIZE) * TILE_SIZE
-
-        topleft = pg.Vector2(x - (width * TILE_SIZE), y - (height * TILE_SIZE))
+        half_tile_w, half_tile_h = (self.tile_w // 2) * TILE_SIZE, (self.tile_h // 2) * TILE_SIZE
+        x, y = (mouse_coords[0] // TILE_SIZE) * TILE_SIZE, (mouse_coords[1] // TILE_SIZE) * TILE_SIZE
+        topleft = pg.Vector2(x - half_tile_w, y - half_tile_h)
         return topleft - self.camera_offset
 
     def update(self, mouse_coords: tuple[int, int], mouse_moving, left_click: bool) -> None:
