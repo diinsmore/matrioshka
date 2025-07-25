@@ -32,7 +32,8 @@ class SpriteManager:
         tree_map: list[tuple[int, int]],
         current_biome: str,
         inventory: Inventory,
-        saved_data: dict[str, any]
+        saved_data: dict[str, any],
+        get_tile_material: callable
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -44,9 +45,9 @@ class SpriteManager:
         self.tile_IDs_to_names = tile_IDs_to_names
         self.tree_map = tree_map
         self.current_biome = current_biome
-        
         self.inventory = inventory
         self.saved_data = saved_data
+        self.get_tile_material = get_tile_material
 
         self.all_sprites = pg.sprite.Group()
         self.animated_sprites = pg.sprite.Group()
@@ -69,7 +70,8 @@ class SpriteManager:
             self.tile_IDs_to_names,
             self.collision_map, 
             self.get_tool_strength, 
-            self.pick_up_item 
+            self.pick_up_item,
+            self.get_tile_material
         )
 
         self.crafting = Crafting(self.tile_map, self.tile_IDs, self.collision_map)
@@ -187,7 +189,8 @@ class Mining:
         tile_IDs_to_names: dict[int, str],
         collision_map: dict[tuple[int, int], pg.Rect],
         get_tool_strength: callable,
-        pick_up_item: callable
+        pick_up_item: callable,
+        get_tile_material: callable
     ):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
@@ -195,10 +198,10 @@ class Mining:
         self.collision_map = collision_map
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
+        self.get_tile_material = get_tile_material
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
         self.invalid_IDs = {self.tile_IDs['air'], self.tile_IDs['tree base']} # can't be mined
-        self.ramp_IDs = [self.tile_IDs[name] for name in self.tile_IDs.keys() if 'ramp' in name]
     
     def run(self, sprite: pg.sprite.Sprite, tile_coords: tuple[int, int]) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
@@ -226,12 +229,6 @@ class Mining:
             self.tile_map[tile_coords] = self.tile_IDs['air']
             self.collision_map.update_map(tile_coords, remove_tile = True)
             del self.mining_map[tile_coords]
-    
-    def get_tile_material(self, tile_ID: int) -> str:
-        if tile_ID in self.ramp_IDs:
-            return self.tile_IDs_to_names[tile_ID].split(' ')[0] # just extract the material name
-        else:
-            return self.tile_IDs_to_names[tile_ID]
 
 
 class Crafting:

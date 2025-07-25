@@ -1,6 +1,5 @@
 import pygame as pg
 import numpy as np
-from math import ceil
 
 from settings import MAP_SIZE, TILE_SIZE
 
@@ -54,7 +53,7 @@ class MiniMap:
             'obsidian': (32, 23, 43)
         }
 
-        self.ignore_IDs = {self.tile_IDs['air'], self.tile_IDs['tree base']}
+        self.non_tiles = {'air', 'tree base'}
 
     def render_outline(self) -> None:
         if self.render:
@@ -70,8 +69,9 @@ class MiniMap:
             for y in range(cols):
                 image = pg.Surface((self.tile_px_w, self.tile_px_h))
                 tile_ID = tiles[x, y]
-                if tile_ID in self.ignore_IDs:
-                    tile_color = (178, 211, 236) if tile_ID == 'air' else 'black'
+                tile_name = self.tile_IDs_to_names[tile_ID]
+                if tile_name in self.non_tiles:
+                    tile_color = (178, 211, 236) if tile_name == 'air' else 'black'
                 else:
                     tile_color = self.RGBs[self.get_tile_material(tile_ID)]
                 image.fill(tile_color)

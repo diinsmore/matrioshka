@@ -16,6 +16,7 @@ class ProcGen:
         
         self.tile_IDs = self.get_tile_IDs()
         self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
+        self.ramp_IDs = [self.tile_IDs[name] for name in self.tile_IDs.keys() if 'ramp' in name]
         
         if self.saved_data:
             self.load_saved_data()

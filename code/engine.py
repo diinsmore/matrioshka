@@ -45,7 +45,8 @@ class Engine:
             self.proc_gen.tree_map,
             self.proc_gen.current_biome,
             self.inventory, 
-            self.saved_data
+            self.saved_data,
+            self.get_tile_material
         )
       
         self.player = Player( 
@@ -120,6 +121,10 @@ class Engine:
             with open('save.json', 'r') as f:
                 saved_data = json.load(f)
         return saved_data
+
+    def get_tile_material(self, tile_ID: int) -> str:
+        tile_name = self.proc_gen.tile_IDs_to_names[tile_ID]
+        return tile_name.split(' ')[0] if tile_ID in self.proc_gen.ramp_IDs else tile_name
 
     def update(self, dt: float) -> None:
         self.input_mgr.update(self.cam.offset, dt)
