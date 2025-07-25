@@ -4,10 +4,12 @@ if TYPE_CHECKING:
     from inventory import Inventory
     from sprite_manager import SpriteManager
     from player import Player
+    import numpy as np
 
 import pygame as pg
 
 from settings import TILE_SIZE, RES
+from mini_map import MiniMap
 from craft_window import CraftWindow
 from inventory_ui import InventoryUI
 from timer import Timer
@@ -20,7 +22,10 @@ class UI:
         assets: dict[str, dict[str, any]],
         inventory: Inventory,
         sprite_manager: SpriteManager,
-        player: Player
+        player: Player,
+        tile_map: np.ndarray,
+        tile_IDs: dict[str, int],
+        tile_IDs_to_names: dict[int, str]
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -28,8 +33,19 @@ class UI:
         self.inventory = inventory
         self.sprite_manager = sprite_manager
         self.player = player
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
+        self.tile_IDs_to_names = tile_IDs_to_names
 
-        self.mini_map = MiniMap(self.screen, self.assets, self.make_outline)
+        self.mini_map = MiniMap(
+            self.screen, 
+            self.camera_offset, 
+            self.tile_map,
+            self.tile_IDs,
+            self.tile_IDs_to_names, 
+            self.make_outline,
+            self.sprite_manager.mining.get_tile_material
+        )
         
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset, self.get_grid_xy)
 
@@ -38,7 +54,7 @@ class UI:
             self.screen,
             self.camera_offset,
             self.assets,
-            self.mini_map.height + self.mini_map.padding,
+            self.mini_map.outline_h + self.mini_map.padding,
             self.player,
             self.sprite_manager,
             self.make_outline,
@@ -74,7 +90,7 @@ class UI:
 
     def get_craft_window_height(self) -> int:
         inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
-        return inv_grid_max_height + self.mini_map.height + self.mini_map.padding
+        return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
 
     def make_outline(
         self,
@@ -191,35 +207,6 @@ class MouseGrid:
 
     def update(self, mouse_xy: tuple[int, int], mouse_moving, left_click: bool) -> None:
         self.render_grid(mouse_xy, mouse_moving, left_click)
-
-
-class MiniMap:
-    def __init__(
-        self, 
-        screen: pg.Surface, 
-        assets: dict[str, dict[str, any]], 
-        make_outline: callable
-    ):
-        self.screen = screen
-        self.assets = assets
-        self.make_outline = make_outline
-
-        self.colors = self.assets['colors']
-        self.fonts = self.assets['fonts']
-
-        self.width, self.height = TILE_SIZE * 10, TILE_SIZE * 10
-        self.padding = 5
-        self.render = True
-
-    def render_outline(self) -> None:
-        if self.render:
-            base_rect = pg.Rect(self.padding, self.padding, self.width, self.height)
-            outline1 = self.make_outline(base_rect, draw = False, return_outline = True)
-            outline2 = self.make_outline(outline1, draw = True)
-            pg.draw.rect(self.screen, 'black', outline1, 1)
-
-    def update(self) -> None:
-        self.render_outline()
 
 
 class HUD:

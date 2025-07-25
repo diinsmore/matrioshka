@@ -33,7 +33,7 @@ class ProcGen:
 
             self.gen_world()
             self.player_spawn_point = self.get_player_spawn_point()
-
+        
     def load_saved_data(self) -> None:
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])

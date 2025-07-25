@@ -61,7 +61,17 @@ class Engine:
         )
         self.sprite_mgr.player = self.player
 
-        self.ui = UI(self.screen, self.cam.offset, self.asset_mgr.assets, self.inventory, self.sprite_mgr, self.player)
+        self.ui = UI(
+            self.screen, 
+            self.cam.offset, 
+            self.asset_mgr.assets, 
+            self.inventory, 
+            self.sprite_mgr, 
+            self.player, 
+            self.proc_gen.tile_map,
+            self.proc_gen.tile_IDs,
+            self.proc_gen.tile_IDs_to_names
+        )
         self.sprite_mgr.ui = self.ui
 
         self.input_mgr = InputManager(self.physics_engine, self.sprite_mgr, self.ui, self.player)
