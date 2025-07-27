@@ -86,8 +86,11 @@ class MiniMap:
         
         left_edge = max(0, tile_offset_x - self.border_dist_x)
         right_edge = min(self.tile_map.shape[0], tile_offset_x + self.border_dist_x)
-        top_edge = max(0, tile_offset_y - self.border_dist_y)
+        top_edge_default = tile_offset_y - self.border_dist_y # keeping the default in case it's negative so the top/bottom row calculation can be adjusted accordingly
+        top_edge = max(0, top_edge_default)
         bottom_edge = min(self.tile_map.shape[1], tile_offset_y + self.border_dist_y)
+        if top_edge_default < 0:
+            bottom_edge += abs(top_edge_default) # prevents rows below from being occluded when the camera offset is negative 
         
         map_slice = self.tile_map[left_edge:right_edge, top_edge:bottom_edge]
         full_slice = np.full((self.tiles_x, self.tiles_y), self.tile_IDs['air'], dtype = np.uint8) # fill any gaps with air if the map's edge is reached
@@ -97,7 +100,7 @@ class MiniMap:
         map_cols = min(cols, self.tiles_x) 
         map_rows = min(rows, self.tiles_y - start_y)
         
-        full_slice[:map_cols, start_y:start_y + map_rows] = map_slice[:map_cols, :map_rows]
+        full_slice[:map_cols, :start_y + map_rows] = map_slice[:map_cols, :start_y + map_rows]
         return full_slice
 
     def update(self) -> None:
