@@ -29,12 +29,14 @@ class MiniMap:
         self.outline_w = self.tiles_x * self.tile_px_w
         self.outline_h = self.tiles_y * self.tile_px_h
         self.padding = 5
+        self.topleft = pg.Vector2(self.padding, self.padding)
         self.render = True
         
         self.border_dist_x = self.tiles_x // 2
         self.border_dist_y = self.tiles_y // 2
 
         self.RGBs = {
+            'air': (178, 211, 236),
             'dirt': (82, 71, 69),
             'ice': (137, 204, 234),
             'sand': (214, 188, 150),
@@ -50,14 +52,17 @@ class MiniMap:
             'gold': (211, 178, 79),
             'iron': (146, 146, 146),
             'hellstone': (132, 34, 34),
-            'obsidian': (32, 23, 43)
+            'obsidian': (32, 23, 43),
+            'tree': (74, 54, 47)
         }
 
         self.non_tiles = {'air', 'tree base'}
+        self.tree_px_height = 8
+        self.branch_y = self.tree_px_height // 2
 
     def render_outline(self) -> None:
         if self.render:
-            base_rect = pg.Rect(self.padding, self.padding, self.outline_w, self.outline_h)
+            base_rect = pg.Rect(*self.topleft, self.outline_w, self.outline_h)
             outline1 = self.make_outline(base_rect, draw = False, return_outline = True)
             outline2 = self.make_outline(outline1, draw = True)
             pg.draw.rect(self.screen, 'black', outline1, 1)
@@ -65,20 +70,37 @@ class MiniMap:
     def render_tiles(self) -> None:
         tile_map = self.get_map_slice()
         cols, rows = tile_map.shape
-        for x in range(cols):
-            for y in range(rows):
+        for y in range(rows): # keep y first otherwise tree branches to the right get blitted over by the following x index
+            for x in range(cols):
                 image = pg.Surface((self.tile_px_w, self.tile_px_h))
                 tile_ID = tile_map[x, y]
                 tile_name = self.tile_IDs_to_names[tile_ID]
                 
                 if tile_name in self.non_tiles:
-                    tile_color = (178, 211, 236) if tile_name == 'air' else 'black'
+                    match tile_name:
+                        case 'air': # not in the TILES dictionary from settings
+                            tile_color = self.RGBs['air']
+
+                        case 'tree base':
+                            tile_color = self.RGBs['tree']
+                            self.render_tree(image, tile_color, x, y)
                 else:
                     tile_color = self.RGBs[self.get_tile_material(tile_ID)]
 
                 image.fill(tile_color)
-                rect = image.get_rect(topleft = pg.Vector2(self.padding, self.padding) + (x * self.tile_px_w, y * self.tile_px_h))
+                rect = image.get_rect(topleft = self.topleft + (x * self.tile_px_w, y * self.tile_px_h))
                 self.screen.blit(image, rect)
+
+    def render_tree(self, image: pg.Surface, tile_color: str, x: int, y: int) -> None:
+        image.fill(tile_color)
+        for i in range(self.tree_px_height):
+            rect = image.get_rect(topleft = self.topleft + (x * self.tile_px_w, (y - i) * self.tile_px_h))
+            self.screen.blit(image, rect)
+            if i == self.branch_y:
+                left_branch = image.get_rect(topleft = self.topleft + ((x - 1) * self.tile_px_w, (y - i) * self.tile_px_h))
+                right_branch = image.get_rect(topleft = self.topleft + ((x + 1) * self.tile_px_w, (y - i) * self.tile_px_h))
+                self.screen.blit(image, left_branch)
+                self.screen.blit(image, right_branch)
 
     def get_map_slice(self) -> np.ndarray:
         tile_offset_x = int(self.cam_offset.x / TILE_SIZE)
