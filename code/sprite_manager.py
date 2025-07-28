@@ -32,7 +32,7 @@ class SpriteManager:
         tree_map: list[tuple[int, int]],
         current_biome: str,
         inventory: Inventory,
-        saved_data: dict[str, any],
+        saved_data: dict[str, any] | None,
         get_tile_material: callable
     ):
         self.screen = screen

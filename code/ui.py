@@ -25,7 +25,8 @@ class UI:
         player: Player,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str]
+        tile_IDs_to_names: dict[int, str],
+        saved_data: dict[str, any] | None
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -36,6 +37,7 @@ class UI:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
+        self.saved_data = saved_data
 
         self.mini_map = MiniMap(
             self.screen, 
@@ -44,7 +46,8 @@ class UI:
             self.tile_IDs,
             self.tile_IDs_to_names, 
             self.make_outline,
-            self.sprite_manager.mining.get_tile_material
+            self.sprite_manager.mining.get_tile_material,
+            self.saved_data
         )
         
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset, self.get_grid_xy)

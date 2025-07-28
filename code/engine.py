@@ -71,7 +71,8 @@ class Engine:
             self.player, 
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
-            self.proc_gen.tile_IDs_to_names
+            self.proc_gen.tile_IDs_to_names,
+            self.saved_data
         )
         self.sprite_mgr.ui = self.ui
 
@@ -102,6 +103,7 @@ class Engine:
             'tile map': self.proc_gen.tile_map.tolist(),
             'tree map': [list(coord) for coord in self.proc_gen.tree_map],
             'cave maps': {biome: cave_map.tolist() for biome, cave_map in self.proc_gen.cave_maps.items()},
+            'visited tiles': self.ui.mini_map.visited_tiles.tolist(),
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,
             'sprites': {}
