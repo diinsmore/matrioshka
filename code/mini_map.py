@@ -23,18 +23,18 @@ class MiniMap:
         self.get_tile_material = get_tile_material
         
         self.visited_tiles = np.full(MAP_SIZE, False, dtype = bool)
-        
+        self.update_radius = 6
+
         self.tiles_x, self.tiles_y = 80, 80
         self.tile_px_w, self.tile_px_h = 2, 2
         self.outline_w = self.tiles_x * self.tile_px_w
         self.outline_h = self.tiles_y * self.tile_px_h
+        self.border_dist_x = self.tiles_x // 2
+        self.border_dist_y = self.tiles_y // 2
         self.padding = 5
         self.topleft = pg.Vector2(self.padding, self.padding)
         self.render = True
         
-        self.border_dist_x = self.tiles_x // 2
-        self.border_dist_y = self.tiles_y // 2
-
         self.RGBs = {
             'air': (178, 211, 236),
             'dirt': (82, 71, 69),
@@ -68,25 +68,26 @@ class MiniMap:
             pg.draw.rect(self.screen, 'black', outline1, 1)
 
     def render_tiles(self) -> None:
-        tile_map = self.get_map_slice()
+        tile_map, visited_map = self.get_map_slices()
         cols, rows = tile_map.shape
         for y in range(rows): # keep y first otherwise tree branches to the right get blitted over by the following x index
             for x in range(cols):
                 image = pg.Surface((self.tile_px_w, self.tile_px_h))
-                tile_ID = tile_map[x, y]
-                tile_name = self.tile_IDs_to_names[tile_ID]
-                
-                if tile_name in self.non_tiles:
-                    match tile_name:
-                        case 'air': # not in the TILES dictionary from settings
-                            tile_color = self.RGBs['air']
+                if visited_map[x, y]:
+                    tile_ID = tile_map[x, y]
+                    tile_name = self.tile_IDs_to_names[tile_ID]
+                    if tile_name in self.non_tiles:
+                        match tile_name:
+                            case 'air': # not in the TILES dictionary from settings
+                                tile_color = self.RGBs['air']
 
-                        case 'tree base':
-                            tile_color = self.RGBs['tree']
-                            self.render_tree(image, tile_color, x, y)
+                            case 'tree base':
+                                tile_color = self.RGBs['tree']
+                                self.render_tree(image, tile_color, x, y)
+                    else:
+                        tile_color = self.RGBs[self.get_tile_material(tile_ID)]
                 else:
-                    tile_color = self.RGBs[self.get_tile_material(tile_ID)]
-
+                    tile_color = 'black'
                 image.fill(tile_color)
                 rect = image.get_rect(topleft = self.topleft + (x * self.tile_px_w, y * self.tile_px_h))
                 self.screen.blit(image, rect)
@@ -102,28 +103,45 @@ class MiniMap:
                 self.screen.blit(image, left_branch)
                 self.screen.blit(image, right_branch)
 
-    def get_map_slice(self) -> np.ndarray:
-        tile_offset_x = int(self.cam_offset.x / TILE_SIZE)
-        tile_offset_y = int(self.cam_offset.y / TILE_SIZE)
+    def get_map_slices(self) -> tuple[np.ndarray, np.ndarray]:
+        '''returns the slice of the tile map to display & the updated visited tiles map'''
+        screen_w = self.screen.get_width() // 2
+        screen_h = self.screen.get_height() // 2
+        tile_offset_x = int((self.cam_offset.x + screen_w) / TILE_SIZE) # not using int division since the camera offset is a vector2
+        tile_offset_y = int((self.cam_offset.y + screen_h) / TILE_SIZE)
+
+        left = max(0, tile_offset_x - self.border_dist_x)
+        right = min(self.tile_map.shape[0], tile_offset_x + self.border_dist_x)
+        top_default = tile_offset_y - self.border_dist_y # keeping the default in case it's negative so the top/bottom row calculation can be adjusted
+        top = max(0, top_default)
+        bottom = min(self.tile_map.shape[1], tile_offset_y + self.border_dist_y)
+        if top_default < 0:
+            bottom += abs(top_default) # prevents rows below from being occluded when the camera offset is negative 
         
-        left_edge = max(0, tile_offset_x - self.border_dist_x)
-        right_edge = min(self.tile_map.shape[0], tile_offset_x + self.border_dist_x)
-        top_edge_default = tile_offset_y - self.border_dist_y # keeping the default in case it's negative so the top/bottom row calculation can be adjusted accordingly
-        top_edge = max(0, top_edge_default)
-        bottom_edge = min(self.tile_map.shape[1], tile_offset_y + self.border_dist_y)
-        if top_edge_default < 0:
-            bottom_edge += abs(top_edge_default) # prevents rows below from being occluded when the camera offset is negative 
+        left_visited = max(0, tile_offset_x - self.update_radius)
+        right_visited = min(self.tile_map.shape[0], tile_offset_x + self.update_radius)
+        top_default = tile_offset_y - self.update_radius
+        top_visited = max(0, tile_offset_y - self.update_radius)
+        bottom_visited = min(self.tile_map.shape[1], tile_offset_y + self.update_radius)
+        if top_default < 0:
+            bottom_visited += abs(top_default)
+        self.visited_tiles[left_visited:right_visited, top_visited:bottom_visited] = True
         
-        map_slice = self.tile_map[left_edge:right_edge, top_edge:bottom_edge]
-        full_slice = np.full((self.tiles_x, self.tiles_y), self.tile_IDs['air'], dtype = np.uint8) # fill any gaps with air if the map's edge is reached
-        start_y = max(0, self.border_dist_y - (tile_offset_y - top_edge)) # not needed for the x axis since movement is constrained to within the tile map's left/right borders
-        # determine how many cols/rows represent the tile map vs empty space outside the map
-        cols, rows = map_slice.shape
-        map_cols = min(cols, self.tiles_x) 
-        map_rows = min(rows, self.tiles_y - start_y)
+        start_x = max(0, self.border_dist_x - (tile_offset_x - left))
+        start_y = max(0, self.border_dist_y - (tile_offset_y - top))
         
-        full_slice[:map_cols, :start_y + map_rows] = map_slice[:map_cols, :start_y + map_rows]
-        return full_slice
+        map_slice = self.tile_map[left:right, top:bottom]
+        map_cols, map_rows = map_slice.shape
+        cols = min(map_cols, self.tiles_x - start_x) 
+        rows = min(map_rows, self.tiles_y - start_y)
+
+        full_slice = np.full((self.tiles_x, self.tiles_y), self.tile_IDs['air'], dtype = np.uint8)
+        full_slice[start_x:start_x + map_cols, start_y:start_y + map_rows] = map_slice[start_x:start_x + map_cols, start_y:start_y + map_rows]
+        
+        visited_slice = np.full((self.tiles_x, self.tiles_y), False, dtype = bool)
+        visited_slice[start_x:start_x + cols, start_y:start_y + rows] = self.visited_tiles[left:left + cols, top:top + rows]
+        
+        return full_slice, visited_slice
 
     def update(self) -> None:
         self.render_outline()
