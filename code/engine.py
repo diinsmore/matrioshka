@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+
 import pygame as pg
 import os
 from os.path import join
@@ -99,11 +104,12 @@ class Engine:
         self.sprite_mgr.init_active_items() # keep this line below the sprite instances
 
     def make_save(self, file: str) -> None:
+        visited_tiles = self.ui.mini_map.visited_tiles
         data = {
             'tile map': self.proc_gen.tile_map.tolist(),
             'tree map': [list(coord) for coord in self.proc_gen.tree_map],
-            'cave maps': {biome: cave_map.tolist() for biome, cave_map in self.proc_gen.cave_maps.items()},
-            'visited tiles': self.ui.mini_map.visited_tiles.tolist(),
+            'cave maps': {biome: cave_map if type(cave_map) == list else cave_map.tolist() for biome, cave_map in self.proc_gen.cave_maps.items()},
+            'visited tiles': visited_tiles if type(visited_tiles) == list else visited_tiles.tolist(),
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,
             'sprites': {}
