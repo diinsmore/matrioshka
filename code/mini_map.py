@@ -25,8 +25,6 @@ class MiniMap:
         self.saved_data = saved_data
         
         self.visited_tiles = np.array(self.saved_data['visited tiles']) if self.saved_data else np.full(MAP_SIZE, False, dtype = bool)
-        if self.saved_data:
-            print(self.visited_tiles)
         self.update_radius = 6
 
         self.tiles_x, self.tiles_y = 80, 80

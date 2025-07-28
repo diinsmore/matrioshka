@@ -17,7 +17,7 @@ class ProcGen:
         self.tile_IDs = self.get_tile_IDs()
         self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
         self.ramp_IDs = [self.tile_IDs[name] for name in self.tile_IDs.keys() if 'ramp' in name]
-        
+
         if self.saved_data:
             self.load_saved_data()
         else:
@@ -250,14 +250,13 @@ class TerrainGen:
                 
     def get_depth_masks(self, rel_depth: np.ndarray, underground_tiles: np.ndarray) -> list[np.ndarray]:
         masks = []
-
-        if self.current_biome not in self.cave_maps.keys():
+        if self.current_biome not in self.cave_gen.maps.keys():
             self.cave_gen.gen_map(self.current_biome)
 
         for i, v in enumerate(self.depth_vals):
             below_max = rel_depth < v
             above_min = rel_depth >= (0 if i == 0 else self.depth_vals[i - 1])
-            cave_mask = self.cave_maps[self.current_biome]
+            cave_mask = self.cave_gen.maps[self.current_biome]
             masks.append(below_max & above_min & underground_tiles & ~cave_mask)
         return masks
 
