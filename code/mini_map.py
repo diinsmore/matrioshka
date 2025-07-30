@@ -1,7 +1,7 @@
 import pygame as pg
 import numpy as np
 
-from settings import MAP_SIZE, TILE_SIZE
+from settings import MAP_SIZE, TILE_SIZE, TILES
 
 class MiniMap:
     def __init__(
@@ -36,29 +36,13 @@ class MiniMap:
         self.padding = 5
         self.topleft = pg.Vector2(self.padding, self.padding)
         self.render = True
-        
-        self.RGBs = {
-            'air': (178, 211, 236),
-            'dirt': (82, 71, 69),
-            'ice': (137, 204, 234),
-            'sand': (214, 188, 150),
-            'clay': (192, 136, 119),
-            'tin': (205, 206, 181),
-            'defiled stone': (157, 157, 157),
-            'stone': (100, 100, 100),
-            'desert fossil': (173, 159, 139),
-            'coal': (37, 40, 41),
-            'sandstone': (162, 132, 88),
-            'silver': (208, 213, 215),
-            'copper': (158, 110, 61),
-            'gold': (211, 178, 79),
-            'iron': (146, 146, 146),
-            'hellstone': (132, 34, 34),
-            'obsidian': (32, 23, 43),
-            'tree': (74, 54, 47)
+
+        self.terrain_tiles = TILES.keys()
+        self.non_tiles = {
+            'air': {'rgb': (178, 211, 236)}, 
+            'tree base': {'rgb': (74, 54, 47)},
         }
 
-        self.non_tiles = {'air', 'tree base'}
         self.tree_px_height = 8
         self.branch_y = self.tree_px_height // 2
 
@@ -79,15 +63,17 @@ class MiniMap:
                     tile_ID = tile_map[x, y]
                     tile_name = self.tile_IDs_to_names[tile_ID]
                     if tile_name in self.non_tiles:
-                        match tile_name:
-                            case 'air': # not in the TILES dictionary from settings
-                                tile_color = self.RGBs['air']
-
-                            case 'tree base':
-                                tile_color = self.RGBs['tree']
-                                self.render_tree(image, tile_color, x, y)
+                        tile_color = self.non_tiles[tile_name]['rgb']
+                        if tile_name == 'tree base':
+                            self.render_tree(image, tile_color, x, y)
                     else:
-                        tile_color = self.RGBs[self.get_tile_material(tile_ID)]
+                        if tile_name != 'obj extended':
+                            if tile_name in self.terrain_tiles:
+                                tile_color = TILES[tile_name]['rgb']
+                            else:
+                                pass
+                        else:
+                            pass
                 else:
                     tile_color = 'black'
                 image.fill(tile_color)

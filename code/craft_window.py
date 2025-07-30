@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from player import Player
 
 import pygame as pg
-import math
+from math import ceil
 
 from settings import TILE_SIZE, TOOLS, MATERIALS, MACHINES, STORAGE, DECOR, RESEARCH
 
@@ -262,7 +262,7 @@ class ItemGrid:
     def render_item_slots(self, left_click: bool) -> None:
         # not defining these in __init__ since they rely on the selected category
         self.num_slots = len(self.categories[self.selected_category])
-        self.y_cells = math.ceil(self.num_slots / self.x_cells)
+        self.y_cells = ceil(self.num_slots / self.x_cells)
         for x in range(self.x_cells):
             for y in range(self.y_cells):
                 index = x + (y * self.x_cells)

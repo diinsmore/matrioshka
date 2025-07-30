@@ -90,22 +90,22 @@ GRAVITY = 1200
 Z_LAYERS = {'clouds': 0, 'bg': 1, 'main': 2, 'player': 3}
 
 TILES = {
-    'dirt': {'hardness': 100},
-    'ice': {'hardness': 200},
-    'sand': {'hardness': 100},
-    'clay': {'hardness': 150},
-    'tin': {'ore': True, 'hardness': 200},
-    'defiled stone': {'hardness': 250},
-    'stone': {'hardness': 300},
-    'desert fossil': {'hardness': 400},
-    'coal': {'hardness': 450},
-    'sandstone': {'hardness': 500},
-    'silver': {'ore': True, 'hardness': 500},
-    'copper': {'ore': True, 'hardness': 550},
-    'gold': {'ore': True, 'hardness': 600},
-    'iron': {'ore': True, 'hardness': 750},
-    'hellstone': {'hardness': 950},
-    'obsidian': {'hardness': 1000},
+    'dirt': {'hardness': 100, 'rgb': (82, 71, 69)},
+    'ice': {'hardness': 200, 'rgb': (82, 71, 69)},
+    'sand': {'hardness': 100, 'rgb': (214, 188, 150)},
+    'clay': {'hardness': 150, 'rgb': (192, 136, 119)},
+    'tin': {'ore': True, 'hardness': 200, 'rgb': (205, 206, 181)},
+    'defiled stone': {'hardness': 250, 'rgb': (157, 157, 157)},
+    'stone': {'hardness': 300, 'rgb': (100, 100, 100)},
+    'desert fossil': {'hardness': 400, 'rgb': (173, 159, 139)},
+    'coal': {'hardness': 450, 'rgb': (37, 40, 41)},
+    'sandstone': {'hardness': 500, 'rgb': (162, 132, 88)},
+    'silver': {'ore': True, 'hardness': 500, 'rgb': (208, 213, 215)},
+    'copper': {'ore': True, 'hardness': 550, 'rgb': (158, 110, 61)},
+    'gold': {'ore': True, 'hardness': 600, 'rgb': (211, 178, 79)},
+    'iron': {'ore': True, 'hardness': 750, 'rgb': (146, 146, 146)},
+    'hellstone': {'hardness': 950, 'rgb': (132, 34, 34)},
+    'obsidian': {'hardness': 1000, 'rgb': (32, 23, 43)},
 }
 
 RAMP_TILES = ['dirt', 'sand', 'stone', 'ice']
@@ -141,26 +141,55 @@ TOOLS = {
 }
 
 MACHINES = {
-    'burner furnace': {'recipe': {'stone': 7, 'wood': 2, 'torch': 1}}, 'electric furnace': {},
-    'burner drill': {}, 'electric drill': {}, 'inserter': {}, 'assembler': {},
-    'electric pole': {}, 'electric grid': {}, 'boiler': {}, 'steam engine': {}, 'pump': {}, 'solar panel': {},
-    'belt': {}, 'pipes': {},  # TODO: add trains or maybe minecarts with similar functionality?
+    'burner furnace': {'recipe': {'stone': 7, 'torch': 1}, 'rgb': (47, 15, 15)}, 
+    'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4, 'glass': 4}, 'rgb': (49, 63, 71)},
+    'burner drill': {'recipe': {'iron plate': 7, 'iron gear': 5, 'burner furnace': 1}, 'rgb': (137, 126, 126),},
+    'electric drill': {'recipe': {'iron plate': 7, 'circuit': 5, 'electric furnace': 1}, 'rgb': (111, 122, 112),},
+    'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'torch': 1}, 'rgb': (47, 29, 29),}, 
+    'electric inserter': {'recipe': {'iron plate': 5, 'circuit': 3}, 'rgb': (118, 107, 107),}, 
+    'assembler': {'recipe': {'iron plate': 10, 'iron gear': 5, 'circuit': 4}, 'rgb': (80, 74, 73),},
+    'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
+    'boiler': {'recipe': {'iron plate': 8, 'pipe': 4, 'burner furnace': 1}, 'rgb': (38, 33, 31),}, 
+    'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27),}, 
+    'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
+    'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),}, 
+    'solar panel': {'recipe': {'copper plate': 4, 'glass': 4, 'circuit': 13}, 'rgb': (20, 52, 77),},
+    'belt': {'recipe': {'iron plate': 1, 'iron gear': 2}, 'rgb': (70, 72, 74),},
+    'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),},  # TODO: add trains or maybe minecarts with similar functionality?
 }
 
 MATERIALS = {
-    'iron gear': {}, 'circuit': {}, 'copper cable': {},
-    'copper plate': {}, 'steel plate': {}, 'iron rod': {}, 'glass': {},
-    'copper bar': {}, 'iron bar': {}, 'silver bar': {}, 'gold bar': {},
+    'iron gear': {'recipe': {'iron plate': 2}},
+    'iron plate': {'recipe': {'iron ore': 3}}, 
+    'iron rod': {'recipe': {'iron plate': 2}}, 
+    'copper cable': {'recipe': {'copper plate': 1}},
+    'copper plate': {'recipe': {'copper ore': 3}},
+    'circuit': {'recipe': {'copper cable': 1, 'iron plate': 1}}, 
+    'steel plate': {'recipe': {'iron plate': 7}}, 
+    'glass': {'recipe': {'sand': 6}},
 }
 
 STORAGE = {
-    'chest': {'materials': {'wood': {'capacity': 500}, 'iron': {'capacity': 1500}}},
-    'accumulator': {},
+    'chest': {
+        'materials': {
+            'wood': {
+                'recipe': {'wood': 10}, 
+                'capacity': 500,
+                'rgb': (63, 54, 52)
+            }, 
+            'iron': {
+                'recipe': {'iron plate': 10},
+                'capacity': 1500,
+                'rgb': (71, 70, 69)
+            },
+        },
+    },
 }
 
 RESEARCH = {
-    'lab': {},
-    'core': {}
+    'lab': {'recipe': {'glass': 8, 'iron rod': 6, 'circuit': 9, 'belt': 4}, 'rgb': (139, 154, 167)},
+    'automation science': {'recipe': {'circuit:': 1, 'gear': 1, 'glass': 1}},
+    'logistic science': {'recipe': {'electric inserter': 1, 'belt': 1, 'glass': 1}},
 }
 
 DECOR = {

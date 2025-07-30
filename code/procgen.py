@@ -285,7 +285,7 @@ class CaveGen:
     def gen_map(self, biome: str) -> None:
         cave_map = np.zeros(MAP_SIZE, dtype = bool)
         params = BIOMES[biome]['cave map']
-        min_y = randint(self.screen_tiles_y, self.half_screen_tiles_y) # out of view until you dig 1 tile down at minimum
+        min_y = randint(self.half_screen_tiles_y, self.screen_tiles_y) # out of view until you dig 1 tile down at minimum
         for x in range(MAP_SIZE[0]):
             surface_level = int(self.height_map[x])
             for y in range(surface_level + min_y, MAP_SIZE[1]):

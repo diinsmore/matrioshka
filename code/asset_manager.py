@@ -57,13 +57,15 @@ class AssetManager:
             self.assets['graphics'][tool] = load_folder(join('..', 'graphics', 'tools', f'{tool}s'))
 
     def load_machine_graphics(self) -> None:
-        animated = {'assembler', 'belt', 'inserter'}
+        no_category = {'assembler', 'boiler', 'steam engine', 'electric pole', 'solar panel', 'belt'} # not stored in a folder of related graphics
         for machine in MACHINES:
-            if machine in animated: 
-                self.assets['graphics'][machine] = load_folder(join('..', 'graphics', 'machinery', machine))
+            if machine in no_category:
+                self.assets['graphics'][machine] = load_image(join('..', 'graphics', 'machines', f'{machine}.png'))
             else:
-                if machine in {'steam engine', 'burner furnace', 'burner drill', 'electric drill', 'inserter'}: # don't have the others yet
-                    self.assets['graphics'][machine] = load_image(join('..', 'graphics', 'machinery', f'{machine}.png'))
+                category = machine.split()[-1] + 's'
+                if category not in self.assets['graphics'].keys():
+                    self.assets['graphics'][category] = load_folder(join('..', 'graphics', 'machines', category))
+                self.assets['graphics'][machine] = self.assets['graphics'][category][machine]
 
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
