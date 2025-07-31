@@ -131,6 +131,9 @@ TOOLS = {
         'iron': {'recipe': {'iron bar': 9}, 'strength': 40, 'producers': {'player', 'workbench', 'anvil'}},
         'copper': {'recipe': {'copper bar': 9}, 'strength': 25, 'producers': {'player', 'workbench', 'anvil'}},
     },
+    'torch': {
+        'wood': {'recipe': {'wood': 1}, 'producers': {'player', 'workbench'}}
+    },
     'chainsaw': {},
     'bow': {},
     'arrow': {},
@@ -159,6 +162,7 @@ MACHINES = {
 }
 
 MATERIALS = {
+    'wood': {'recipe': None},
     'iron gear': {'recipe': {'iron plate': 2}},
     'iron plate': {'recipe': {'iron ore': 3}}, 
     'iron rod': {'recipe': {'iron plate': 2}}, 

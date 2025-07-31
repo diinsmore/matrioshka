@@ -67,6 +67,8 @@ class InventoryUI:
         self.make_transparent_bg(rect)
         
     def render_slots(self) -> None:
+        selected_idx = self.player.inventory.index
+        selected_idx_highlighted = False
         for x in range(self.num_cols):
             for y in range(self.num_rows):
                 box = pg.Rect(
@@ -75,12 +77,19 @@ class InventoryUI:
                 )
                 pg.draw.rect(self.screen, 'black', box, 1)
 
+                if not selected_idx_highlighted and (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
+                    hl_surf = pg.Surface(box.size - pg.Vector2(2, 2)) # -2 to not overlap with the 1px borders
+                    hl_surf.fill('gray')
+                    hl_surf.set_alpha(50)
+                    hl_rect = hl_surf.get_rect(topleft = box.topleft)
+                    self.screen.blit(hl_surf, hl_rect)
+                    selected_idx_highlighted = True
+
     def render_icons(self) -> None:
-        contents = list(self.inventory.contents.items()) # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
-        for item_name, item_data in contents:
+        for item_name, item_data in list(self.player.inventory.contents.items()): # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
             try:
                 icon_image = self.get_icon_image(item_name)
-                
+
                 row, col = divmod(item_data['index'], self.num_cols) # determine the slot an item corresponds to
                 
                 left = self.outline.left + (col * self.box_width)

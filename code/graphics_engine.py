@@ -309,10 +309,7 @@ class Terrain:
                     elif tile == 'tree base':
                         tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
 
-                    if (x, y) in mining_map_keys:
-                        image = self.get_mined_tile_image(x, y)
-                    else:
-                        image = self.graphics[tile] if 'ramp' not in tile else self.graphics['ramps'][tile]
+                    image = self.get_mined_tile_image(x, y) if (x, y) in mining_map_keys else self.graphics[tile]
                     self.screen.blit(image, self.tile_pixel_convert(image.get_size(), x, y) - self.cam_offset)
 
     @staticmethod

@@ -87,7 +87,7 @@ class Keyboard:
     
     def update_inv_index(self, key: pg.key) -> None:
         '''select an inventory item by index number (only applies to keys <= 10)'''
-        self.player.inv.index = self.key_map[key]
+        self.player.inventory.index = self.key_map[key]
 
     def update_render_state(self, keys: list[bool]) -> None:
         '''switch between rendering/not rendering a given ui component'''

@@ -170,7 +170,7 @@ class SpriteManager:
                     tree_map = self.tree_map, 
                     tree_map_coords = xy,
                     sprite_movement = self.sprite_movement,
-                    wood_image = self.graphics['materials']['wood'],
+                    wood_image = self.graphics['wood'],
                     wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
                 )
             
