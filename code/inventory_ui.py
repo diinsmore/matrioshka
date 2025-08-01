@@ -7,12 +7,11 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from settings import TILE_SIZE
+from settings import TILE_SIZE, PLACEABLE_ITEMS
 
 class InventoryUI:
     def __init__(
-        self, 
-        inventory: Inventory,
+        self,
         screen: pg.Surface,
         camera_offset: pg.Vector2,
         assets: dict[str, dict[str, any]], 
@@ -24,25 +23,25 @@ class InventoryUI:
         render_inventory_item_name: callable,
         get_scaled_image: callable,
         get_grid_xy: callable
-    ):
-        self.inventory = inventory
-        self.player = player
-        self.sprite_manager = sprite_manager
+    ):  
         self.screen = screen
         self.camera_offset = camera_offset
         self.assets = assets
         self.padding = 5
         self.top = top + self.padding
+        self.player = player
+        self.sprite_manager = sprite_manager
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
         self.render_inventory_item_name = render_inventory_item_name
         self.get_scaled_image = get_scaled_image
         self.get_grid_xy = get_grid_xy
-
+        
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
         self.colors = self.assets['colors']
 
+        self.inventory = self.player.inventory
         self.num_slots = self.inventory.num_slots
         self.num_cols = 5
         self.num_rows = 2
@@ -67,8 +66,7 @@ class InventoryUI:
         self.make_transparent_bg(rect)
         
     def render_slots(self) -> None:
-        selected_idx = self.player.inventory.index
-        selected_idx_highlighted = False
+        selected_idx = self.inventory.index
         for x in range(self.num_cols):
             for y in range(self.num_rows):
                 box = pg.Rect(
@@ -77,14 +75,17 @@ class InventoryUI:
                 )
                 pg.draw.rect(self.screen, 'black', box, 1)
 
-                if not selected_idx_highlighted and (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
-                    hl_surf = pg.Surface(box.size - pg.Vector2(2, 2)) # -2 to not overlap with the 1px borders
-                    hl_surf.fill('gray')
-                    hl_surf.set_alpha(50)
-                    hl_rect = hl_surf.get_rect(topleft = box.topleft)
-                    self.screen.blit(hl_surf, hl_rect)
+                if (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
+                    self.highlight_slot(box)
                     selected_idx_highlighted = True
 
+    def highlight_slot(self, slot: pg.Rect) -> None:
+        hl_surf = pg.Surface(slot.size - pg.Vector2(2, 2)) # -2 to not overlap with the 1px borders
+        hl_surf.fill('gray')
+        hl_surf.set_alpha(50)
+        hl_rect = hl_surf.get_rect(topleft = slot.topleft)
+        self.screen.blit(hl_surf, hl_rect)
+        
     def render_icons(self) -> None:
         for item_name, item_data in list(self.player.inventory.contents.items()): # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
             try:
@@ -131,6 +132,7 @@ class InventoryUI:
                     self.player.item_holding = item
                     self.drag = True
                     self.start_drag()
+                    self.inventory.index = self.inventory.contents[item]['index']
             else:
                 self.end_drag(pg.mouse.get_pos())
         else:
@@ -141,21 +143,22 @@ class InventoryUI:
                 tile_coords = (self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE # assigning the rect's center results in an off by 1 error on the y-axis for objects >1 tile tall
                 tile_coords = (int(tile_coords[0]), int(tile_coords[1])) # previously vector2 floats
                 self.sprite_manager.item_placement.render_placement_ui(self.image_to_drag, self.rect_to_drag, tile_coords, self.player)
-    
+
     def get_clicked_item(self) -> str | None:
         for item_name, item_data in self.inventory.contents.items():
-            col = item_data['index'] % self.num_cols
-            row = item_data['index'] // self.num_cols
+            if item_name in PLACEABLE_ITEMS:
+                col = item_data['index'] % self.num_cols
+                row = item_data['index'] // self.num_cols
 
-            left = self.outline.left + (col * self.box_width)
-            top = self.outline.top + (row * self.box_height)
+                left = self.outline.left + (col * self.box_width)
+                top = self.outline.top + (row * self.box_height)
 
-            padding_x = (self.box_width - self.icon_size[0]) // 2
-            padding_y = (self.box_height - self.icon_size[1]) // 2
+                padding_x = (self.box_width - self.icon_size[0]) // 2
+                padding_y = (self.box_height - self.icon_size[1]) // 2
 
-            icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
-            if icon_rect.collidepoint(pg.mouse.get_pos()):
-                return item_name
+                icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
+                if icon_rect.collidepoint(pg.mouse.get_pos()):
+                    return item_name
         return None
 
     def start_drag(self) -> None:

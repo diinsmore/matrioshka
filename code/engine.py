@@ -69,7 +69,7 @@ class Engine:
 
         self.ui = UI(
             self.screen, 
-            self.cam.offset, 
+            self.cam.offset,
             self.asset_mgr.assets, 
             self.inventory, 
             self.sprite_mgr, 
@@ -82,6 +82,7 @@ class Engine:
         self.sprite_mgr.ui = self.ui
 
         self.input_mgr = InputManager(self.physics_engine, self.sprite_mgr, self.ui, self.player)
+        self.mouse = self.input_mgr.mouse
 
         self.chunk_mgr = ChunkManager(self.cam.offset)
         
@@ -137,9 +138,9 @@ class Engine:
     def update(self, dt: float) -> None:
         self.input_mgr.update(self.cam.offset, dt)
         self.graphics_engine.update(
-            self.input_mgr.mouse.coords, 
-            self.input_mgr.mouse.moving, 
-            self.input_mgr.mouse.click_states, 
+            self.mouse.coords, 
+            self.mouse.moving, 
+            self.mouse.click_states, 
             self.player.current_biome, 
             dt
         )

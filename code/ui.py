@@ -53,7 +53,6 @@ class UI:
         self.mouse_grid = MouseGrid(self.screen, self.camera_offset, self.get_grid_xy)
 
         self.inventory_ui = InventoryUI(
-            self.inventory,
             self.screen,
             self.camera_offset,
             self.assets,

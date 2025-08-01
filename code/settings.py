@@ -203,6 +203,12 @@ DECOR = {
     'chairs': {'materials': ['wood', 'glass', 'ice']},
 }
 
+PLACEABLE_ITEMS = [*TOOLS.keys(), *MACHINES.keys(), 'glass', 'lab']
+for category, data in DECOR.items():
+    category = category.rstrip('s')
+    for material in data['materials']:
+        PLACEABLE_ITEMS.append(material + ' ' + category)
+
 # TODO: everything below is unfinished
 FOOD = {
     'fruits': [

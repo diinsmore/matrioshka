@@ -48,8 +48,8 @@ class ProcGen:
         '''give each tile a unique number to store at its locations within the tile map'''
         id_map = {'air': 0}
         
-        world_objects = {**TILES, **MACHINES, **STORAGE}
-        id_map.update((obj, index + 1) for index, obj in enumerate(world_objects.keys()))
+        world_objects = [*TILES.keys(), *MACHINES.keys(), *STORAGE.keys()]
+        id_map.update((obj, index + 1) for index, obj in enumerate(world_objects))
         
         id_map['obj extended'] = len(id_map)
         id_map['tree base'] = id_map['obj extended'] + 1
