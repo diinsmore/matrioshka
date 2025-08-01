@@ -77,7 +77,6 @@ class InventoryUI:
 
                 if (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
                     self.highlight_slot(box)
-                    selected_idx_highlighted = True
 
     def highlight_slot(self, slot: pg.Rect) -> None:
         hl_surf = pg.Surface(slot.size - pg.Vector2(2, 2)) # -2 to not overlap with the 1px borders
