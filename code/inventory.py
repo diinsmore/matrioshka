@@ -8,7 +8,7 @@ class Inventory:
             self.contents = {
                 'stone': {'amount': 100}, 
                 'wood': {'amount': 100}, 
-                'wood torch': {'amount': 100}, 
+                'wood torch': {'amount': 100},
                 'stone axe': {'amount': 10}, 
                 'stone pickaxe': {'amount': 10}
             }
@@ -32,7 +32,7 @@ class Inventory:
             if self.contents[item]['amount'] + 1 <= self.slot_capacity[item]:
                self.contents[item]['amount'] += 1
 
-    def remove_item(self, item: str, amount: int) -> None:
+    def remove_item(self, item: str, amount: int = 1) -> None:
         if self.contents[item]['amount'] - amount >= 1:
             self.contents[item]['amount'] -= amount
         else:

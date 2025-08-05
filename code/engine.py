@@ -35,25 +35,27 @@ class Engine:
         self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
         
         self.asset_mgr = AssetManager()
+        self.graphics = self.asset_mgr.assets['graphics'] 
         
         self.physics_engine = PhysicsEngine(self.proc_gen)
         
         self.sprite_mgr = SpriteManager(
             self.screen, 
             self.cam.offset, 
-            self.asset_mgr.assets['graphics'], 
-            self.physics_engine.sprite_movement,
-            self.physics_engine.collision_map,
+            self.graphics, 
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.proc_gen.tile_IDs_to_names,
             self.proc_gen.tree_map,
+            self.proc_gen.height_map,
             self.proc_gen.current_biome,
-            self.inventory, 
-            self.saved_data,
-            self.get_tile_material
+            self.physics_engine.sprite_movement,
+            self.physics_engine.collision_map,
+            self.inventory,
+            self.get_tile_material,
+            self.saved_data
         )
-      
+        
         self.player = Player( 
             self.saved_data['sprites']['player']['coords'] if self.saved_data else self.proc_gen.player_spawn_point,
             load_subfolders(join('..', 'graphics', 'player')), 
@@ -89,7 +91,7 @@ class Engine:
         self.graphics_engine = GraphicsEngine(
             self.screen, 
             self.cam,
-            self.asset_mgr.assets['graphics'], 
+            self.graphics, 
             self.ui, 
             self.sprite_mgr, 
             self.chunk_mgr, 
@@ -108,8 +110,10 @@ class Engine:
         visited_tiles = self.ui.mini_map.visited_tiles
         data = {
             'tile map': self.proc_gen.tile_map.tolist(),
-            'tree map': [list(coord) for coord in self.proc_gen.tree_map],
+            'height map': self.proc_gen.height_map.tolist(),
+            'tree map': [list(xy) for xy in self.proc_gen.tree_map],
             'cave maps': {biome: cave_map if type(cave_map) == list else cave_map.tolist() for biome, cave_map in self.proc_gen.cave_maps.items()},
+            'machine map': self.sprite_mgr.machine_map,
             'visited tiles': visited_tiles if type(visited_tiles) == list else visited_tiles.tolist(),
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,

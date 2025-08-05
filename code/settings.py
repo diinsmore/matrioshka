@@ -1,11 +1,12 @@
 RES = (1500, 750)
+SCREEN_W, SCREEN_H = RES[0] // 2, RES[1] // 2
 FPS = 60
 
 TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
 # TODO: any value larger on the x-axis will cause a glitch where the physics engine doesn't detect the player's initial contact with the ground in time and ends up spawning in a cave
-MAP_SIZE = (3000, 200) 
+MAP_SIZE = (3000, 200)
 
 # ordered from left-right
 # since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
@@ -144,11 +145,11 @@ TOOLS = {
 }
 
 MACHINES = {
-    'burner furnace': {'recipe': {'stone': 7, 'torch': 1}, 'rgb': (47, 15, 15)}, 
+    'burner furnace': {'recipe': {'stone': 7, 'wood torch': 1}, 'rgb': (47, 15, 15)}, 
     'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4, 'glass': 4}, 'rgb': (49, 63, 71)},
     'burner drill': {'recipe': {'iron plate': 7, 'iron gear': 5, 'burner furnace': 1}, 'rgb': (137, 126, 126),},
     'electric drill': {'recipe': {'iron plate': 7, 'circuit': 5, 'electric furnace': 1}, 'rgb': (111, 122, 112),},
-    'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'torch': 1}, 'rgb': (47, 29, 29),}, 
+    'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'wood torch': 1}, 'rgb': (47, 29, 29),}, 
     'electric inserter': {'recipe': {'iron plate': 5, 'circuit': 3}, 'rgb': (118, 107, 107),}, 
     'assembler': {'recipe': {'iron plate': 10, 'iron gear': 5, 'circuit': 4}, 'rgb': (80, 74, 73),},
     'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
@@ -203,7 +204,7 @@ DECOR = {
     'chairs': {'materials': ['wood', 'glass', 'ice']},
 }
 
-PLACEABLE_ITEMS = [*TILES.keys(), *TOOLS.keys(), *MACHINES.keys(), 'glass', 'lab']
+PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), 'glass', 'lab']
 for category, data in DECOR.items():
     category = category.rstrip('s')
     for material in data['materials']:

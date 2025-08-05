@@ -37,6 +37,7 @@ class ProcGen:
         
     def load_saved_data(self) -> None:
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
+        self.height_map = np.array(self.saved_data['height map'], dtype = np.float32)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
         self.cave_maps = self.saved_data['cave maps']
         self.biome_order = self.saved_data['biome order']
@@ -51,8 +52,8 @@ class ProcGen:
         world_objects = [*TILES.keys(), *MACHINES.keys(), *STORAGE.keys()]
         id_map.update((obj, index + 1) for index, obj in enumerate(world_objects))
         
-        id_map['obj extended'] = len(id_map)
-        id_map['tree base'] = id_map['obj extended'] + 1
+        id_map['item extended'] = len(id_map)
+        id_map['tree base'] = id_map['item extended'] + 1
         
         for i, tile in enumerate(RAMP_TILES):
             id_map[f'{tile} ramp left'] = id_map['tree base'] + 1 + (2 * i)
@@ -326,8 +327,7 @@ class TreeGen:
             start_x = data['idx'] * BIOME_WIDTH
             for x in range(start_x, start_x + BIOME_WIDTH):
                 y = int(self.height_map[x]) # surface level
-                if self.valid_spawn_point(x, y) and \
-                not self.get_tree_neighbors(x, y, 1, True, True) and \
+                if self.valid_spawn_point(x, y) and not self.get_tree_neighbors(x, y, 2, True, True) and \
                 randint(0, 100) <= self.get_tree_prob(data['name'], x, y):
                     self.tree_map.add((x, y))
                     self.tile_map[x, y] = self.tile_IDs['tree base']

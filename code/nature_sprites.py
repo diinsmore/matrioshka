@@ -45,19 +45,20 @@ class Tree(SpriteBase):
         sprite_groups: list[pg.sprite.Group],
         tree_map: list[tuple[int, int]],
         tree_map_coords: tuple[int, int], # the coords value before it was adjusted by the camera offset & tile size
-        # passing to the Wood class
-        sprite_movement: callable,
+        # passing to the Wood class:
         wood_image: pg.Surface,
-        wood_sprites: list[pg.sprite.Group]
+        wood_sprites: list[pg.sprite.Group],
+        sprite_movement: callable
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.image = self.image.copy()
         self.rect = self.image.get_rect(midbottom = self.coords) # SpriteBase uses the topleft
         self.tree_map = tree_map
         self.tree_map_coords = tree_map_coords
-        self.sprite_movement = sprite_movement
+        
         self.wood_image = wood_image
         self.wood_sprites = wood_sprites
+        self.sprite_movement = sprite_movement
 
         self.max_strength, self.current_strength = 50, 50
         self.alpha = 255
@@ -99,7 +100,7 @@ class Tree(SpriteBase):
                 sprite_groups = self.wood_sprites,
                 direction = pg.Vector2(-1 if left == self.rect.left else 1, 1),
                 speed = randint(15, 30),
-                physics_engine = self.physics_engine,
+                sprite_movement = self.sprite_movement,
                 pick_up_item = pick_up_item
             )
 
