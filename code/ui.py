@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory import Inventory
@@ -26,6 +27,7 @@ class UI:
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         tile_IDs_to_names: dict[int, str],
+        key_bindings: dict[str, int],
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
@@ -37,7 +39,14 @@ class UI:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
+        self.key_bindings = key_bindings
         self.saved_data = saved_data
+
+        self.key_expand_inv = self.key_bindings['expand inventory ui']
+        self.key_toggle_inv = self.key_bindings['toggle inventory ui']
+        self.key_toggle_craft_window = self.key_bindings['toggle craft window ui']
+        self.key_toggle_mini_map = self.key_bindings['toggle mini map ui']
+        self.key_toggle_HUD = self.key_bindings['toggle HUD ui']
 
         self.mini_map = MiniMap(
             self.screen, 
@@ -58,7 +67,7 @@ class UI:
             self.assets,
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
-            self.sprite_manager,
+            self.sprite_manager.item_placement,
             self.make_outline,
             self.make_transparent_bg,
             self.render_inventory_item_name,
@@ -178,13 +187,39 @@ class UI:
         topleft = pg.Vector2(x - x_offset, y - y_offset)
         return topleft - self.camera_offset
 
-    def update(self, mouse_xy: tuple[int, int], mouse_moving: bool, click_states: dict[str, dict[str, bool]]) -> None:
-        self.mouse_grid.update(mouse_xy, mouse_moving, click_states)
+    def update_render_states(self, pressed_keys: Sequence[bool], key_map: dict[int, int]) -> None:
+        if pressed_keys[self.key_expand_inv]:
+            self.inventory_ui.expand = not self.inventory_ui.expand
+        
+        if pressed_keys[self.key_toggle_inv]:
+            self.inventory_ui.render = not self.inventory_ui.render
+
+        if pressed_keys[self.key_toggle_craft_window]:
+            self.craft_window.opened = not self.craft_window.opened
+            self.inventory_ui.expand = self.craft_window.opened
+            self.HUD.shift_right = not self.HUD.shift_right
+
+        if pressed_keys[self.key_toggle_mini_map]:
+            self.mini_map.render = not self.mini_map.render
+
+        if pressed_keys[self.key_toggle_HUD]:
+            self.HUD.render = not self.HUD.render
+
+    def update(
+        self, 
+        mouse_world_xy: tuple[int, int], 
+        mouse_moving: bool, 
+        click_states: dict[str, bool], 
+        pressed_keys: Sequence[bool], 
+        key_map: dict[int, int]
+    ) -> None:
+        self.mouse_grid.update(mouse_world_xy, mouse_moving, click_states)
         self.HUD.update()
         self.mini_map.update()
-        self.craft_window.update(mouse_xy, click_states['left']) # keep above the inventory ui otherwise item names may be rendered behind the window
-        self.inventory_ui.update(click_states, mouse_xy)
+        self.craft_window.update(mouse_world_xy, click_states['left']) # keep above the inventory ui otherwise item names may be rendered behind the window
+        self.inventory_ui.update(click_states, mouse_world_xy)
         self.update_item_name_data()
+        self.update_render_states(pressed_keys, key_map)
         
 
 class MouseGrid:

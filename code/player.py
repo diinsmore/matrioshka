@@ -46,7 +46,7 @@ class Player(pg.sprite.Sprite):
         self.gravity = GRAVITY
         self.jump_height = 350 
         self.health = 100
-        self.item_holding = 'stone pickaxe'
+        self.item_holding = None
         self.arm_strength = 4
         
         # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame

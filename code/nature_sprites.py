@@ -98,7 +98,7 @@ class Tree(SpriteBase):
                 image = self.wood_image,
                 z = Z_LAYERS['main'],
                 sprite_groups = self.wood_sprites,
-                direction = pg.Vector2(-1 if left == self.rect.left else 1, 1),
+                direction = pg.Vector2(-1 if left < self.rect.left else 1, 1),
                 speed = randint(15, 30),
                 sprite_movement = self.sprite_movement,
                 pick_up_item = pick_up_item

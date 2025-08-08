@@ -29,6 +29,10 @@ class Engine:
         self.saved_data = self.get_saved_data()
 
         self.cam = Camera(self.saved_data['sprites']['player']['coords'] if self.saved_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
+    
+        self.input_mgr = InputManager()
+        self.mouse = self.input_mgr.mouse
+        self.keyboard = self.input_mgr.keyboard
 
         self.proc_gen = ProcGen(screen, self.cam.offset, self.saved_data)
     
@@ -37,7 +41,12 @@ class Engine:
         self.asset_mgr = AssetManager()
         self.graphics = self.asset_mgr.assets['graphics'] 
         
-        self.physics_engine = PhysicsEngine(self.proc_gen)
+        self.physics_engine = PhysicsEngine(
+            self.proc_gen.tile_map, 
+            self.proc_gen.tile_IDs, 
+            self.proc_gen.tile_IDs_to_names,
+            self.keyboard.key_bindings
+        )
         
         self.sprite_mgr = SpriteManager(
             self.screen, 
@@ -53,6 +62,8 @@ class Engine:
             self.physics_engine.collision_map,
             self.inventory,
             self.get_tile_material,
+            self.mouse,
+            self.keyboard.key_bindings,
             self.saved_data
         )
         
@@ -67,7 +78,6 @@ class Engine:
             self.proc_gen.biome_order,
             self.inventory
         )
-        self.sprite_mgr.player = self.player
 
         self.ui = UI(
             self.screen, 
@@ -79,12 +89,10 @@ class Engine:
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.proc_gen.tile_IDs_to_names,
+            self.keyboard.key_bindings,
             self.saved_data
         )
         self.sprite_mgr.ui = self.ui
-
-        self.input_mgr = InputManager(self.physics_engine, self.sprite_mgr, self.ui, self.player)
-        self.mouse = self.input_mgr.mouse
 
         self.chunk_mgr = ChunkManager(self.cam.offset)
         
@@ -94,8 +102,8 @@ class Engine:
             self.graphics, 
             self.ui, 
             self.sprite_mgr, 
-            self.chunk_mgr, 
-            self.input_mgr, 
+            self.chunk_mgr,
+            self.keyboard.key_map,
             self.player,
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
@@ -103,8 +111,6 @@ class Engine:
             self.proc_gen.current_biome,
             self.proc_gen.biome_order
         )
-    
-        self.sprite_mgr.init_active_items() # keep this line below the sprite instances
 
     def make_save(self, file: str) -> None:
         visited_tiles = self.ui.mini_map.visited_tiles
@@ -140,12 +146,16 @@ class Engine:
         return tile_name.split(' ')[0] if tile_ID in self.proc_gen.ramp_IDs else tile_name
 
     def update(self, dt: float) -> None:
-        self.input_mgr.update(self.cam.offset, dt)
+        self.input_mgr.update(self.cam.offset)
+        self.sprite_mgr.update(self.player, self.keyboard.held_keys, self.mouse.world_xy, self.mouse.tile_xy, self.mouse.buttons_held, dt)
+        self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
         self.graphics_engine.update(
-            self.mouse.coords, 
-            self.mouse.moving, 
-            self.mouse.click_states, 
+            self.mouse.world_xy, 
+            self.mouse.moving,
+            self.mouse.click_states,
+            self.keyboard.pressed_keys, 
             self.player.current_biome, 
             dt
         )
-        self.cam.update(pg.Vector2(self.player.rect.x, self.player.rect.y))
+        self.cam.update(pg.Vector2(self.player.rect.center))
+        self.inventory.update_selected_index(self.keyboard, self.player)

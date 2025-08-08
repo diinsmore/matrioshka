@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory import Inventory
     from player import Player
-    from sprite_manager import SpriteManager
+    from item_placement import ItemPlacement
 
 import pygame as pg
 
@@ -17,7 +17,7 @@ class InventoryUI:
         assets: dict[str, dict[str, any]], 
         top: int,
         player: Player,
-        sprite_manager: SpriteManager,
+        item_placement: ItemPlacement,
         make_outline: callable,
         make_transparent_bg: callable,
         render_inventory_item_name: callable,
@@ -30,7 +30,7 @@ class InventoryUI:
         self.padding = 5
         self.top = top + self.padding
         self.player = player
-        self.sprite_manager = sprite_manager
+        self.item_placement = item_placement
         self.make_outline = make_outline
         self.make_transparent_bg = make_transparent_bg
         self.render_inventory_item_name = render_inventory_item_name
@@ -141,7 +141,7 @@ class InventoryUI:
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
                 tile_coords = (self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE # assigning the rect's center results in an off by 1 error on the y-axis for objects >1 tile tall
                 tile_coords = (int(tile_coords[0]), int(tile_coords[1])) # previously vector2 floats
-                self.sprite_manager.item_placement.render_placement_ui(self.image_to_drag, self.rect_to_drag, tile_coords, self.player)
+                self.item_placement.render_ui(self.image_to_drag, self.rect_to_drag, tile_coords, self.player)
 
     def get_clicked_item(self) -> str | None:
         for item_name, item_data in self.inventory.contents.items():
@@ -171,7 +171,7 @@ class InventoryUI:
                 int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE,
                 int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
             )
-            self.sprite_manager.item_placement.place_item(self.player, self.graphics[self.player.item_holding], tile_coords)
+            self.item_placement.place_item(self.player, self.graphics[self.player.item_holding], tile_coords)
 
         self.drag = False
         self.image_to_drag, self.rect_to_drag = None, None

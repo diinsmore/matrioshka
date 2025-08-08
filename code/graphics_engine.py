@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from camera import Camera
@@ -6,7 +7,7 @@ if TYPE_CHECKING:
     from procgen import ProcGen
     from sprite_manager import SpriteManager
     from chunk_manager import ChunkManager
-    from input_manager import InputManager
+    from input_manager import Mouse
     
 import pygame as pg
 from os import walk
@@ -26,7 +27,7 @@ class GraphicsEngine:
         ui: UI,
         sprite_manager: SpriteManager,
         chunk_manager: ChunkManager,
-        input_manager: InputManager,
+        key_map: dict[int, int],
         player: Player,
         tile_map: np.ndarray, 
         tile_IDs: dict[str, int],
@@ -40,7 +41,7 @@ class GraphicsEngine:
         self.ui = ui
         self.sprite_manager = sprite_manager
         self.chunk_manager = chunk_manager
-        self.input_manager = input_manager
+        self.key_map = key_map
         self.player = player
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
@@ -64,26 +65,11 @@ class GraphicsEngine:
 
         self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
         self.weather = Weather(self.screen)
-
         # only render an equipped item while the sprite is in a given state
         self.item_render_states = {
             'pickaxe': {'mining', 'fighting'},
             'axe': {'chopping', 'fighting'}
         }
-
-        # self.sprite_manager.<sprite group> -> self.<sprite_group>
-        for name, group in self.sprite_manager.all_groups.items():
-            setattr(self, name, group)
-
-        self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
-        self.weather = Weather(screen)
-
-        # only render an equipped item while the sprite is in a given state
-        self.item_render_states = {
-            'pickaxe': {'mining', 'fighting'},
-            'axe': {'chopping', 'fighting'}
-        }
-
         # self.sprite_manager.<sprite group> -> self.<sprite_group>
         for name, group in self.sprite_manager.all_groups.items():
             setattr(self, name, group)
@@ -110,8 +96,10 @@ class GraphicsEngine:
         return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
     def render_sprites(self, dt: float) -> None:
-        all_sprites = self.sprite_manager.all_sprites
-        for sprite in sorted(self.sprite_manager.get_sprites_in_radius(self.player.rect, all_sprites), key = lambda sprite: sprite.z):
+        for sprite in sorted(
+            self.sprite_manager.get_sprites_in_radius(self.player.rect, self.sprite_manager.all_sprites), 
+            key = lambda sprite: sprite.z
+        ):  
             self.screen.blit(sprite.image, sprite.rect.topleft - self.cam.offset)
             groups = self.get_sprite_groups(sprite) 
             if groups: # the sprite isn't just a member of all_sprites
@@ -143,8 +131,6 @@ class GraphicsEngine:
     def render_item_held(self, dt: float) -> None:
         # TODO: this is unfinished
         for sprite in self.sprite_manager.human_sprites:
-            self.update_active_item(sprite)
-
             if sprite.item_holding:
                 item_category = self.get_item_category(sprite)
                 if item_category:
@@ -155,10 +141,6 @@ class GraphicsEngine:
                         rect = image_frame.get_rect(center = coords) if image_frame else image.get_rect(center = coords)
                         self.screen.blit(image_frame if image_frame else image, rect)
 
-    def update_active_item(self, sprite: pg.sprite.Sprite) -> str:
-        if sprite.item_holding != self.sprite_manager.active_items[sprite]:
-            self.sprite_manager.active_items[sprite] = sprite.item_holding
-    
     @staticmethod
     def get_item_category(sprite: pg.sprite.Sprite) -> str:
         '''removes the material name from the item_holding variable if applicable'''
@@ -183,20 +165,17 @@ class GraphicsEngine:
 
     def update(
         self, 
-        mouse_xy: tuple[int, int], 
+        mouse_world_xy: tuple[int, int], 
         mouse_moving: bool, 
-        click_states: dict[str, bool],
-        current_biome: str,
+        click_states: dict[str, bool], 
+        pressed_keys: Sequence[bool], 
+        current_biome: str, 
         dt: float
     ) -> None:
-        self.sprite_manager.update(dt)
-        
-        self.weather.update()
-        # update the weather first to keep the sky behind the rest of the world
+        self.weather.update() # update the weather first to keep the sky behind the rest of the world
         self.terrain.update(current_biome)
         self.render_sprites(dt)
-        
-        self.ui.update(mouse_xy, mouse_moving, click_states)
+        self.ui.update(mouse_world_xy, mouse_moving, click_states, pressed_keys, self.key_map)
         self.cam.update(target_coords = pg.Vector2(self.player.rect.center))
 
 

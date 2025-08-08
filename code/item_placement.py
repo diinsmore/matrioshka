@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory import Inventory
+    from input_manager import Mouse
 
 import pygame as pg
 from math import ceil
@@ -21,6 +22,7 @@ class ItemPlacement:
         inventory: Inventory,
         all_sprites: pg.sprite.Group,
         mech_sprites: pg.sprite.Group,
+        mouse: Mouse,
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
@@ -117,7 +119,7 @@ class ItemPlacement:
         else:
             return self.tile_map[tile_xy[0], tile_xy[1] + 1] in tile_IDs
 
-    def render_placement_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, tile_xy: tuple[int, int], player: Player) -> None:
+    def render_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, tile_xy: tuple[int, int], player: Player) -> None:
         '''add a slight tinge of color to the image to signal whether it can be placed at the current location'''
         mouse_world_coords = pg.mouse.get_pos() + self.camera_offset
         tiles_covered = ceil(icon_image.width / TILE_SIZE)

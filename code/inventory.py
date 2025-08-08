@@ -1,3 +1,9 @@
+from __future__ import annotations
+from typing import Sequence
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import pygame as pg
+    from input_manager import Keyboard
 from collections import defaultdict
 
 from settings import TILES, TOOLS
@@ -15,19 +21,27 @@ class Inventory:
             for i, item in enumerate(self.contents.keys()):
                 self.contents[item]['index'] = i
         else:
-            self.contents = contents
+            self.contents = contents 
         
+        self.index = 0
         self.num_slots = 50
         self.slot_capacity = defaultdict(lambda: 999)
         self.set_slot_capacity()
+        self.item_names = list(self.contents.keys())
+    
+    def set_slot_capacity(self) -> None:
+        for tile in TILES.keys():
+            self.slot_capacity[tile] = 9999 
 
-        self.index = 0
-        
+        for tool in TOOLS.keys():
+            self.slot_capacity[tool] = 99   
+
     def add_item(self, item: str) -> None:
         if item not in self.contents.keys():
             num_slots_taken = len(self.contents.keys())
             if num_slots_taken < self.num_slots:
                 self.contents[item] = {'amount': 1, 'index': num_slots_taken}
+                self.item_names.append(item)
         else:
             if self.contents[item]['amount'] + 1 <= self.slot_capacity[item]:
                self.contents[item]['amount'] += 1
@@ -37,15 +51,13 @@ class Inventory:
             self.contents[item]['amount'] -= amount
         else:
             del self.contents[item]
-            self.update_indexing()
-    
-    def update_indexing(self) ->  None:
-        for i, (name, data) in enumerate(self.contents.items()):
-            data['index'] = i
-            
-    def set_slot_capacity(self) -> None:
-        for tile in TILES.keys():
-            self.slot_capacity[tile] = 9999 
-
-        for tool in TOOLS.keys():
-            self.slot_capacity[tool] = 99
+            self.item_names.remove(item)
+            for i, (name, data) in enumerate(self.contents.items()):
+                data['index'] = i
+        
+    def update_selected_index(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:
+        for key in keyboard.num_keys:
+            if keyboard.pressed_keys[key]:
+                player.inventory.index = keyboard.key_map[key]
+                player.item_holding = self.item_names[player.inventory.index] if player.inventory.index <= len(self.item_names) else None
+                return

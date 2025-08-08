@@ -23,7 +23,7 @@ class Main:
                     sys.exit()
 
             self.engine.update(dt)
-            pg.display.update()
+            pg.display.flip()
              
 if __name__ == '__main__':
     main = Main()

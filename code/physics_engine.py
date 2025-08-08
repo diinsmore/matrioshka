@@ -10,10 +10,17 @@ from collections import defaultdict
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
 class PhysicsEngine:
-    def __init__(self, proc_gen: ProcGen):
-        self.tile_map = proc_gen.tile_map
-        self.tile_IDs = proc_gen.tile_IDs
-        self.tile_IDs_to_names = proc_gen.tile_IDs_to_names
+    def __init__(
+        self, 
+        tile_map: np.ndarray, 
+        tile_IDs: dict[str, int], 
+        tile_IDs_to_names: dict[int, str], 
+        key_bindings: dict[str, int]
+    ):
+        self.tile_map = tile_map
+        self.tile_IDs = tile_IDs
+        self.tile_IDs_to_names = tile_IDs_to_names
+        self.key_bindings = key_bindings
         
         self.collision_map = CollisionMap(self.tile_map, self.tile_IDs)
 
@@ -25,7 +32,14 @@ class PhysicsEngine:
             self.step_over_tile
         )
         
-        self.sprite_movement = SpriteMovement(self.collision_detection, self.tile_map, self.tile_IDs)
+        self.sprite_movement = SpriteMovement(
+            self.tile_map, 
+            self.tile_IDs, 
+            self.collision_detection.tile_collision_update,
+            self.key_bindings['move left'],
+            self.key_bindings['move right'],
+            self.key_bindings['jump']
+        )
 
     def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
         '''determine if the sprite can step over the colliding tile'''
@@ -36,6 +50,10 @@ class PhysicsEngine:
             above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2]) # also check if the tile above the player's head is air
             return all(tile_id == self.tile_IDs['air'] for tile_id in above_tiles)
         return False
+
+    def update(self, player: pg.sprite.Sprite, held_keys: Sequence[bool], pressed_keys: Sequence[bool], dt: float) -> None:
+        self.sprite_movement.update(player, held_keys, pressed_keys, dt)
+
 
 class CollisionMap:
     def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int]):
@@ -185,10 +203,21 @@ class CollisionDetection:
         
 
 class SpriteMovement:
-    def __init__(self, collision_detection: CollisionDetection, tile_map: np.ndarray, tile_IDs: dict[str, int]) -> None:
-        self.collision_detection = collision_detection
+    def __init__(
+        self,  
+        tile_map: np.ndarray, 
+        tile_IDs: dict[str, int],
+        tile_collision_update: callable,
+        key_move_left: int,
+        key_move_right: int,
+        key_jump: int
+    ) -> None:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
+        self.tile_collision_update = tile_collision_update
+        self.key_move_left = key_move_left
+        self.key_move_right = key_move_right
+        self.key_jump = key_jump
 
         self.active_states = {'jumping', 'mining', 'chopping'} # TODO: revisit this line in case more relevant states are added
 
@@ -201,9 +230,9 @@ class SpriteMovement:
                 sprite.state = 'idle'
                 sprite.frame_index = 0
         
-        self.collision_detection.tile_collision_update(sprite, 'x')
+        self.tile_collision_update(sprite, 'x')
         self.update_movement_y(sprite, dt) # always called since it handles gravity
-        self.collision_detection.tile_collision_update(sprite, 'y')
+        self.tile_collision_update(sprite, 'y')
 
     @staticmethod
     def update_movement_x(sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
@@ -223,10 +252,13 @@ class SpriteMovement:
 
         sprite.rect.y = min(sprite.rect.y, WORLD_EDGE_BOTTOM) # don't add a top limit until the space biome borders are set, if any
 
-    @staticmethod
-    def jump(sprite: pg.sprite.Sprite) -> None:
-        if sprite.grounded and sprite.state != 'jumping':
+    def jump(self, sprite: pg.sprite.Sprite, pressed_keys: Sequence[bool]) -> None:
+        if pressed_keys[self.key_jump] and sprite.grounded and sprite.state != 'jumping':
             sprite.direction.y -= sprite.jump_height
             sprite.grounded = False
             sprite.state = 'jumping'
             sprite.frame_index = 0
+
+    def update(self, player: pg.sprite.Sprite, held_keys: Sequence[bool], pressed_keys: Sequence[bool], dt: float):
+        self.move_sprite(player, held_keys[self.key_move_right] - held_keys[self.key_move_left], dt)
+        self.jump(player, pressed_keys)

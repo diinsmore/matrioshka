@@ -1,10 +1,12 @@
 from __future__ import annotations
+from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
     from inventory import Inventory
     from player import Player
     from physics_engine import CollisionMap
+    from input_manager import Mouse
 
 import pygame as pg
 from os.path import join
@@ -34,6 +36,8 @@ class SpriteManager:
         collision_map: CollisionMap,
         inventory: Inventory,
         get_tile_material: callable,
+        mouse: Mouse,
+        key_bindings: dict[str, int],
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
@@ -49,6 +53,8 @@ class SpriteManager:
         self.collision_map = collision_map
         self.inventory = inventory
         self.get_tile_material = get_tile_material
+        self.mouse = mouse
+        self.key_bindings = key_bindings
         self.saved_data = saved_data
 
         self.all_sprites = pg.sprite.Group()
@@ -61,19 +67,19 @@ class SpriteManager:
         self.tree_sprites = pg.sprite.Group()
         self.item_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
-
-        self.player = None # not initialized until after the sprite manager
-
-        self.active_items = {} # block/tool currently held by a given sprite
+       
+        self.ui = None # not initialized until after the sprite manager
          
         self.mining = Mining(
             self.tile_map, 
             self.tile_IDs,
             self.tile_IDs_to_names,
-            self.collision_map, 
+            self.key_bindings['mine'],
+            self.collision_map.update_map,
             self.get_tool_strength, 
             self.pick_up_item,
-            self.get_tile_material
+            self.get_tile_material,
+            self.end_action
         )
 
         self.crafting = Crafting()
@@ -87,6 +93,7 @@ class SpriteManager:
             self.inventory,
             self.all_sprites,
             self.mech_sprites,
+            self.mouse,
             self.saved_data
         )
         self.machine_map = self.item_placement.machine_map
@@ -100,15 +107,9 @@ class SpriteManager:
             self.get_tool_strength,
             self.pick_up_item
         )
-        
-        self.ui = None # passed in engine.py after the UI class is initialized
 
         self.init_trees()
         self.init_machines()
-                
-    def init_active_items(self) -> None: 
-        for sprite in self.human_sprites: # not doing a list comprehension in __init__ since sprites aren't assigned their groups until after the class is initialized
-            self.active_items[sprite] = sprite.item_holding
         
     @staticmethod
     def get_tool_strength(sprite: pg.sprite.Sprite) -> int:
@@ -142,11 +143,11 @@ class SpriteManager:
         return [sprite for sprite in group if abs(sprite.rect.centerx - target.centerx) < x_dist and \
         abs(sprite.rect.centery - target.centery) < y_dist]
 
-    def init_clouds(self) -> None:
+    def init_clouds(self, player: pg.sprite.Sprite) -> None:
         if not self.cloud_sprites:
-            player_x = self.player.rect.x
+            player_x = player.rect.x
             surface_lvl = self.height_map[player_x // TILE_SIZE]
-            if self.player.rect.y // TILE_SIZE < surface_lvl:
+            if player.rect.y // TILE_SIZE < surface_lvl:
                 img_folder = self.graphics['clouds']
                 num_imgs = len(img_folder) - 1
                 for i in range(randint(10, 15)):
@@ -156,7 +157,7 @@ class SpriteManager:
                         z = Z_LAYERS['clouds'],
                         sprite_groups = [self.all_sprites, self.nature_sprites, self.cloud_sprites],
                         speed = randint(1, 3),
-                        player = self.player
+                        player = player
                     )
     
     def init_trees(self) -> None:
@@ -181,19 +182,30 @@ class SpriteManager:
             cls = mech_sprite_dict[machine]
             for xy in xy_list:
                 cls(
-                    coords=pg.Vector2(xy),
+                    coords=pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
                     image=self.graphics[machine],
                     z=Z_LAYERS['main'],
                     sprite_groups=[self.all_sprites, self.mech_sprites],
                     screen=self.screen,
-                    cam_offset=self.cam_offset
+                    cam_offset=self.cam_offset,
+                    mouse=self.mouse
                 )
         
-    def update(self, dt) -> None:
+    def update(
+        self, 
+        player: pg.sprite.Sprite, 
+        held_keys: Sequence[bool],
+        mouse_world_xy: tuple[int, int],
+        mouse_tile_xy: tuple[int, int],
+        mouse_buttons_held: dict[str, bool],
+        dt: float
+    ) -> None:
         for sprite in self.all_sprites:
             sprite.update(dt)
 
-        self.init_clouds()
+        self.mining.update(held_keys, player, mouse_tile_xy)
+        self.wood_gathering.update(player, self.mouse.buttons_held, mouse_world_xy)
+        self.init_clouds(player)
 
 
 class Mining:
@@ -202,48 +214,59 @@ class Mining:
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         tile_IDs_to_names: dict[int, str],
-        collision_map: dict[tuple[int, int], pg.Rect],
+        key_mine: int,
+        update_map: callable,
         get_tool_strength: callable,
         pick_up_item: callable,
-        get_tile_material: callable
+        get_tile_material: callable,
+        end_action: callable
     ):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
-        self.collision_map = collision_map
+        self.key_mine = key_mine
+        self.update_map = update_map
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
         self.get_tile_material = get_tile_material
+        self.end_action = end_action
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
         self.invalid_IDs = {self.tile_IDs['air'], self.tile_IDs['tree base']} # can't be mined
     
-    def run(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> None:
+    def run(self, sprite: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
-            if self.valid_tile(sprite, tile_xy):
+            if self.valid_tile(sprite, mouse_tile_xy):
                 sprite.state = 'mining'
-                if tile_xy not in self.mining_map:
-                    self.mining_map[tile_xy] = {
-                        'hardness': TILES[self.get_tile_material(self.tile_map[tile_xy])]['hardness'], 
+                if mouse_tile_xy not in self.mining_map:
+                    self.mining_map[mouse_tile_xy] = {
+                        'hardness': TILES[self.get_tile_material(self.tile_map[mouse_tile_xy])]['hardness'], 
                         'hits': 0
                     }
-                self.update_tile(sprite, tile_xy) 
+                self.update_tile(sprite, mouse_tile_xy) 
 
-    def valid_tile(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> bool:
+    def valid_tile(self, sprite: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
-        tile_distance = sprite_coords.distance_to(tile_xy)
-        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[tile_xy] not in self.invalid_IDs
+        tile_distance = sprite_coords.distance_to(mouse_tile_xy)
+        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[mouse_tile_xy] not in self.invalid_IDs
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
-    def update_tile(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> bool:   
-        data = self.mining_map[tile_xy]
+    def update_tile(self, sprite: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> bool:   
+        data = self.mining_map[mouse_tile_xy]
         data['hits'] += 1 / FPS
         data['hardness'] = max(0, data['hardness'] - (self.get_tool_strength(sprite) * data['hits']))
-        if self.mining_map[tile_xy]['hardness'] == 0:
-            sprite.inventory.add_item(self.get_tile_material(self.tile_map[tile_xy]))
-            self.tile_map[tile_xy] = self.tile_IDs['air']
-            self.collision_map.update_map(tile_xy, remove_tile = True)
-            del self.mining_map[tile_xy]
+        if self.mining_map[mouse_tile_xy]['hardness'] == 0:
+            sprite.inventory.add_item(self.get_tile_material(self.tile_map[mouse_tile_xy]))
+            self.tile_map[mouse_tile_xy] = self.tile_IDs['air']
+            self.update_map(mouse_tile_xy, remove_tile = True)
+            del self.mining_map[mouse_tile_xy]
+    
+    def update(self, held_keys: Sequence[bool], player: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> None:
+        if held_keys[self.key_mine]:
+            self.run(player, mouse_tile_xy)
+        else:
+            if player.state == 'mining':
+                self.end_action(player)
 
 
 class Crafting:
@@ -278,12 +301,13 @@ class WoodGathering:
 
         self.reach_radius = TILE_SIZE * 3
 
-    def make_cut(self, sprite: pg.sprite.Sprite) -> None:
-        if isinstance(sprite, Player):
+    def make_cut(self, sprite: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
+        if mouse_button_held['left']:
             if sprite.item_holding and sprite.item_holding.split()[-1] == 'axe':
-                for tree in [tree for tree in self.tree_sprites if abs(sprite.rect.x - tree.rect.x) <= self.reach_radius]:
-                    if tree.rect.collidepoint(pg.mouse.get_pos() + self.cam_offset):
+                for tree in [t for t in self.tree_sprites if abs(sprite.rect.x - t.rect.x) <= self.reach_radius]:
+                    if tree.rect.collidepoint(mouse_world_xy):
                         tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
-                        break # avoid cutting multiple trees at once
-        else:
-            pass
+                        return
+
+    def update(self, player: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
+        self.make_cut(player, mouse_button_held, mouse_world_xy)
