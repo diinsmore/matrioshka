@@ -59,5 +59,5 @@ class Inventory:
         for key in keyboard.num_keys:
             if keyboard.pressed_keys[key]:
                 player.inventory.index = keyboard.key_map[key]
-                player.item_holding = self.item_names[player.inventory.index] if player.inventory.index <= len(self.item_names) else None
+                player.item_holding = self.item_names[player.inventory.index] if player.inventory.index < len(self.item_names) else None
                 return

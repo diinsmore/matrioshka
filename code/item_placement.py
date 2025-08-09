@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory import Inventory
     from input_manager import Mouse
+    from sprite_manager import SpriteManager
 
 import pygame as pg
 from math import ceil
@@ -20,9 +21,9 @@ class ItemPlacement:
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         inventory: Inventory,
-        all_sprites: pg.sprite.Group,
-        mech_sprites: pg.sprite.Group,
+        sprite_manager: SpriteManager,
         mouse: Mouse,
+        graphics: dict[str, pg.Surface],
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
@@ -31,9 +32,13 @@ class ItemPlacement:
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map
         self.inventory = inventory
-        self.all_sprites = all_sprites
-        self.mech_sprites = mech_sprites
+        self.sprite_manager = sprite_manager
+        self.mouse = mouse
+        self.graphics = graphics
         self.saved_data = saved_data
+        # waiting for the UI class to be initialized
+        self.make_outline = None
+        self.make_transparent_bg = None
         
         self.machine_map = self.saved_data['machine map'] if self.saved_data else defaultdict(list)
         self.machine_names = set(MACHINES.keys())
@@ -51,26 +56,39 @@ class ItemPlacement:
         item = sprite.item_holding
         self.tile_map[tile_xy] = self.tile_IDs[item]
         self.collision_map.update_map(tile_xy, add_tile = True)
-        if item in self.machine_names:
-            self.machine_map[item].append(tile_xy)
         
         sprite.inventory.remove_item(item)
         sprite.item_holding = None
 
     def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], image: pg.Surface, sprite: pg.sprite.Sprite) -> None:
-        image_topleft = tile_xy_list[0]
+        img_topleft = tile_xy_list[0]
         item = sprite.item_holding
-        self.tile_map[image_topleft] = self.tile_IDs[item] # only store the topleft to prevent rendering multiple images
-        self.collision_map.update_map(image_topleft, add_tile = True)
+        self.tile_map[img_topleft] = self.tile_IDs[item] # only store the topleft to prevent rendering multiple images
+        self.collision_map.update_map(img_topleft, add_tile=True)
         for coord in tile_xy_list[1:]: 
             self.tile_map[coord] = self.tile_IDs['item extended'] # update the remaining tiles covered with a separate ID to be ignored by the renderer
-            self.collision_map.update_map(coord, add_tile = True)
+            self.collision_map.update_map(coord, add_tile=True)
         
         if item in self.machine_names:
-            self.machine_map[item].append(image_topleft)
+            self.machine_map[item].append(img_topleft)
+            self.init_item_class(item, img_topleft)
 
         sprite.inventory.remove_item(item)
         sprite.item_holding = None
+            
+    def init_item_class(self, item: str, img_topleft: tuple[int, int]) -> None:
+        item_cls = mech_sprite_dict[item]
+        item_cls(
+            coords=pg.Vector2(img_topleft[0] * TILE_SIZE, img_topleft[1] * TILE_SIZE),
+            image=self.graphics[item],
+            z=Z_LAYERS['main'],
+            sprite_groups=[self.sprite_manager.all_sprites, self.sprite_manager.active_sprites, self.sprite_manager.mech_sprites],
+            screen=self.screen,
+            cam_offset=self.camera_offset,
+            mouse=self.mouse,
+            make_outline=self.make_outline,
+            make_transparent_bg=self.make_transparent_bg
+        )
 
     def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
         if isinstance(tile_xy, tuple):
@@ -121,7 +139,6 @@ class ItemPlacement:
 
     def render_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, tile_xy: tuple[int, int], player: Player) -> None:
         '''add a slight tinge of color to the image to signal whether it can be placed at the current location'''
-        mouse_world_coords = pg.mouse.get_pos() + self.camera_offset
         tiles_covered = ceil(icon_image.width / TILE_SIZE)
         if tiles_covered == 1:
             valid = self.valid_placement(tile_xy, player)

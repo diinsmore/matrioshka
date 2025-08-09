@@ -18,7 +18,6 @@ from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
 from nature_sprites import Tree, Cloud
-from item_placement import ItemPlacement
 
 class SpriteManager:
     def __init__(
@@ -58,6 +57,7 @@ class SpriteManager:
         self.saved_data = saved_data
 
         self.all_sprites = pg.sprite.Group()
+        self.active_sprites = pg.sprite.Group() # has an update method
         self.animated_sprites = pg.sprite.Group()
         self.player_sprite = pg.sprite.GroupSingle()
         self.human_sprites = pg.sprite.Group()
@@ -67,9 +67,10 @@ class SpriteManager:
         self.tree_sprites = pg.sprite.Group()
         self.item_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
-       
-        self.ui = None # not initialized until after the sprite manager
-         
+        # not initialized until after the sprite manager
+        self.ui = None   
+        self.item_placement = None
+
         self.mining = Mining(
             self.tile_map, 
             self.tile_IDs,
@@ -84,20 +85,6 @@ class SpriteManager:
 
         self.crafting = Crafting()
 
-        self.item_placement = ItemPlacement(
-            self.screen,
-            self.cam_offset,
-            self.tile_map,
-            self.tile_IDs,
-            self.collision_map,
-            self.inventory,
-            self.all_sprites,
-            self.mech_sprites,
-            self.mouse,
-            self.saved_data
-        )
-        self.machine_map = self.item_placement.machine_map
-
         self.wood_gathering = WoodGathering(
             self.tile_map, 
             self.tile_IDs, 
@@ -109,7 +96,6 @@ class SpriteManager:
         )
 
         self.init_trees()
-        self.init_machines()
         
     @staticmethod
     def get_tool_strength(sprite: pg.sprite.Sprite) -> int:
@@ -174,21 +160,23 @@ class SpriteManager:
                     tree_map_coords = xy,
                     sprite_movement = self.sprite_movement,
                     wood_image = self.graphics['wood'],
-                    wood_sprites = [self.all_sprites, self.nature_sprites, self.item_sprites]
+                    wood_sprites = [self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites]
                 )
     
     def init_machines(self) -> None:
-        for machine, xy_list in self.machine_map.items():
+        for machine, xy_list in self.item_placement.machine_map.items():
             cls = mech_sprite_dict[machine]
             for xy in xy_list:
                 cls(
                     coords=pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
                     image=self.graphics[machine],
                     z=Z_LAYERS['main'],
-                    sprite_groups=[self.all_sprites, self.mech_sprites],
+                    sprite_groups=[self.all_sprites, self.active_sprites, self.mech_sprites],
                     screen=self.screen,
                     cam_offset=self.cam_offset,
-                    mouse=self.mouse
+                    mouse=self.mouse,
+                    make_outline=self.ui.make_outline,
+                    make_transparent_bg=self.ui.make_transparent_bg
                 )
         
     def update(
@@ -200,9 +188,9 @@ class SpriteManager:
         mouse_buttons_held: dict[str, bool],
         dt: float
     ) -> None:
-        for sprite in self.all_sprites:
+        for sprite in self.active_sprites:
             sprite.update(dt)
-
+    
         self.mining.update(held_keys, player, mouse_tile_xy)
         self.wood_gathering.update(player, self.mouse.buttons_held, mouse_world_xy)
         self.init_clouds(player)

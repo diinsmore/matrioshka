@@ -17,7 +17,9 @@ class Furnace(SpriteBase):
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
         cam_offset: pg.Vector2,
-        mouse: Mouse
+        mouse: Mouse,
+        make_outline: callable,
+        make_transparent_bg: callable
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.coords = coords
@@ -25,8 +27,12 @@ class Furnace(SpriteBase):
         self.screen = screen
         self.cam_offset = cam_offset
         self.mouse = mouse
+        self.make_outline = make_outline
+        self.make_transparent_bg = make_transparent_bg
         
+        self.active = False
         self.load_ui = False
+        self.ui_box_w, self.ui_box_h = 200, 200
 
         self.max_capacity = {'smelting': 100, 'fuel': 50}
         self.valid_inputs = {
@@ -41,27 +47,20 @@ class Furnace(SpriteBase):
         pass
     
     def render(self) -> None:
-        # continue loading the ui after a left-click until another left-click is detected
         if not self.load_ui:
-            self.load_ui = self.rect.collidepoint(pg.mouse.get_pos() + self.cam_offset) and self.mouse.click_states['left']
-            if self.load_ui:
-                self.render_ui()
+            self.load_ui = self.rect.collidepoint(self.mouse.world_xy) and self.mouse.click_states['left']
         else:
+            self.render_ui()
             if self.mouse.click_states['left']:
                 self.load_ui = False
                 
     def render_ui(self):
-        surf = pg.Surface((100, 100))
-        surf.fill('gray')
-        surf.set_alpha(100)
-        rect = surf.get_rect(bottomleft = self.rect.topleft)
-        print(rect.topleft, pg.mouse.get_pos())
-        self.screen.blit(surf, rect)
+        rect = pg.Rect(self.rect.topright - pg.Vector2(0, self.ui_box_h) - self.cam_offset, (self.ui_box_w, self.ui_box_h))
+        self.make_transparent_bg(rect)
+        self.make_outline(rect)
 
     def update(self, dt) -> None:
         self.render()
-        if self.load_ui:
-            print('rendering ui')
 
 
 class BurnerFurnace(Furnace):
@@ -73,9 +72,11 @@ class BurnerFurnace(Furnace):
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
         cam_offset: pg.Vector2,
-        mouse: Mouse
+        mouse: Mouse,
+        make_outline: callable,
+        make_transparent_bg: callable
     ):
-        super().__init__(coords, image, z, sprite_groups, screen, cam_offset, mouse)
+        super().__init__(coords, image, z, sprite_groups, screen, cam_offset, mouse, make_outline, make_transparent_bg)
         self.recipe = MACHINES['burner furnace']['recipe']
         self.valid_inputs['fuel'] = {'wood', 'coal'}
 
@@ -89,9 +90,11 @@ class ElectricFurnace(Furnace):
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
         cam_offset: pg.Vector2,
-        mouse: Mouse
+        mouse: Mouse,
+        make_outline: callable,
+        make_transparent_bg: callable
     ):
-        super().__init__(coords, image, z, sprite_groups, screen, cam_offset, mouse)
+        super().__init__(coords, image, z, sprite_groups, screen, cam_offset, mouse, make_outline, make_transparent_bg)
         self.recipe = MACHINES['electric furnace']['recipe']
 
 
@@ -104,12 +107,16 @@ class Drill(SpriteBase):
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
         cam_offset: pg.Vector2,
-        mouse: Mouse
+        mouse: Mouse,
+        make_outline: callable,
+        make_transparent_bg: callable
     ):
         super().__init__(coords, image, z, sprite_groups, cam_offset)
         self.screen = screen
         self.cam_offset = cam_offset
         self.mouse = mouse
+        self.make_outline = make_outline
+        self.make_transparent_bg = make_transparent_bg
 
         self.target_ore = None
         self.reach_radius = ((image.width // TILE_SIZE) + 2, RES[1] // 5)

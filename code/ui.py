@@ -106,34 +106,26 @@ class UI:
     def make_outline(
         self,
         rect: pg.Rect,
-        color: str|tuple[int, int, int] = None,
+        color: str | tuple[int, int, int] = None,
         width: int = 1,
         padding: int = 1,
         radius: int = 0,
         draw: bool = True, # if multiple rects are used, this gives more flexibility for their layering
         return_outline: bool = False
-    ) -> None|pg.Rect:
+    ) -> None | pg.Rect:
 
         # avoids evaluating 'self' prematurely when set as a default parameter
         if color is None:
             color = self.assets['colors']['outline bg']
 
-        outline = pg.Rect(
-                    rect.topleft - pg.Vector2(padding, padding), 
-                    (rect.width + (padding * 2), rect.height + (padding * 2))
-                )
+        outline = pg.Rect(rect.topleft - pg.Vector2(padding, padding), (rect.width + (padding * 2), rect.height + (padding * 2)))
         if draw:
             pg.draw.rect(self.screen, color, outline, width, radius)
 
         if return_outline: # use the outline as the base rect for creating another outline
             return outline
 
-    def make_transparent_bg(
-        self, 
-        rect: pg.Rect, 
-        color: str|tuple[int, int, int] = 'black', 
-        alpha: int = 100
-    ) -> None:
+    def make_transparent_bg(self, rect: pg.Rect, color: str | tuple[int, int, int] = 'black', alpha: int=200) -> None:
         bg_image = pg.Surface(rect.size)
         bg_image.fill(color)
         bg_image.set_alpha(alpha)
