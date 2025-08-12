@@ -97,24 +97,13 @@ class GraphicsEngine:
         
     def render_sprites(self, dt: float) -> None:
         for sprite in sorted(
-            self.sprite_manager.get_sprites_in_radius(self.player.rect, self.sprite_manager.all_sprites), 
+            self.sprite_manager.get_sprites_in_radius(self.player.rect, self.all_sprites), 
             key = lambda sprite: sprite.z
         ):  
             self.screen.blit(sprite.image, sprite.rect.topleft - self.cam.offset)
-            groups = self.get_sprite_groups(sprite) 
+            groups = self.sprite_manager.get_sprite_groups(sprite) 
             if groups: # the sprite isn't just a member of all_sprites
                 self.render_group_action(groups, sprite, dt)
-
-    def visible_check(self, sprite) -> bool:
-        '''returns whether the sprite is within/outside the screen boundary'''
-        return abs(sprite.rect.centerx - self.player.rect.centerx) < (RES[0] // 2) + 100
-
-    def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[str]:
-        '''
-        return every sprite group a given sprite is a member of
-        in order to determine which rendering methods to pass the sprite into
-        '''
-        return set(group for group in self.sprite_manager.all_groups.values() if sprite in group)
 
     def render_group_action(self, groups: set[pg.sprite.Group], sprite: pg.sprite.Sprite, dt: float) -> None:
         '''
@@ -130,7 +119,7 @@ class GraphicsEngine:
 
     def render_item_held(self, dt: float) -> None:
         # TODO: this is unfinished
-        for sprite in self.sprite_manager.human_sprites:
+        for sprite in self.human_sprites:
             if sprite.item_holding:
                 item_category = self.get_item_category(sprite)
                 if item_category:
@@ -198,20 +187,17 @@ class Terrain:
         self.graphics = graphics
         self.cam_offset = cam_offset
         self.chunk_manager = chunk_manager
-
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
         self.mining_map = mining_map
-
         self.current_biome = current_biome
-        self.biome_order = biome_order
-
+        self.biome_order = biome_order 
         self.player = player
 
         self.biome_x_offsets = {biome: self.biome_order[biome] * BIOME_WIDTH * TILE_SIZE for biome in self.biome_order.keys()}
-        self.elev_data = self.get_elevation_data()
         self.biome_transition = BiomeTransition(self.graphics, self.render_bg_imgs)
+        self.elev_data = self.get_elevation_data()
 
     def get_tile_type(self, x: int, y: int) -> str:
         return self.tile_IDs_to_names.get(self.tile_map[x, y], 'item extended')
@@ -244,7 +230,7 @@ class Terrain:
         elev_data['landscape base'] = (bottom * TILE_SIZE) - (elev_data['range'] // 2.5)
         return elev_data
 
-    def render_bg_imgs(self, bg_type: str, imgs_folder: dict[int, pg.Surface] = None) -> None:
+    def render_bg_imgs(self, bg_type: str, current_biome: str, imgs_folder: dict[int, pg.Surface] = None) -> None:
         base_y = self.elev_data['landscape base']
         if not imgs_folder: # only provided for biome transitions
             imgs_folder = self.graphics[self.current_biome][bg_type]
@@ -304,14 +290,15 @@ class Terrain:
             self.biome_transition.previous_biome = self.current_biome
             self.current_biome = current_biome
             self.biome_transition.active = True
+            self.elev_data = self.get_elevation_data()
 
     def update(self, current_biome: str) -> None:
         self.get_biome_status(current_biome)
         if self.biome_transition.active:
             self.biome_transition.run(current_biome)
         else:
-            self.render_bg_imgs('landscape')
-            self.render_bg_imgs('underground')
+            self.render_bg_imgs('landscape', current_biome)
+            self.render_bg_imgs('underground', current_biome)
         self.render_tiles()
 
 
@@ -357,8 +344,8 @@ class BiomeTransition:
                 img.set_alpha(new_alpha)
                 self.active = new_alpha < 255
             
-            self.render_bg_imgs(bg_type, previous_biome_imgs)
-            self.render_bg_imgs(bg_type, current_biome_imgs)
+            self.render_bg_imgs(bg_type, current_biome, previous_biome_imgs)
+            self.render_bg_imgs(bg_type, current_biome, current_biome_imgs)
 
         if not self.active:
             self.alphas_init = False

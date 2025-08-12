@@ -13,7 +13,7 @@ from os.path import join
 from random import choice, randint
 
 from file_import_functions import load_image
-from settings import SCREEN_W, TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
 from player import Player
 from timer import Timer
 from mech_sprites import mech_sprite_dict
@@ -31,10 +31,10 @@ class SpriteManager:
         tree_map: set[tuple[int, int]],
         height_map: np.ndarray,
         current_biome: str,
+        get_tile_material: callable,
         sprite_movement: callable,
         collision_map: CollisionMap,
         inventory: Inventory,
-        get_tile_material: callable,
         mouse: Mouse,
         keyboard: Keyboard,
         saved_data: dict[str, any] | None
@@ -48,10 +48,10 @@ class SpriteManager:
         self.tree_map = tree_map
         self.height_map = height_map
         self.current_biome = current_biome
+        self.get_tile_material = get_tile_material
         self.sprite_movement = sprite_movement
         self.collision_map = collision_map
         self.inventory = inventory
-        self.get_tile_material = get_tile_material
         self.mouse = mouse
         self.keyboard = keyboard
         self.saved_data = saved_data
@@ -67,11 +67,7 @@ class SpriteManager:
         self.tree_sprites = pg.sprite.Group()
         self.item_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
-        # not initialized until after the sprite manager
-        self.ui = None   
-        self.item_placement = None
-        self.player = None
-
+        
         self.mining = Mining(
             self.tile_map, 
             self.tile_IDs,
@@ -86,17 +82,8 @@ class SpriteManager:
 
         self.crafting = Crafting()
 
-        self.wood_gathering = WoodGathering(
-            self.tile_map, 
-            self.tile_IDs, 
-            self.tree_sprites, 
-            self.tree_map, 
-            self.cam_offset, 
-            self.get_tool_strength,
-            self.pick_up_item
-        )
-
         self.init_trees()
+        self.ui = self.item_placement = self.player = None # not initialized until after the sprite manager
         
     @staticmethod
     def get_tool_strength(sprite: pg.sprite.Sprite) -> int:
@@ -112,25 +99,38 @@ class SpriteManager:
         idle_img = sprite.frames['idle'][0]
         sprite.image = idle_img if sprite.facing_left else pg.transform.flip(idle_img, True, False)
 
-    def pick_up_item(self, item: object, item_name: str, item_rect: pg.Rect) -> None:
-        for sprite in self.get_sprites_in_radius(item_rect, self.human_sprites):
-            if sprite.rect.colliderect(item_rect):
-                sprite.inventory.add_item(item_name)
-                self.ui.render_new_item_name(item_name, item_rect)
-                item.kill()
+    def pick_up_item(self, obj: object, name: str, rect: pg.Rect) -> None:
+        for sprite in self.get_sprites_in_radius(rect, self.human_sprites):
+            inv = sprite.inventory
+            if sprite.rect.colliderect(rect) and inv.contents['item']['amount'] < inv.slot_capacity[name]:
+                inv.add_item(name)
+                self.ui.render_new_item_name(name, rect)
+                obj.kill()
                 return
 
     @staticmethod
+    def rect_in_sprite_radius(
+        sprite: pg.sprite.Sprite, 
+        rect: pg.Rect, 
+        x_dist: int = (RES[0] // 2) + 5, 
+        y_dist: int = (RES[1] // 2) + 5
+    ) -> bool:
+        return abs(sprite.rect.centerx - rect.centerx) < x_dist and abs(sprite.rect.centery - rect.centery) < y_dist
+
     def get_sprites_in_radius(
-        target: pg.Rect, 
+        self, 
+        rect: pg.Rect, 
         group: pg.sprite.Group, 
-        x_dist: int = (RES[0] // 2) + 100, 
-        y_dist: int = (RES[1] // 2) + 100
-    ) -> list[pg.sprite.Group]:
-        return [sprite for sprite in group if abs(sprite.rect.centerx - target.centerx) < x_dist and \
-        abs(sprite.rect.centery - target.centery) < y_dist]
+        x_dist: int = (RES[0] // 2),  
+        y_dist: int = (RES[1] // 2) 
+    ) -> list[pg.sprite.Sprite]:
+        return [sprite for sprite in group if self.rect_in_sprite_radius(sprite, rect, x_dist, y_dist)]
+
+    def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[pg.sprite.Group]:
+        return set(group for group in self.all_groups.values() if sprite in group)
 
     def init_clouds(self, player: pg.sprite.Sprite) -> None:
+        half_screen_w = RES[0] // 2
         if not self.cloud_sprites:
             player_x = player.rect.x
             surface_lvl = self.height_map[player_x // TILE_SIZE]
@@ -139,12 +139,13 @@ class SpriteManager:
                 num_imgs = len(img_folder) - 1
                 for i in range(randint(10, 15)):
                     Cloud(
-                        coords = pg.Vector2(player_x + SCREEN_W + (50 * (i + 1)), surface_lvl + randint(-2000, -1500)),
-                        image = img_folder[randint(0, num_imgs)],
-                        z = Z_LAYERS['clouds'],
-                        sprite_groups = [self.all_sprites, self.nature_sprites, self.cloud_sprites],
-                        speed = randint(1, 3),
-                        player = player
+                        coords=pg.Vector2(player_x + RES[0] + (50 * (i + 1)), surface_lvl + randint(-2000, -1500)),
+                        image=img_folder[randint(0, num_imgs)],
+                        z=Z_LAYERS['clouds'],
+                        sprite_groups=[self.all_sprites, self.nature_sprites, self.cloud_sprites],
+                        speed=randint(1, 3),
+                        player=player,
+                        rect_in_sprite_radius=self.rect_in_sprite_radius
                     )
     
     def init_trees(self) -> None:
@@ -163,6 +164,17 @@ class SpriteManager:
                     wood_image = self.assets['graphics']['wood'],
                     wood_sprites = [self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites]
                 )
+        
+        self.wood_gathering = WoodGathering(
+            self.tile_map, 
+            self.tile_IDs, 
+            self.tree_sprites, 
+            self.tree_map, 
+            self.cam_offset, 
+            self.get_tool_strength,
+            self.pick_up_item,
+            self.rect_in_sprite_radius
+        )
     
     def init_machines(self) -> None:
         for machine, xy_list in self.item_placement.machine_map.items():
@@ -180,7 +192,8 @@ class SpriteManager:
                     player=self.player,
                     assets=self.assets,
                     gen_outline=self.ui.gen_outline,
-                    gen_bg=self.ui.gen_bg
+                    gen_bg=self.ui.gen_bg,
+                    rect_in_sprite_radius=self.rect_in_sprite_radius
                 )
         
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
@@ -273,7 +286,8 @@ class WoodGathering:
         tree_map: list[tuple[int, int]],
         cam_offset: pg.Vector2,
         get_tool_strength: callable,
-        pick_up_item: callable
+        pick_up_item: callable,
+        rect_in_sprite_radius: callable
     ):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
@@ -282,13 +296,14 @@ class WoodGathering:
         self.cam_offset = cam_offset
         self.get_tool_strength = get_tool_strength
         self.pick_up_item = pick_up_item
+        self.rect_in_sprite_radius = rect_in_sprite_radius
 
         self.reach_radius = TILE_SIZE * 3
 
     def make_cut(self, sprite: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
         if mouse_button_held['left']:
             if sprite.item_holding and sprite.item_holding.split()[-1] == 'axe':
-                for tree in [t for t in self.tree_sprites if abs(sprite.rect.x - t.rect.x) <= self.reach_radius]:
+                for tree in [t for t in self.tree_sprites if self.rect_in_sprite_radius(sprite, t.rect)]:
                     if tree.rect.collidepoint(mouse_world_xy):
                         tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
                         return

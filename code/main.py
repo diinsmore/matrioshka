@@ -64,10 +64,10 @@ class Main:
             self.proc_gen.tree_map,
             self.proc_gen.height_map,
             self.proc_gen.current_biome,
+            self.proc_gen.get_tile_material,
             self.physics_engine.sprite_movement,
             self.physics_engine.collision_map,
             self.inventory,
-            self.get_tile_material,
             self.mouse,
             self.keyboard,
             self.saved_data
@@ -85,6 +85,7 @@ class Main:
             self.proc_gen.biome_order,
             self.inventory
         )
+        self.sprite_mgr.player = self.player
 
         self.item_placement = ItemPlacement(
             self.screen,
@@ -166,10 +167,6 @@ class Main:
             with open('save.json', 'r') as f:
                 saved_data = json.load(f)
         return saved_data
-
-    def get_tile_material(self, tile_ID: int) -> str:
-        tile_name = self.proc_gen.tile_IDs_to_names[tile_ID]
-        return tile_name.split(' ')[0] if tile_ID in self.proc_gen.ramp_IDs else tile_name
     
     def update(self, dt: float) -> None:
         self.input_mgr.update(self.cam.offset)

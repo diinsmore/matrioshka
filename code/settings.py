@@ -1,24 +1,18 @@
 RES = (1500, 750)
-SCREEN_W, SCREEN_H = RES[0] // 2, RES[1] // 2
 FPS = 60
 
 TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
-# TODO: any value larger on the x-axis will cause a glitch where the physics engine doesn't detect the player's initial contact with the ground in time and ends up spawning in a cave
 MAP_SIZE = (3000, 200)
-
-# ordered from left-right
 # since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
-# TODO: the highlands & snow noise parameters are especially in need of fine-tuning
-BIOMES = {
+BIOMES = { # TODO: the highlands & snow noise parameters are especially in need of fine-tuning
     'highlands': {
         'height map': {'scale': 325, 'octaves': 5, 'persistence': 1.6, 'lacunarity': 2.1},
         'cave map': {'scale': 30.0, 'octaves': 5, 'persistence': 2.0, 'lacunarity': 2.3, 'threshold': 0.4},
         'elevation': {'top': 0, 'bottom': 70}, 
         'tile probs': {'stone': 40, 'dirt': 20, 'coal': 15, 'tin': 3, 'iron': 13, 'copper': 10},
         'liquid probs': {'water': 3, 'lava': 5},
-        'tree probs': 10
     }, 
 
     'desert': {
@@ -82,7 +76,7 @@ BIOMES = {
 
 BIOME_WIDTH = MAP_SIZE[0] // (len(BIOMES) - 1) # -1 since the underworld spans the entire map
 
-TREE_BIOMES = ['forest', 'taiga', 'highlands']
+TREE_BIOMES = ['forest', 'taiga']
 
 WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
 WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE

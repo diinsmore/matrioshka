@@ -21,15 +21,17 @@ class Cloud(SpriteBase):
         z: dict[str, int],
         sprite_groups: list[pg.sprite.Group],
         speed: int,
-        player: Player
+        player: Player,
+        rect_in_sprite_radius: callable
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.speed = speed
         self.player = player
+        self.rect_in_sprite_radius = rect_in_sprite_radius
 
     def move(self, dt: float) -> None:  
         self.rect.x -= self.speed * dt
-        if self.rect.right <= 0 or self.rect.right <= self.player.rect.x - (RES[0] // 2) - self.rect.width:
+        if self.rect.right <= 0 or not self.visible_check(self.player, self.rect):
             self.kill()
         
     def update(self, dt: float) -> None:

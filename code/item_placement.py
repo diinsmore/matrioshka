@@ -22,7 +22,7 @@ class ItemPlacement:
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         inventory: Inventory,
-        sprite_manager: SpriteManager,
+        sprite_mgr: SpriteManager,
         mouse: Mouse,
         keyboard: Keyboard,
         player: Player,
@@ -35,18 +35,17 @@ class ItemPlacement:
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map
         self.inventory = inventory
-        self.sprite_manager = sprite_manager
+        self.sprite_mgr = sprite_mgr
         self.mouse = mouse
         self.keyboard = keyboard
         self.player = player
         self.assets = assets
         self.saved_data = saved_data
-        # waiting for the UI class to be initialized
-        self.gen_outline = None
-        self.gen_bg = None
-        
+       
         self.machine_map = self.saved_data['machine map'] if self.saved_data else defaultdict(list)
-        self.machine_names = set(MACHINES.keys())
+        self.machine_names = set(MACHINES.keys()) 
+        
+        self.gen_outline = self.gen_bg = None # waiting for the UI class to be initialized
 
     def place_item(self, sprite: pg.sprite.Sprite, image: pg.Surface, tile_xy: tuple[int, int]) -> None:
         if image.get_size() == (TILE_SIZE, TILE_SIZE):
@@ -87,7 +86,7 @@ class ItemPlacement:
             coords=pg.Vector2(img_topleft[0] * TILE_SIZE, img_topleft[1] * TILE_SIZE),
             image=self.assets['graphics'][item],
             z=Z_LAYERS['main'],
-            sprite_groups=[self.sprite_manager.all_sprites, self.sprite_manager.active_sprites, self.sprite_manager.mech_sprites],
+            sprite_groups=[self.sprite_mgr.all_sprites, self.sprite_mgr.active_sprites, self.sprite_mgr.mech_sprites],
             screen=self.screen,
             cam_offset=self.camera_offset,
             mouse=self.mouse,
@@ -95,7 +94,8 @@ class ItemPlacement:
             player=self.player,
             assets=self.assets,
             gen_outline=self.gen_outline,
-            gen_bg=self.gen_bg
+            gen_bg=self.gen_bg,
+            rect_in_sprite_radius=self.sprite_mgr.rect_in_sprite_radius
         )
 
     def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:

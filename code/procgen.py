@@ -60,6 +60,10 @@ class ProcGen:
             id_map[f'{tile} ramp right'] = id_map[f'{tile} ramp left'] + 1
         return id_map
 
+    def get_tile_material(self, tile_ID: int) -> str:
+        tile_name = self.tile_IDs_to_names[tile_ID]
+        return tile_name.split(' ')[0] if tile_ID in self.ramp_IDs else tile_name
+
     @staticmethod
     def order_biomes() -> dict[str, int]:
         # TODO: randomize this sequence
