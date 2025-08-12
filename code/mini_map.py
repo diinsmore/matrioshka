@@ -11,7 +11,7 @@ class MiniMap:
         tile_map: np.ndarray, 
         tile_IDs: dict[str, int],
         tile_IDs_to_names: dict[int, str], 
-        make_outline: callable,
+        gen_outline: callable,
         get_tile_material: callable,
         saved_data: dict[str, any] | None
     ):
@@ -20,7 +20,7 @@ class MiniMap:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
-        self.make_outline = make_outline
+        self.gen_outline = gen_outline
         self.get_tile_material = get_tile_material
         self.saved_data = saved_data
         
@@ -49,8 +49,8 @@ class MiniMap:
     def render_outline(self) -> None:
         if self.render:
             base_rect = pg.Rect(*self.topleft, self.outline_w, self.outline_h)
-            outline1 = self.make_outline(base_rect, draw = False, return_outline = True)
-            outline2 = self.make_outline(outline1, draw = True)
+            outline1 = self.gen_outline(base_rect, draw = False, return_outline = True)
+            outline2 = self.gen_outline(outline1, draw = True)
             pg.draw.rect(self.screen, 'black', outline1, 1)
 
     def render_tiles(self) -> None:

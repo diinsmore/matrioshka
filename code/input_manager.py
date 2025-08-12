@@ -26,7 +26,8 @@ class Keyboard:
             'toggle inventory ui': pg.K_j,
             'toggle craft window ui': pg.K_c,
             'toggle mini map ui': pg.K_m,
-            'toggle HUD ui': pg.K_h        
+            'toggle HUD ui': pg.K_h,
+            'close ui window': pg.K_q,       
         }
         
     def update(self) -> None:

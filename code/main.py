@@ -45,8 +45,8 @@ class Main:
         self.inventory = Inventory(self.saved_data['sprites']['player']['inventory'] if self.saved_data else None) # TODO: once other human sprites are introduced, they'll need their own data passed
         
         self.asset_mgr = AssetManager()
-        self.graphics = self.asset_mgr.assets['graphics'] 
-        
+        self.assets = self.asset_mgr.assets
+
         self.physics_engine = PhysicsEngine(
             self.proc_gen.tile_map, 
             self.proc_gen.tile_IDs, 
@@ -57,7 +57,7 @@ class Main:
         self.sprite_mgr = SpriteManager(
             self.screen, 
             self.cam.offset, 
-            self.graphics, 
+            self.assets,
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.proc_gen.tile_IDs_to_names,
@@ -69,7 +69,7 @@ class Main:
             self.inventory,
             self.get_tile_material,
             self.mouse,
-            self.keyboard.key_bindings,
+            self.keyboard,
             self.saved_data
         )
 
@@ -95,7 +95,9 @@ class Main:
             self.inventory,
             self.sprite_mgr,
             self.mouse,
-            self.graphics,
+            self.keyboard,
+            self.player,
+            self.assets,
             self.saved_data
         )
         self.sprite_mgr.item_placement = self.item_placement
@@ -103,7 +105,7 @@ class Main:
         self.ui = UI(
             self.screen, 
             self.cam.offset,
-            self.asset_mgr.assets, 
+            self.assets, 
             self.inventory, 
             self.sprite_mgr, 
             self.player, 
@@ -114,16 +116,16 @@ class Main:
             self.saved_data
         )
         self.sprite_mgr.ui = self.ui
-        self.sprite_mgr.init_machines() # machine sprites need access to the UI methods
-        self.item_placement.make_outline = self.ui.make_outline
-        self.item_placement.make_transparent_bg = self.ui.make_transparent_bg
+        self.sprite_mgr.init_machines() # machine sprites need access to UI & Player
+        self.item_placement.gen_outline = self.ui.gen_outline
+        self.item_placement.gen_bg = self.ui.gen_bg
         
         self.chunk_mgr = ChunkManager(self.cam.offset)
         
         self.graphics_engine = GraphicsEngine(
             self.screen, 
             self.cam,
-            self.graphics, 
+            self.assets['graphics'], 
             self.ui, 
             self.sprite_mgr, 
             self.chunk_mgr,
@@ -181,14 +183,7 @@ class Main:
             dt
         ) 
         self.cam.update(pg.Vector2(self.player.rect.center)) 
-        self.sprite_mgr.update( # keep below the graphics engine otherwise the ui for machines will be rendered over
-            self.player, 
-            self.keyboard.held_keys, 
-            self.mouse.world_xy, 
-            self.mouse.tile_xy, 
-            self.mouse.buttons_held, 
-            dt
-        )
+        self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
         self.inventory.update_selected_index(self.keyboard, self.player)
 
     def run(self) -> None:

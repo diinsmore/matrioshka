@@ -18,8 +18,8 @@ class InventoryUI:
         top: int,
         player: Player,
         item_placement: ItemPlacement,
-        make_outline: callable,
-        make_transparent_bg: callable,
+        gen_outline: callable,
+        gen_bg: callable,
         render_inventory_item_name: callable,
         get_scaled_image: callable,
         get_grid_xy: callable
@@ -31,8 +31,8 @@ class InventoryUI:
         self.top = top + self.padding
         self.player = player
         self.item_placement = item_placement
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
         self.render_inventory_item_name = render_inventory_item_name
         self.get_scaled_image = get_scaled_image
         self.get_grid_xy = get_grid_xy
@@ -62,8 +62,8 @@ class InventoryUI:
 
     def render_bg(self) -> None:
         rect = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
-        self.make_outline(rect)
-        self.make_transparent_bg(rect)
+        self.gen_outline(rect)
+        self.gen_bg(rect, transparent=True)
         
     def render_slots(self) -> None:
         selected_idx = self.inventory.index
@@ -120,7 +120,7 @@ class InventoryUI:
         x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0 # move 3+ digit values to the left by 5px for every remaining digit 
 
         rect = image.get_rect(center = (coords[0] + x_offset, coords[1] - 2))
-        self.make_transparent_bg(rect)
+        self.gen_bg(rect, transparent=True)
         self.screen.blit(image, rect)
     
     def check_drag(self, mouse_xy: tuple[int, int], left_click: bool) -> None:

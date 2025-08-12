@@ -21,6 +21,7 @@ class AssetManager:
                 'research': load_folder(join('..', 'graphics', 'research')),
                 'storage': load_folder(join('..', 'graphics', 'storage')),
                 'tools': load_folder(join('..', 'graphics', 'tools')),
+                'ui': load_folder(join('..', 'graphics', 'ui')),
             },
         
             'fonts': {
@@ -32,7 +33,8 @@ class AssetManager:
         
             'colors': {
                 'outline bg': 'gray18',
-                'text': 'ivory4'
+                'text': 'ivory4',
+                'ui bg highlight': 'gray4'
             }, 
         }
 

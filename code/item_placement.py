@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from inventory import Inventory
-    from input_manager import Mouse
+    from input_manager import Mouse, Keyboard
     from sprite_manager import SpriteManager
+    from player import Player
 
 import pygame as pg
 from math import ceil
@@ -23,7 +24,9 @@ class ItemPlacement:
         inventory: Inventory,
         sprite_manager: SpriteManager,
         mouse: Mouse,
-        graphics: dict[str, pg.Surface],
+        keyboard: Keyboard,
+        player: Player,
+        assets: dict[str, dict[str, any]],
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
@@ -34,11 +37,13 @@ class ItemPlacement:
         self.inventory = inventory
         self.sprite_manager = sprite_manager
         self.mouse = mouse
-        self.graphics = graphics
+        self.keyboard = keyboard
+        self.player = player
+        self.assets = assets
         self.saved_data = saved_data
         # waiting for the UI class to be initialized
-        self.make_outline = None
-        self.make_transparent_bg = None
+        self.gen_outline = None
+        self.gen_bg = None
         
         self.machine_map = self.saved_data['machine map'] if self.saved_data else defaultdict(list)
         self.machine_names = set(MACHINES.keys())
@@ -80,14 +85,17 @@ class ItemPlacement:
         item_cls = mech_sprite_dict[item]
         item_cls(
             coords=pg.Vector2(img_topleft[0] * TILE_SIZE, img_topleft[1] * TILE_SIZE),
-            image=self.graphics[item],
+            image=self.assets['graphics'][item],
             z=Z_LAYERS['main'],
             sprite_groups=[self.sprite_manager.all_sprites, self.sprite_manager.active_sprites, self.sprite_manager.mech_sprites],
             screen=self.screen,
             cam_offset=self.camera_offset,
             mouse=self.mouse,
-            make_outline=self.make_outline,
-            make_transparent_bg=self.make_transparent_bg
+            keyboard=self.keyboard,
+            player=self.player,
+            assets=self.assets,
+            gen_outline=self.gen_outline,
+            gen_bg=self.gen_bg
         )
 
     def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:

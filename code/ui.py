@@ -54,7 +54,7 @@ class UI:
             self.tile_map,
             self.tile_IDs,
             self.tile_IDs_to_names, 
-            self.make_outline,
+            self.gen_outline,
             self.sprite_manager.mining.get_tile_material,
             self.saved_data
         )
@@ -68,8 +68,8 @@ class UI:
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
             self.sprite_manager.item_placement,
-            self.make_outline,
-            self.make_transparent_bg,
+            self.gen_outline,
+            self.gen_bg,
             self.render_inventory_item_name,
             self.get_scaled_image,
             self.get_grid_xy
@@ -83,8 +83,8 @@ class UI:
             self.sprite_manager,
             self.player,
             self.get_craft_window_height(),
-            self.make_outline,
-            self.make_transparent_bg,
+            self.gen_outline,
+            self.gen_bg,
             self.render_inventory_item_name,
             self.get_scaled_image
         )
@@ -93,8 +93,8 @@ class UI:
             self.screen, 
             self.assets, 
             self.craft_window.outline.right, 
-            self.make_outline, 
-            self.make_transparent_bg
+            self.gen_outline, 
+            self.gen_bg
         )
 
         self.active_item_names = []
@@ -103,7 +103,7 @@ class UI:
         inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
         return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
 
-    def make_outline(
+    def gen_outline(
         self,
         rect: pg.Rect,
         color: str | tuple[int, int, int] = None,
@@ -125,12 +125,20 @@ class UI:
         if return_outline: # use the outline as the base rect for creating another outline
             return outline
 
-    def make_transparent_bg(self, rect: pg.Rect, color: str | tuple[int, int, int] = 'black', alpha: int=200) -> None:
-        bg_image = pg.Surface(rect.size)
-        bg_image.fill(color)
-        bg_image.set_alpha(alpha)
-        bg_rect = bg_image.get_rect(topleft = rect.topleft)
-        self.screen.blit(bg_image, bg_rect)
+    def gen_bg(
+        self, 
+        rect: pg.Rect, 
+        color: str | tuple[int, int, int] = 'black', 
+        transparent: bool = False, 
+        alpha: int = None
+    ) -> None:
+        if alpha is None:
+            alpha = 200 if transparent else 255
+        
+        img = pg.Surface(rect.size)
+        img.fill(color)
+        img.set_alpha(alpha)
+        self.screen.blit(img, rect)
 
     def render_inventory_item_name(self, rect: pg.Rect, name: str) -> None:
         if rect.collidepoint(pg.mouse.get_pos()):
@@ -244,14 +252,14 @@ class HUD:
         screen: pg.Surface, 
         assets: dict[str, dict[str, any]], 
         craft_window_right: int,
-        make_outline: callable,
-        make_transparent_bg: callable,
+        gen_outline: callable,
+        gen_bg: callable,
     ):
         self.screen = screen
         self.assets = assets
         self.craft_window_right = craft_window_right
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
 
         self.colors = self.assets['colors']
         self.fonts = self.assets['fonts']
@@ -264,10 +272,10 @@ class HUD:
     def render_bg(self) -> None:
         self.image = pg.Surface((self.width, self.height))
         self.rect = self.image.get_rect(topleft = (self.get_left_point(), 0))
-        self.make_transparent_bg(self.rect)
+        self.gen_bg(self.rect, transparent=True)
         
-        outline1 = self.make_outline(self.rect, draw = False, return_outline = True)
-        outline2 = self.make_outline(outline1, draw = True)
+        outline1 = self.gen_outline(self.rect, draw = False, return_outline = True)
+        outline2 = self.gen_outline(outline1, draw = True)
         pg.draw.rect(self.screen, 'black', outline1, 1)
 
     def get_left_point(self) -> int:

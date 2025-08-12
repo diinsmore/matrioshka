@@ -20,8 +20,8 @@ class CraftWindow:
         sprite_manager: SpriteManager,
         player: Player,
         height: int,
-        make_outline: callable,
-        make_transparent_bg: callable,
+        gen_outline: callable,
+        gen_bg: callable,
         render_inventory_item_name: callable,
         get_scaled_image: callable
     ):
@@ -32,8 +32,8 @@ class CraftWindow:
         self.sprite_manager = sprite_manager
         self.player = player
         self.height = height
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
         self.render_inventory_item_name = render_inventory_item_name
         self.get_scaled_image = get_scaled_image
 
@@ -59,8 +59,8 @@ class CraftWindow:
             self.colors,
             self.padding,
             self.opened,
-            self.make_outline, 
-            self.make_transparent_bg, 
+            self.gen_outline, 
+            self.gen_bg, 
         )
 
         self.item_grid = ItemGrid(
@@ -72,18 +72,18 @@ class CraftWindow:
             self.category_grid.selected_category,
             self.sprite_manager,
             self.player,
-            self.make_outline, 
+            self.gen_outline, 
             self.render_inventory_item_name,
             self.get_scaled_image
         )
 
-    def render_outline(self) -> None:
-        self.make_outline(self.outline, color = 'black')
-        self.make_transparent_bg(pg.Rect(self.outline.topleft, self.outline.size))
+    def render(self) -> None:
+        self.gen_outline(self.outline, color = 'black')
+        self.gen_bg(pg.Rect(self.outline.topleft, self.outline.size), transparent=True)
 
     def update(self, mouse_coords: pg.Vector2, left_click: bool) -> None:
         if self.opened:
-            self.render_outline()
+            self.render()
 
             self.category_grid.opened = self.opened
             self.category_grid.update(mouse_coords, left_click)
@@ -103,8 +103,8 @@ class CategoryGrid:
         colors: dict[str, str],
         padding: int,
         opened: bool,
-        make_outline: callable, 
-        make_transparent_bg: callable
+        gen_outline: callable, 
+        gen_bg: callable
     ):
         self.screen = screen
         self.camera_offset = camera_offset
@@ -114,8 +114,8 @@ class CategoryGrid:
         self.colors = colors
         self.padding = padding
         self.opened = opened
-        self.make_outline = make_outline
-        self.make_transparent_bg = make_transparent_bg
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
 
         self.categories = {
             'tools': {**TOOLS},
@@ -152,7 +152,7 @@ class CategoryGrid:
         for col in range(self.num_cols):
             left = self.window_outline.left + (self.col_width * col)
             col_rect = pg.Rect(left, self.window_outline.top, self.col_width, self.row_height * self.num_rows)
-            self.make_outline(col_rect)
+            self.gen_outline(col_rect)
             pg.draw.rect(self.screen, 'black', col_rect, 1)
 
             for row in range(self.num_rows):
@@ -189,8 +189,8 @@ class CategoryGrid:
         padding = 2
         text = self.fonts['craft menu category'].render(category, True, self.colors['text'])
         border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
-        self.make_transparent_bg(border)
-        self.make_outline(border, color = 'black')
+        self.gen_bg(border, transparent=True)
+        self.gen_outline(border, color = 'black')
         text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
         self.screen.blit(text, text_rect)
 
@@ -238,7 +238,7 @@ class ItemGrid:
         selected_category: str,
         sprite_manager: SpriteManager,
         player: Player,
-        make_outline: callable,
+        gen_outline: callable,
         render_item_name: callable,
         get_scaled_image: callable,
     ):
@@ -250,7 +250,7 @@ class ItemGrid:
         self.selected_category = selected_category
         self.sprite_manager = sprite_manager
         self.player = player
-        self.make_outline = make_outline
+        self.gen_outline = gen_outline
         self.render_item_name = render_item_name
         self.get_scaled_image = get_scaled_image
         

@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
     from player import Player
     from physics_engine import CollisionMap
-    from input_manager import Mouse
+    from input_manager import Mouse, Keyboard
 
 import pygame as pg
 from os.path import join
@@ -24,7 +24,7 @@ class SpriteManager:
         self,
         screen: pg.Surface,
         cam_offset: pg.Vector2,
-        graphics: dict[str, pg.Surface],
+        assets: dict[str, dict[str, any]],
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         tile_IDs_to_names: dict[str, int],
@@ -36,12 +36,12 @@ class SpriteManager:
         inventory: Inventory,
         get_tile_material: callable,
         mouse: Mouse,
-        key_bindings: dict[str, int],
+        keyboard: Keyboard,
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
-        self.graphics = graphics
+        self.assets = assets
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
@@ -53,7 +53,7 @@ class SpriteManager:
         self.inventory = inventory
         self.get_tile_material = get_tile_material
         self.mouse = mouse
-        self.key_bindings = key_bindings
+        self.keyboard = keyboard
         self.saved_data = saved_data
 
         self.all_sprites = pg.sprite.Group()
@@ -70,12 +70,13 @@ class SpriteManager:
         # not initialized until after the sprite manager
         self.ui = None   
         self.item_placement = None
+        self.player = None
 
         self.mining = Mining(
             self.tile_map, 
             self.tile_IDs,
             self.tile_IDs_to_names,
-            self.key_bindings['mine'],
+            self.keyboard.key_bindings['mine'],
             self.collision_map.update_map,
             self.get_tool_strength, 
             self.pick_up_item,
@@ -134,7 +135,7 @@ class SpriteManager:
             player_x = player.rect.x
             surface_lvl = self.height_map[player_x // TILE_SIZE]
             if player.rect.y // TILE_SIZE < surface_lvl:
-                img_folder = self.graphics['clouds']
+                img_folder = self.assets['graphics']['clouds']
                 num_imgs = len(img_folder) - 1
                 for i in range(randint(10, 15)):
                     Cloud(
@@ -148,7 +149,7 @@ class SpriteManager:
     
     def init_trees(self) -> None:
         if self.current_biome in TREE_BIOMES:
-            image_folder = self.graphics[self.current_biome]['trees']
+            image_folder = self.assets['graphics'][self.current_biome]['trees']
             tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
             for xy in tree_map: 
                 Tree(
@@ -159,7 +160,7 @@ class SpriteManager:
                     tree_map = self.tree_map, 
                     tree_map_coords = xy,
                     sprite_movement = self.sprite_movement,
-                    wood_image = self.graphics['wood'],
+                    wood_image = self.assets['graphics']['wood'],
                     wood_sprites = [self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites]
                 )
     
@@ -169,30 +170,25 @@ class SpriteManager:
             for xy in xy_list:
                 cls(
                     coords=pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
-                    image=self.graphics[machine],
+                    image=self.assets['graphics'][machine],
                     z=Z_LAYERS['main'],
                     sprite_groups=[self.all_sprites, self.active_sprites, self.mech_sprites],
                     screen=self.screen,
                     cam_offset=self.cam_offset,
                     mouse=self.mouse,
-                    make_outline=self.ui.make_outline,
-                    make_transparent_bg=self.ui.make_transparent_bg
+                    keyboard=self.keyboard,
+                    player=self.player,
+                    assets=self.assets,
+                    gen_outline=self.ui.gen_outline,
+                    gen_bg=self.ui.gen_bg
                 )
         
-    def update(
-        self, 
-        player: pg.sprite.Sprite, 
-        held_keys: Sequence[bool],
-        mouse_world_xy: tuple[int, int],
-        mouse_tile_xy: tuple[int, int],
-        mouse_buttons_held: dict[str, bool],
-        dt: float
-    ) -> None:
+    def update(self, player: pg.sprite.Sprite, dt: float) -> None:
         for sprite in self.active_sprites:
             sprite.update(dt)
     
-        self.mining.update(held_keys, player, mouse_tile_xy)
-        self.wood_gathering.update(player, self.mouse.buttons_held, mouse_world_xy)
+        self.mining.update(self.keyboard.held_keys, player, self.mouse.tile_xy)
+        self.wood_gathering.update(player, self.mouse.buttons_held, self.mouse.world_xy)
         self.init_clouds(player)
 
 
