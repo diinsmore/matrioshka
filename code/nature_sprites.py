@@ -31,7 +31,7 @@ class Cloud(SpriteBase):
 
     def move(self, dt: float) -> None:  
         self.rect.x -= self.speed * dt
-        if self.rect.right <= 0 or not self.visible_check(self.player, self.rect):
+        if self.rect.right <= 0:
             self.kill()
         
     def update(self, dt: float) -> None:

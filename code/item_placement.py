@@ -42,7 +42,7 @@ class ItemPlacement:
         self.assets = assets
         self.saved_data = saved_data
        
-        self.machine_map = self.saved_data['machine map'] if self.saved_data else defaultdict(list)
+        self.machine_map = defaultdict(list, self.saved_data['machine map']) if self.saved_data else defaultdict(list)
         self.machine_names = set(MACHINES.keys()) 
         
         self.gen_outline = self.gen_bg = None # waiting for the UI class to be initialized

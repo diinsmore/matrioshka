@@ -125,42 +125,39 @@ class InventoryUI:
     
     def check_drag(self, mouse_xy: tuple[int, int], left_click: bool) -> None:
         if left_click:
-            if not self.drag:
+            if self.drag:
+                self.end_drag(pg.mouse.get_pos())
+            else:
                 item = self.get_clicked_item()
                 if item:
                     self.player.item_holding = item
-                    self.drag = True
-                    self.start_drag()
-                    self.inventory.index = self.inventory.contents[item]['index']
-            else:
-                self.end_drag(pg.mouse.get_pos())
+                    self.player.inventory.index = self.player.inventory.contents[item]['index']  
+                    self.start_drag()       
         else:
             if self.drag: 
-                # continue dragging
                 self.rect_to_drag.topleft = self.get_grid_xy(mouse_xy, self.rect_to_drag.size)
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
-                tile_coords = (self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE # assigning the rect's center results in an off by 1 error on the y-axis for objects >1 tile tall
-                tile_coords = (int(tile_coords[0]), int(tile_coords[1])) # previously vector2 floats
-                self.item_placement.render_ui(self.image_to_drag, self.rect_to_drag, tile_coords, self.player)
-
-    def get_clicked_item(self) -> str | None:
+                if self.player.item_holding in PLACEABLE_ITEMS:
+                    tile_coords = pg.Vector2(self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE
+                    self.item_placement.render_ui(self.image_to_drag, self.rect_to_drag, (int(tile_coords.x), int(tile_coords.y)), self.player)
+                    
+    def get_clicked_item(self) -> str:
         for item_name, item_data in self.inventory.contents.items():
-            if item_name in PLACEABLE_ITEMS:
-                col = item_data['index'] % self.num_cols
-                row = item_data['index'] // self.num_cols
+            col = item_data['index'] % self.num_cols
+            row = item_data['index'] // self.num_cols
 
-                left = self.outline.left + (col * self.box_width)
-                top = self.outline.top + (row * self.box_height)
+            left = self.outline.left + (col * self.box_width)
+            top = self.outline.top + (row * self.box_height)
 
-                padding_x = (self.box_width - self.icon_size[0]) // 2
-                padding_y = (self.box_height - self.icon_size[1]) // 2
+            padding_x = (self.box_width - self.icon_size[0]) // 2
+            padding_y = (self.box_height - self.icon_size[1]) // 2
 
-                icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
-                if icon_rect.collidepoint(pg.mouse.get_pos()):
-                    return item_name
-        return None
+            icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
+            if icon_rect.collidepoint(pg.mouse.get_pos()):
+                return item_name
 
     def start_drag(self) -> None:
+        self.drag = True
         self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
         self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
         self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())

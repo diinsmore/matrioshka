@@ -3,7 +3,6 @@ from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
-    from inventory import Inventory
     from player import Player
     from physics_engine import CollisionMap
     from input_manager import Mouse, Keyboard
@@ -34,7 +33,6 @@ class SpriteManager:
         get_tile_material: callable,
         sprite_movement: callable,
         collision_map: CollisionMap,
-        inventory: Inventory,
         mouse: Mouse,
         keyboard: Keyboard,
         saved_data: dict[str, any] | None
@@ -51,7 +49,6 @@ class SpriteManager:
         self.get_tile_material = get_tile_material
         self.sprite_movement = sprite_movement
         self.collision_map = collision_map
-        self.inventory = inventory
         self.mouse = mouse
         self.keyboard = keyboard
         self.saved_data = saved_data

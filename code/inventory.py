@@ -7,28 +7,21 @@ if TYPE_CHECKING:
 from collections import defaultdict
 
 from settings import TILES, TOOLS
+from player import Player
 
 class Inventory:
-    def __init__(self, contents: dict[str, int] | None):
-        if contents is None:
-            self.contents = {
-                'stone': {'amount': 100}, 
-                'wood': {'amount': 100}, 
-                'wood torch': {'amount': 100},
-                'stone axe': {'amount': 10}, 
-                'stone pickaxe': {'amount': 10}
-            }
-            for i, item in enumerate(self.contents.keys()):
+    def __init__(self, contents: dict[str, int] = None):
+        self.contents = contents
+        if self.contents:
+            for i, item in enumerate(self.contents):
                 self.contents[item]['index'] = i
-        else:
-            self.contents = contents 
-        
+                self.item_names = list(self.contents.keys())      
+
         self.index = 0
         self.num_slots = 50
         self.slot_capacity = defaultdict(lambda: 999)
         self.set_slot_capacity()
-        self.item_names = list(self.contents.keys())
-    
+        
     def set_slot_capacity(self) -> None:
         for tile in TILES.keys():
             self.slot_capacity[tile] = 9999 
@@ -54,7 +47,19 @@ class Inventory:
             self.item_names.remove(item)
             for i, (name, data) in enumerate(self.contents.items()):
                 data['index'] = i
-        
+
+
+class PlayerInventory(Inventory):
+    def __init__(self, contents: dict[str, int] = None):
+        default_contents = {
+            'stone': {'amount': 100}, 
+            'wood': {'amount': 100}, 
+            'wood torch': {'amount': 100},
+            'stone axe': {'amount': 10}, 
+            'stone pickaxe': {'amount': 10}
+        }
+        super().__init__(contents if contents else default_contents)
+         
     def update_selected_index(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:
         for key in keyboard.num_keys:
             if keyboard.pressed_keys[key]:

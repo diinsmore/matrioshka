@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
-    from inventory import Inventory
+    from inventory import PlayerInventory
 
 import pygame as pg
 import numpy as np
@@ -22,7 +22,7 @@ class Player(pg.sprite.Sprite):
         tile_IDs: dict[str, dict[str, any]],
         current_biome: str,
         biome_order: dict[str, int],
-        inventory: Inventory
+        inventory: PlayerInventory
     ):
         super().__init__(*sprite_groups)
         self.coords = coords
@@ -48,10 +48,8 @@ class Player(pg.sprite.Sprite):
         self.health = 100
         self.item_holding = None
         self.arm_strength = 4
-        
-        # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
-        self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0}
-        
+        self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0} # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
+
     def get_current_biome(self) -> None:
         biome_index = (self.rect.x // TILE_SIZE) // BIOME_WIDTH
         if self.biome_order[self.current_biome] != biome_index:

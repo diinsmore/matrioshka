@@ -41,7 +41,7 @@ class ProcGen:
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
         self.cave_maps = self.saved_data['cave maps']
         self.biome_order = self.saved_data['biome order']
-        self.player_spawn_point = self.saved_data['sprites']['player']['coords']
+        self.player_spawn_point = self.saved_data['sprites']['player']['xy']
         self.current_biome = self.saved_data['current biome']
 
     @staticmethod
