@@ -84,36 +84,33 @@ class ItemPlacement:
         '''
         tile_IDs = {self.tile_IDs[name] for name in list(TILES.keys())}
         if single_tile:
-            border_xy = [
+            return any(self.tile_map[xy] in tile_IDs for xy in [
                 (tile_xy[0], tile_xy[1] - 1), # north
                 (tile_xy[0] + 1, tile_xy[1]), # east
                 (tile_xy[0], tile_xy[1] + 1), # south
                 (tile_xy[0] - 1, tile_xy[1]), # west
-            ]
-            return any(self.tile_map[bc] in tile_IDs for bc in border_xy)
+            ])
         else:
             return self.tile_map[tile_xy[0], tile_xy[1] + 1] in tile_IDs
 
     def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite) -> None:
-        item = sprite.item_holding
-        self.tile_map[tile_xy] = self.tile_IDs[item]
+        self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]
         self.collision_map.update_map(tile_xy, add_tile=True)
-        
-        sprite.inventory.remove_item(item)
+        sprite.inventory.remove_item(sprite.item_holding)
         sprite.item_holding = None
 
-    def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], image: pg.Surface, sprite: pg.sprite.Sprite) -> None:
-        img_topleft = tile_xy_list[0]
+    def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
+        surf_topleft = tile_xy_list[0]
         item = sprite.item_holding
-        self.tile_map[img_topleft] = self.tile_IDs[item] # only store the topleft to prevent rendering multiple images
-        self.collision_map.update_map(img_topleft, add_tile=True)
-        for coord in tile_xy_list[1:]: 
-            self.tile_map[coord] = self.tile_IDs['item extended'] # update the remaining tiles covered with a separate ID to be ignored by the renderer
-            self.collision_map.update_map(coord, add_tile=True)
+        self.tile_map[surf_topleft] = self.tile_IDs[item] # only store the topleft to prevent rendering multiple images
+        self.collision_map.update_map(surf_topleft, add_tile=True)
+        for xy in tile_xy_list[1:]: 
+            self.tile_map[xy] = self.tile_IDs['item extended'] # update the remaining tiles covered with a separate ID to be ignored by the renderer
+            self.collision_map.update_map(xy, add_tile=True)
         
         if item in self.machine_names:
-            self.machine_map[item].append(img_topleft)
-            self.init_item_class(item, img_topleft)
+            self.machine_map[item].append(surf_topleft)
+            self.init_item_class(item, surf_topleft)
 
         sprite.inventory.remove_item(item)
         sprite.item_holding = None
