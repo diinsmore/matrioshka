@@ -11,10 +11,9 @@ import json
 
 from settings import RES, FPS, Z_LAYERS, MAP_SIZE, MAP_SIZE, TILE_SIZE
 from procgen import ProcGen
-from camera import Camera
 from player import Player
 from inventory import Inventory, PlayerInventory
-from graphics_engine import GraphicsEngine
+from graphics_engine import GraphicsEngine, Camera
 from asset_manager import AssetManager
 from chunk_manager import ChunkManager
 from physics_engine import PhysicsEngine
@@ -37,6 +36,7 @@ class Main:
             player_xy = pg.Vector2(player_data['xy'])
         
         self.cam = Camera(player_xy if saved_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
+        
         self.input_mgr = InputManager()
         self.mouse = self.input_mgr.mouse
         self.keyboard = self.input_mgr.keyboard
@@ -107,13 +107,14 @@ class Main:
             screen, 
             self.cam.offset,
             assets, 
+            self.mouse,
+            self.keyboard,
             self.player_inv, 
             self.sprite_mgr, 
             self.player, 
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.proc_gen.tile_IDs_to_names,
-            self.keyboard.key_bindings,
             saved_data
         )
         self.sprite_mgr.ui = self.ui
@@ -171,14 +172,7 @@ class Main:
     def update(self, dt: float) -> None:
         self.input_mgr.update(self.cam.offset)
         self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
-        self.graphics_engine.update(
-            self.mouse.world_xy, 
-            self.mouse.moving,
-            self.mouse.click_states,
-            self.keyboard.pressed_keys, 
-            self.player.current_biome, 
-            dt
-        ) 
+        self.graphics_engine.update(self.player.current_biome, dt) 
         self.cam.update(pg.Vector2(self.player.rect.center)) 
         self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
         self.player_inv.update_selected_index(self.keyboard, self.player)

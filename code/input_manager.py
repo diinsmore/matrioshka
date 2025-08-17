@@ -68,8 +68,7 @@ class Mouse:
             self.buttons_held['right'] = True
         
     def reset_click_states(self) -> None:
-        self.buttons_held['left'], self.buttons_held['right'] = False, False
-        self.click_states['left'], self.click_states['right'] = False, False
+        self.buttons_held['left'] = self.buttons_held['right'] = self.click_states['left'] = self.click_states['right'] = False
 
     def update(self, cam_offset: pg.Vector2) -> None:
         self.get_movement(cam_offset)

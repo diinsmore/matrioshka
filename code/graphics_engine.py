@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from camera import Camera
     from ui import UI
     from procgen import ProcGen
     from sprite_manager import SpriteManager
@@ -152,20 +151,30 @@ class GraphicsEngine:
             case 'axe':
                 return pg.Vector2(2 if facing_left else -2, -4)
 
-    def update(
-        self, 
-        mouse_world_xy: tuple[int, int], 
-        mouse_moving: bool, 
-        click_states: dict[str, bool], 
-        pressed_keys: Sequence[bool], 
-        current_biome: str, 
-        dt: float
-    ) -> None:
+    def update(self, current_biome: str, dt: float) -> None:
         self.weather.update() # update the weather first to keep the sky behind the rest of the world
         self.terrain.update(current_biome)
         self.render_sprites(dt)
-        self.ui.update(mouse_world_xy, mouse_moving, click_states, pressed_keys, self.key_map)
-        self.cam.update(target_coords = pg.Vector2(self.player.rect.center))
+        self.ui.update()
+        self.cam.update(pg.Vector2(self.player.rect.center))
+
+
+class Camera:
+    def __init__(self, coords: pg.Vector2): 
+        self.coords = coords
+        self.offset = pg.Vector2()
+        self.half_screen_x = RES[0] // 2
+        self.half_screen_y = RES[1] // 2
+        self.max_x = MAP_SIZE[0] * TILE_SIZE - self.half_screen_x
+        self.max_y = MAP_SIZE[1] * TILE_SIZE - self.half_screen_y
+
+    def update(self, target_coords: pg.Vector2) -> None:
+        self.coords += (target_coords - self.coords) * 0.05
+        self.coords = pg.Vector2(
+            max(self.half_screen_x, min(self.coords.x, self.max_x)), 
+            min(self.coords.y, self.max_y) # not adding a minimum limit until the space biome (if one is to exist) is configured 
+        )
+        self.offset.x, self.offset.y = int(self.coords.x) - self.half_screen_x, int(self.coords.y) - self.half_screen_y
 
 
 class Terrain:

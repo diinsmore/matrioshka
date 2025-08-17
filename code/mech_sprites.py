@@ -107,6 +107,7 @@ class BurnerFurnace(Furnace):
         self.ui.variant = self.variant
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99}, 'coal': {'capacity': 99}}
+        self.ui.fuel_sources = self.fuel_sources
 
 
 class ElectricFurnace(Furnace):
@@ -143,6 +144,7 @@ class ElectricFurnace(Furnace):
         self.ui.variant = self.variant
         self.recipe = MACHINES['electric furnace']['recipe']
         self.fuel_sources = {'electric poles'}
+        self.ui.fuel_sources = self.fuel_sources
 
 
 class Drill(SpriteBase):

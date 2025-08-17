@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
     from player import Player
     from item_placement import ItemPlacement
+    from input_manager import Mouse
 
 import pygame as pg
 
@@ -13,29 +14,35 @@ class InventoryUI:
     def __init__(
         self,
         screen: pg.Surface,
-        camera_offset: pg.Vector2,
+        cam_offset: pg.Vector2,
         assets: dict[str, dict[str, any]], 
+        mouse: Mouse,
         top: int,
         player: Player,
         item_placement: ItemPlacement,
+        mech_sprites: pg.sprite.Group,
         gen_outline: callable,
         gen_bg: callable,
         render_inventory_item_name: callable,
         get_scaled_image: callable,
-        get_grid_xy: callable
+        get_grid_xy: callable,
+        get_sprites_in_radius: callable
     ):  
         self.screen = screen
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.assets = assets
+        self.mouse = mouse
         self.padding = 5
         self.top = top + self.padding
         self.player = player
         self.item_placement = item_placement
+        self.mech_sprites = mech_sprites
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
         self.render_inventory_item_name = render_inventory_item_name
         self.get_scaled_image = get_scaled_image
         self.get_grid_xy = get_grid_xy
+        self.get_sprites_in_radius = get_sprites_in_radius
         
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
@@ -123,24 +130,34 @@ class InventoryUI:
         self.gen_bg(rect, transparent=True)
         self.screen.blit(image, rect)
     
-    def check_drag(self, mouse_xy: tuple[int, int], left_click: bool) -> None:
-        if left_click:
+    def check_drag(self) -> None:
+        if self.mouse.click_states['left']:
             if self.drag:
-                self.end_drag(pg.mouse.get_pos())
+                for machine in self.get_sprites_in_radius(self.player.rect, self.mech_sprites):
+                    if machine.ui.render and machine.ui.check_input():
+                        self.end_drag()
+                        return
+                self.end_drag()
             else:
                 item = self.get_clicked_item()
                 if item:
                     self.player.item_holding = item
                     self.player.inventory.index = self.player.inventory.contents[item]['index']  
-                    self.start_drag()       
+                    self.start_drag(item)       
         else:
             if self.drag: 
-                self.rect_to_drag.topleft = self.get_grid_xy(mouse_xy, self.rect_to_drag.size)
+                item = self.player.item_holding
+                self.rect_to_drag.topleft = self.get_grid_xy()
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
-                if self.player.item_holding in PLACEABLE_ITEMS:
-                    tile_coords = pg.Vector2(self.rect_to_drag.topleft + self.camera_offset) // TILE_SIZE
-                    self.item_placement.render_ui(self.image_to_drag, self.rect_to_drag, (int(tile_coords.x), int(tile_coords.y)), self.player)
-                    
+                item_xy_world = (pg.Vector2(self.rect_to_drag.topleft) + self.cam_offset) // TILE_SIZE
+                if item in PLACEABLE_ITEMS:
+                    self.item_placement.render_ui(
+                        self.image_to_drag, 
+                        self.rect_to_drag, 
+                        (int(item_xy_world.x), int(item_xy_world.y)),
+                        self.player
+                    )
+                            
     def get_clicked_item(self) -> str:
         for item_name, item_data in self.inventory.contents.items():
             col = item_data['index'] % self.num_cols
@@ -153,37 +170,30 @@ class InventoryUI:
             padding_y = (self.box_height - self.icon_size[1]) // 2
 
             icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
-            if icon_rect.collidepoint(pg.mouse.get_pos()):
+            if icon_rect.collidepoint(self.mouse.screen_xy):
                 return item_name
 
-    def start_drag(self) -> None:
+    def start_drag(self, item: str) -> None:
         self.drag = True
-        self.image_to_drag = self.graphics[self.player.item_holding].copy() # a copy to not alter the alpha value of the original
+        self.image_to_drag = self.graphics[item].copy() # a copy to not alter the alpha value of the original
         self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
-        self.rect_to_drag = self.image_to_drag.get_rect(center = pg.mouse.get_pos())
+        self.rect_to_drag = self.image_to_drag.get_rect(center=self.mouse.world_xy)
  
-    def end_drag(self, mouse_screen_coords: tuple[int, int]) -> None:
+    def end_drag(self) -> None:
         if self.player.item_holding:
-            tile_coords = (
-                int(mouse_screen_coords[0] + self.camera_offset[0]) // TILE_SIZE,
-                int(mouse_screen_coords[1] + self.camera_offset[1]) // TILE_SIZE
+            self.item_placement.place_item(
+                self.player, 
+                self.graphics[self.player.item_holding], 
+                (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE)
             )
-            self.item_placement.place_item(self.player, self.graphics[self.player.item_holding], tile_coords)
 
         self.drag = False
-        self.image_to_drag, self.rect_to_drag = None, None
-        self.player.item_holding = None
+        self.image_to_drag = self.rect_to_drag = self.player.item_holding = None
 
-    def get_grid_xy(self, mouse_coords: tuple[int, int], item_size: tuple[int, int]) -> pg.Vector2:
-        x, y = (mouse_coords[0] // TILE_SIZE) * TILE_SIZE, (mouse_coords[1] // TILE_SIZE) * TILE_SIZE
-        half_tile_w, half_tile_h = (item_size[0] // 2) // TILE_SIZE, (item_size[1] // 2) // TILE_SIZE
-        topleft = pg.Vector2(x - half_tile_w, y - half_tile_h)
-        return topleft - self.camera_offset
-
-    def update(self, click_states: dict[str, bool], mouse_xy: tuple[int, int]) -> None:
+    def update(self) -> None:
         if self.render:
             self.update_dimensions()
             self.render_bg()
             self.render_slots()
             self.render_icons()
-            self.check_drag(mouse_xy, click_states['left'])
+            self.check_drag()

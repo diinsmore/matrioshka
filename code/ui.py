@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from input_manager import Mouse, Keyboard
     from inventory import Inventory
     from sprite_manager import SpriteManager
     from player import Player
@@ -19,38 +20,34 @@ class UI:
     def __init__(
         self,
         screen: pg.Surface,
-        camera_offset: pg.Vector2,
+        cam_offset: pg.Vector2,
         assets: dict[str, dict[str, any]],
+        mouse: Mouse,
+        keyboard: Keyboard,
         inventory: Inventory,
         sprite_manager: SpriteManager,
         player: Player,
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         tile_IDs_to_names: dict[int, str],
-        key_bindings: dict[str, int],
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.assets = assets
+        self.mouse = mouse
+        self.keyboard = keyboard
         self.inventory = inventory
         self.sprite_manager = sprite_manager
         self.player = player
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
-        self.key_bindings = key_bindings
         self.saved_data = saved_data
-
-        self.key_expand_inv = self.key_bindings['expand inventory ui']
-        self.key_toggle_inv = self.key_bindings['toggle inventory ui']
-        self.key_toggle_craft_window = self.key_bindings['toggle craft window ui']
-        self.key_toggle_mini_map = self.key_bindings['toggle mini map ui']
-        self.key_toggle_HUD = self.key_bindings['toggle HUD ui']
 
         self.mini_map = MiniMap(
             self.screen, 
-            self.camera_offset, 
+            self.cam_offset, 
             self.tile_map,
             self.tile_IDs,
             self.tile_IDs_to_names, 
@@ -59,25 +56,29 @@ class UI:
             self.saved_data
         )
         
-        self.mouse_grid = MouseGrid(self.screen, self.camera_offset, self.get_grid_xy)
+        self.mouse_grid = MouseGrid(self.mouse, self.screen, self.cam_offset, self.get_grid_xy)
 
         self.inventory_ui = InventoryUI(
             self.screen,
-            self.camera_offset,
+            self.cam_offset,
             self.assets,
+            self.mouse,
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
             self.sprite_manager.item_placement,
+            self.sprite_manager.mech_sprites,
             self.gen_outline,
             self.gen_bg,
             self.render_inventory_item_name,
             self.get_scaled_image,
-            self.get_grid_xy
+            self.get_grid_xy,
+            self.sprite_manager.get_sprites_in_radius
         )
 
         self.craft_window = CraftWindow(
+            self.mouse,
             self.screen,
-            self.camera_offset,
+            self.cam_offset,
             self.assets, 
             self.inventory_ui, 
             self.sprite_manager,
@@ -96,6 +97,15 @@ class UI:
             self.gen_outline, 
             self.gen_bg
         )
+
+        for key in (
+            'expand inventory ui', 
+            'toggle inventory ui', 
+            'toggle craft window ui', 
+            'toggle mini map ui', 
+            'toggle HUD ui'
+        ):
+            setattr(self, '_'.join(key.split(' ')), self.keyboard.key_bindings[key])
 
         self.active_item_names = []
 
@@ -157,7 +167,7 @@ class UI:
                 alpha = 255,
                 font = self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
                 screen = self.screen,
-                camera_offset = self.camera_offset,
+                cam_offset = self.cam_offset,
                 world_coords = world_coords,
                 timer = Timer(length = 2000)
             )
@@ -176,74 +186,61 @@ class UI:
         scale = (min(bounding_box[0], image.width * aspect_ratio), min(bounding_box[1], image.height * aspect_ratio))
         return pg.transform.scale(self.assets['graphics'][item_name], scale)
 
-    def get_grid_xy(self, mouse_coords: tuple[int, int], item_size: tuple[int, int], multi_tile: bool = False) -> pg.Vector2:
-        x, y = (mouse_coords[0] // TILE_SIZE) * TILE_SIZE, (mouse_coords[1] // TILE_SIZE) * TILE_SIZE
-        
-        if multi_tile:
-            x_offset, y_offset = (item_size[0] // 2) * TILE_SIZE, (item_size[1] // 2) * TILE_SIZE
-        else:
-            x_offset, y_offset = 0, 0
-        
-        topleft = pg.Vector2(x - x_offset, y - y_offset)
-        return topleft - self.camera_offset
+    def get_grid_xy(self) -> pg.Vector2:
+        return ((pg.Vector2(self.mouse.world_xy) // TILE_SIZE) * TILE_SIZE) - self.cam_offset
+    
+    def update_render_states(self) -> None:
+        pressed_keys = self.keyboard.pressed_keys
 
-    def update_render_states(self, pressed_keys: Sequence[bool], key_map: dict[int, int]) -> None:
-        if pressed_keys[self.key_expand_inv]:
+        if pressed_keys[self.expand_inventory_ui]:
             self.inventory_ui.expand = not self.inventory_ui.expand
         
-        if pressed_keys[self.key_toggle_inv]:
+        if pressed_keys[self.toggle_inventory_ui]:
             self.inventory_ui.render = not self.inventory_ui.render
 
-        if pressed_keys[self.key_toggle_craft_window]:
+        if pressed_keys[self.toggle_craft_window_ui]:
             self.craft_window.opened = not self.craft_window.opened
             self.inventory_ui.expand = self.craft_window.opened
             self.HUD.shift_right = not self.HUD.shift_right
 
-        if pressed_keys[self.key_toggle_mini_map]:
+        if pressed_keys[self.toggle_mini_map_ui]:
             self.mini_map.render = not self.mini_map.render
 
-        if pressed_keys[self.key_toggle_HUD]:
+        if pressed_keys[self.toggle_HUD_ui]:
             self.HUD.render = not self.HUD.render
 
-    def update(
-        self, 
-        mouse_world_xy: tuple[int, int], 
-        mouse_moving: bool, 
-        click_states: dict[str, bool], 
-        pressed_keys: Sequence[bool], 
-        key_map: dict[int, int]
-    ) -> None:
-        self.mouse_grid.update(mouse_world_xy, mouse_moving, click_states)
+    def update(self) -> None:
+        self.mouse_grid.update()
         self.HUD.update()
         self.mini_map.update()
-        self.craft_window.update(mouse_world_xy, click_states['left']) # keep above the inventory ui otherwise item names may be rendered behind the window
-        self.inventory_ui.update(click_states, mouse_world_xy)
+        self.craft_window.update() # keep above the inventory ui otherwise item names may be rendered behind the window
+        self.inventory_ui.update()
         self.update_item_name_data()
-        self.update_render_states(pressed_keys, key_map)
+        self.update_render_states()
         
 
 class MouseGrid:
     '''a grid around the mouse position to guide block placement'''
-    def __init__(self, screen: pg.Surface, camera_offset: pg.Vector2, get_grid_xy: callable):
+    def __init__(self, mouse: Mouse, screen: pg.Surface, cam_offset: pg.Vector2, get_grid_xy: callable):
+        self.mouse = mouse
         self.screen = screen
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.get_grid_xy = get_grid_xy
 
-        self.tile_w, self.tile_h = 3, 3
+        self.tile_w = self.tile_h = 3
 
-    def render_grid(self, mouse_xy: tuple[int, int], mouse_moving: bool, left_click: bool) -> None:
-        if mouse_moving or left_click:
-            topleft = self.get_grid_xy(mouse_xy, (self.tile_w, self.tile_h), True)
+    def render_grid(self) -> None:
+        if self.mouse.moving or self.mouse.click_states['left']:
+            topleft = self.get_grid_xy()
             for x in range(self.tile_w):
                 for y in range(self.tile_h):
                     cell_surf = pg.Surface((TILE_SIZE, TILE_SIZE), pg.SRCALPHA)
                     cell_surf.fill((0, 0, 0, 0))
                     pg.draw.rect(cell_surf, (255, 255, 255, 10), (0, 0, TILE_SIZE, TILE_SIZE), 1) # (0, 0) is relative to the topleft of cell_surf 
-                    cell_rect = cell_surf.get_rect(topleft = topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE))
-                    self.screen.blit(cell_surf, cell_rect)
+                    self.screen.blit(cell_surf, cell_surf.get_rect(topleft=topleft + pg.Vector2(x * TILE_SIZE, y * TILE_SIZE)))
 
-    def update(self, mouse_xy: tuple[int, int], mouse_moving, left_click: bool) -> None:
-        self.render_grid(mouse_xy, mouse_moving, left_click)
+    def update(self) -> None:
+        self.render_grid()
 
 
 class HUD:
@@ -300,7 +297,7 @@ class ItemName:
         alpha: int,
         font: pg.Font, 
         screen: pg.Surface,
-        camera_offset: pg.Vector2,
+        cam_offset: pg.Vector2,
         world_coords: tuple[int, int],
         timer: Timer
     ):
@@ -309,7 +306,7 @@ class ItemName:
         self.alpha = alpha
         self.font = font
         self.screen = screen
-        self.camera_offset = camera_offset
+        self.cam_offset = cam_offset
         self.world_coords = world_coords
         self.timer = timer
 
@@ -322,7 +319,7 @@ class ItemName:
         
         self.alpha = max(0, self.alpha - 2)
         self.font.set_alpha(self.alpha)
-        screen_coords = self.world_coords - self.camera_offset
+        screen_coords = self.world_coords - self.cam_offset
         self.screen.blit(self.font, self.font.get_rect(midbottom = screen_coords))
         self.world_coords[1] -= index + 1 # move north across the screen
 
@@ -334,7 +331,7 @@ class FurnaceUI:
         cam_offset: pg.Vector2,
         furnace_surf: pg.Surface,
         furnace_rect: pg.Rect,
-        items_smelted: dict[str, dict[str, int | str]],
+        items_smelted: dict[str, dict],
         mouse: Mouse, 
         keyboard: Keyboard,
         player: Player,
@@ -364,25 +361,30 @@ class FurnaceUI:
         self.arrow_surf = self.assets['graphics']['ui']['arrow']
         self.furnace_mask = pg.mask.from_surface(self.furnace_surf)
         self.furnace_highlight_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
-        self.smelt_surf, self.fuel_surf, self.output_surf = None, None, None
+        self.smelt_surf = self.fuel_surf = self.output_surf = None
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
-        self.variant = None # initialized with the subclass
+        
+        self.variant = self.fuel_sources = None # initialized with the subclass
     
-    def input_item(self, smelt_input_box: pg.Rect, fuel_input_box: pg.Rect = None, amount: int = 1) -> None:
-        if smelt_input_box.collidepoint(self.mouse.world_xy) and self.player.item_holding in self.items_smelted:
-            self.player.inventory.contents[self.player.item_holding]['amount'] -= min(
-                amount, self.player.inventory.contents[self.player.item_holding]['amount']
-            )
+    def check_input(self, item_amount: int = 1) -> bool:
+        if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and self.player.item_holding in self.items_smelted:
+            item = self.player.item_holding
+            inv_contents = self.player.inventory.contents
+            inv_contents[item]['amount'] -= min(item_amount, inv_contents[item]['amount'])
             self.smelt_surf = self.assets['graphics'][item]
             self.screen.blit(self.smelt_surf, self.smelt_surf.get_rect(center=smelt_input_box.center))
+            return True
 
-        if self.variant == 'burner' and fuel_input_box.collidepoint(self.mouse.world_xy) and self.player.item_holding in self.fuel_sources:
-            self.player.inventory.contents[self.player.item_holding]['amount'] -= min(
-                amount, self.player.inventory.contents[self.player.item_holding]['amount']
-            )
-            self.fuel_surf = self.assets['graphics'][self.player.item_holding]
+        if self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.world_xy) and self.player.item_holding in self.fuel_sources:
+            item = self.player.item_holding
+            inv_contents = self.player.inventory.contents
+            inv_contents[item]['amount'] -= min(amount, inv_contents[item]['amount'])
+            self.fuel_surf = self.assets['graphics'][item]
             self.screen.blit(self.fuel_surf, self.fuel_surf.get_rect(center=fuel_input_box.center))
+            return True
+
+        return False
 
     def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
         if rect_mouse_collide:
@@ -396,21 +398,21 @@ class FurnaceUI:
         bg_rect.topleft -= self.cam_offset # converting to world-space now to not mess with the radius check above
 
         offset = 0 if self.variant == 'burner' else (self.outline_h // 2) - (self.item_box_h // 2) - self.padding
-        smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, self.padding + offset), (self.item_box_w, self.item_box_h))
+        self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, self.padding + offset), (self.item_box_w, self.item_box_h))
 
-        fuel_input_box = None
+        self.fuel_input_box = None
         if self.variant == 'burner':
-            fuel_input_box = smelt_input_box.copy()
-            fuel_input_box.topleft += pg.Vector2(0, bg_rect.bottom - smelt_input_box.bottom - self.padding)
+            self.fuel_input_box = self.smelt_input_box.copy()
+            self.fuel_input_box.topleft += pg.Vector2(0, bg_rect.bottom - self.smelt_input_box.bottom - self.padding)
 
-        output_box = smelt_input_box.copy()
-        output_box.topleft += pg.Vector2(
-            bg_rect.right - (smelt_input_box.right + self.padding), 
-            0 if self.variant == 'electric' else (self.outline_h // 2) - (self.item_box_h // 2)  - self.padding
+        self.output_box = self.smelt_input_box.copy()
+        self.output_box.topleft += pg.Vector2(
+            bg_rect.right - (self.smelt_input_box.right + self.padding), 
+            0 if self.variant == 'electric' else (self.outline_h // 2) - (self.item_box_h // 2) - self.padding
         )
 
-        boxes = [bg_rect, smelt_input_box, output_box, fuel_input_box]
-        for box in boxes if fuel_input_box else boxes[:-1]:
+        boxes = [bg_rect, self.smelt_input_box, self.output_box, self.fuel_input_box]
+        for box in boxes if self.fuel_input_box else boxes[:-1]:
             color = 'black'
             transparent = False
             if box == bg_rect:
@@ -422,12 +424,7 @@ class FurnaceUI:
             self.gen_bg(box, color, transparent)
             self.gen_outline(box)
 
-        self.screen.blit(
-            self.arrow_surf, 
-            self.arrow_surf.get_rect(center=bg_rect.center)
-        )
-
-        self.input_item(smelt_input_box, fuel_input_box)
+        self.screen.blit(self.arrow_surf, self.arrow_surf.get_rect(center=bg_rect.center))
 
     def run(self, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)
