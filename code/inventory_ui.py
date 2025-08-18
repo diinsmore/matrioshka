@@ -137,8 +137,7 @@ class InventoryUI:
                     if machine.ui.render and self.player.item_holding:
                         machine.ui.check_input()
                         if machine.ui.item_input:
-                            print(True)
-                            machine.input_item(self.player.item_holding)
+                            machine.ui.input_item(self.player.item_holding)
                             self.end_drag(machine_input=True)
                             return
                 self.end_drag()

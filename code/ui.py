@@ -373,7 +373,7 @@ class FurnaceUI:
         if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and item in self.items_smelted:
             self.smelt_input = item
         
-        elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.world_xy) and item in self.fuel_sources:
+        elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.screen_xy) and item in self.fuel_sources:
             self.fuel_input = item
 
         self.item_input = self.smelt_input or self.fuel_input
