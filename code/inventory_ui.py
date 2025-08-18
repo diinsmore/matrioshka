@@ -134,9 +134,13 @@ class InventoryUI:
         if self.mouse.click_states['left']:
             if self.drag:
                 for machine in self.get_sprites_in_radius(self.player.rect, self.mech_sprites):
-                    if machine.ui.render and machine.ui.check_input():
-                        self.end_drag()
-                        return
+                    if machine.ui.render and self.player.item_holding:
+                        machine.ui.check_input()
+                        if machine.ui.item_input:
+                            print(True)
+                            machine.input_item(self.player.item_holding)
+                            self.end_drag(machine_input=True)
+                            return
                 self.end_drag()
             else:
                 item = self.get_clicked_item()
@@ -149,8 +153,8 @@ class InventoryUI:
                 item = self.player.item_holding
                 self.rect_to_drag.topleft = self.get_grid_xy()
                 self.screen.blit(self.image_to_drag, self.rect_to_drag)
-                item_xy_world = (pg.Vector2(self.rect_to_drag.topleft) + self.cam_offset) // TILE_SIZE
                 if item in PLACEABLE_ITEMS:
+                    item_xy_world = (pg.Vector2(self.rect_to_drag.topleft) + self.cam_offset) // TILE_SIZE
                     self.item_placement.render_ui(
                         self.image_to_drag, 
                         self.rect_to_drag, 
@@ -179,14 +183,13 @@ class InventoryUI:
         self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
         self.rect_to_drag = self.image_to_drag.get_rect(center=self.mouse.world_xy)
  
-    def end_drag(self) -> None:
-        if self.player.item_holding:
+    def end_drag(self, machine_input: bool = False) -> None: 
+        if not machine_input:
             self.item_placement.place_item(
                 self.player, 
                 self.graphics[self.player.item_holding], 
                 (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE)
             )
-
         self.drag = False
         self.image_to_drag = self.rect_to_drag = self.player.item_holding = None
 

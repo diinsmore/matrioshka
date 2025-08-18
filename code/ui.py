@@ -357,34 +357,39 @@ class FurnaceUI:
         self.outline_w, self.outline_h = 150, 150
         self.padding = 10
         self.item_box_w, self.item_box_h = 50, 50
+        self.graphics = self.assets['graphics']
         
         self.arrow_surf = self.assets['graphics']['ui']['arrow']
         self.furnace_mask = pg.mask.from_surface(self.furnace_surf)
         self.furnace_highlight_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
-        self.smelt_surf = self.fuel_surf = self.output_surf = None
+        self.item_input = self.smelt_input = self.fuel_input = None
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
         
         self.variant = self.fuel_sources = None # initialized with the subclass
     
-    def check_input(self, item_amount: int = 1) -> bool:
-        if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and self.player.item_holding in self.items_smelted:
-            item = self.player.item_holding
-            inv_contents = self.player.inventory.contents
-            inv_contents[item]['amount'] -= min(item_amount, inv_contents[item]['amount'])
-            self.smelt_surf = self.assets['graphics'][item]
-            self.screen.blit(self.smelt_surf, self.smelt_surf.get_rect(center=smelt_input_box.center))
-            return True
+    def check_input(self) -> bool:
+        item = self.player.item_holding
+        if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and item in self.items_smelted:
+            self.smelt_input = item
+        
+        elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.world_xy) and item in self.fuel_sources:
+            self.fuel_input = item
 
-        if self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.world_xy) and self.player.item_holding in self.fuel_sources:
-            item = self.player.item_holding
-            inv_contents = self.player.inventory.contents
-            inv_contents[item]['amount'] -= min(amount, inv_contents[item]['amount'])
-            self.fuel_surf = self.assets['graphics'][item]
-            self.screen.blit(self.fuel_surf, self.fuel_surf.get_rect(center=fuel_input_box.center))
-            return True
+        self.item_input = self.smelt_input or self.fuel_input
+        return self.item_input
 
-        return False
+    def input_item(self, item:str, amount:int=1) -> None: 
+        self.player.inventory.contents[item]['amount'] -= min(amount, self.player.inventory.contents[item]['amount'])
+
+    def render_item_input(self) -> None:
+        if self.smelt_input:
+            surf = self.graphics[self.smelt_input] 
+            self.screen.blit(surf, surf.get_frect(center=self.smelt_input_box.center))
+        
+        elif self.fuel_input:
+            surf = self.graphics[self.fuel_input] 
+            self.screen.blit(surf, surf.get_frect(center=self.fuel_input_box.center))
 
     def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
         if rect_mouse_collide:
@@ -425,6 +430,7 @@ class FurnaceUI:
             self.gen_outline(box)
 
         self.screen.blit(self.arrow_surf, self.arrow_surf.get_rect(center=bg_rect.center))
+        self.render_item_input()
 
     def run(self, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)

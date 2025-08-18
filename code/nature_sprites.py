@@ -46,7 +46,7 @@ class Tree(SpriteBase):
         z: dict[str, int],
         sprite_groups: list[pg.sprite.Group],
         tree_map: list[tuple[int, int]],
-        tree_map_coords: tuple[int, int], # the coords value before it was adjusted by the camera offset & tile size
+        tree_map_coords: tuple[int, int] | list[int, int], # the coords value before it was adjusted by the camera offset & tile size
         # passing to the Wood class:
         wood_image: pg.Surface,
         wood_sprites: list[pg.sprite.Group],
@@ -56,8 +56,8 @@ class Tree(SpriteBase):
         self.image = self.image.copy()
         self.rect = self.image.get_rect(midbottom = self.coords) # SpriteBase uses the topleft
         self.tree_map = tree_map
-        self.tree_map_coords = tree_map_coords
-        
+        self.tree_map_coords = tree_map_coords if type(tree_map_coords) == tuple else tuple(tree_map_coords)
+
         self.wood_image = wood_image
         self.wood_sprites = wood_sprites
         self.sprite_movement = sprite_movement
@@ -82,7 +82,7 @@ class Tree(SpriteBase):
             rel_alpha = self.alpha * (1 / rel_strength)
             self.alpha = max(0, self.alpha - rel_alpha)
             self.image.set_alpha(self.alpha)
-
+          
             if self.current_strength == 0 and self.tree_map_coords in self.tree_map:
                 self.tree_map.remove(self.tree_map_coords)  
                 self.kill()
