@@ -35,8 +35,8 @@ class Main:
         save_data = self.get_save_data()
         if save_data:
             player_data = save_data['sprites']['player'][0] # index 0 to get the dictionary within the list
-            player_xy = pg.Vector2(player_data['xy'])
-            
+            player_xy = player_data['xy']
+
         self.cam = Camera(player_xy if save_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
         
         self.input_mgr = InputManager()
@@ -167,7 +167,8 @@ class Main:
 
     def load_sprite_data(self, data:dict[str, list]) -> None:
         for sprite in [s for s in self.sprite_mgr.all_sprites if hasattr(s, 'get_save_data')]:
-            data['sprites'][re.sub(r'(?<!^)(?=[A-Z])', ' ', sprite.__class__.__name__).lower()].append(sprite.get_save_data())
+            key = re.sub(r'(?<!^)(?=[A-Z])', ' ', sprite.__class__.__name__).lower()
+            data['sprites'][key].append(sprite.get_save_data())
 
     def get_save_data(self) -> dict[str, list|dict]|None:
         data = None
