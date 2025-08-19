@@ -14,7 +14,7 @@ from settings import *
 class Player(pg.sprite.Sprite):
     def __init__(
         self, 
-        coords: tuple[int, int], 
+        xy: tuple[int, int], 
         frames: dict[str, pg.Surface],
         z: dict[str, int],
         sprite_groups: list[pg.sprite.Group],
@@ -22,10 +22,11 @@ class Player(pg.sprite.Sprite):
         tile_IDs: dict[str, dict[str, any]],
         current_biome: str,
         biome_order: dict[str, int],
-        inventory: PlayerInventory
+        inventory: PlayerInventory,
+        save_data: dict[str, any]
     ):
         super().__init__(*sprite_groups)
-        self.coords = coords
+        self.spawn_point = self.xy = xy
         self.frames = frames
         self.z = z
         self.tile_map = tile_map
@@ -37,16 +38,16 @@ class Player(pg.sprite.Sprite):
         self.frame_index = 0
         self.state = 'idle'
         self.image = self.frames[self.state][self.frame_index]
-        self.rect = self.image.get_rect(midbottom = self.coords)
+        self.rect = self.image.get_rect(midbottom=self.xy)
         
         self.direction = pg.Vector2()
-        self.facing_left = True
+        self.facing_left = save_data['facing left'] if save_data else True
         self.speed = 225
         self.grounded = False
         self.gravity = GRAVITY
         self.jump_height = 350 
-        self.health = 100
-        self.item_holding = None
+        self.health = save_data['health'] if save_data else 100
+        self.item_holding = self.inventory.item_names[self.inventory.index] if save_data else 0
         self.arm_strength = 4
         self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0} # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
 
@@ -60,3 +61,12 @@ class Player(pg.sprite.Sprite):
         
     def update(self, dt: float) -> None:
         self.get_current_biome()
+
+    def get_save_data(self) -> dict[str, any]:
+        return {
+            'xy': self.spawn_point,
+            'current biome': self.current_biome,
+            'inventory data': {'contents': self.inventory.contents, 'index': self.inventory.index},
+            'facing left': self.facing_left,
+            'health': self.health
+        }

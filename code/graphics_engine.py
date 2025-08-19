@@ -33,6 +33,7 @@ class GraphicsEngine:
         tile_IDs_to_names: dict[int, str],
         current_biome: str,
         biome_order: dict[str, int],
+        save_data: dict[str, any]
     ):
         self.screen = screen
         self.cam = cam
@@ -63,7 +64,7 @@ class GraphicsEngine:
         )
 
         self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
-        self.weather = Weather(self.screen)
+        self.weather = Weather(self.screen, save_data['weather'] if save_data else None)
         # only render an equipped item while the sprite is in a given state
         self.item_render_states = {
             'pickaxe': {'mining', 'fighting'},

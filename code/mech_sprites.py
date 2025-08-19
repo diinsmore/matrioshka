@@ -28,7 +28,6 @@ class Furnace(SpriteBase):
         rect_in_sprite_radius: callable
     ):
         super().__init__(coords, image, z, sprite_groups)
-        self.rect = image.get_rect(topleft = self.coords)
         self.screen = screen
         self.cam_offset = cam_offset
         self.mouse = mouse
@@ -46,8 +45,7 @@ class Furnace(SpriteBase):
             'iron': {'speed': 5000, 'output': 'iron plate'},
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
-        self.current_smelt_input = {}
-        self.current_fuel_input = {}
+        self.smelt_input = self.fuel_input = self.output = {}
         
         self.ui = FurnaceUI(
             self.screen, 
@@ -69,6 +67,14 @@ class Furnace(SpriteBase):
 
     def update(self, dt) -> None:
         self.ui.update()
+
+    def get_save_data(self) -> dict[str, list|str]:
+        return {
+            'xy': list(self.rect.topleft),
+            'smelt input': self.smelt_input,
+            'fuel input': self.fuel_input,
+            'output': self.output
+        }
 
 
 class BurnerFurnace(Furnace):
@@ -174,8 +180,16 @@ class Drill(SpriteBase):
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
 
-        self.target_ore = None
+        self.target_ore = {} # key: ore, value: amount available
+        self.output = {}
         self.reach_radius = ((image.width // TILE_SIZE) + 2, RES[1] // 5)
+
+    def get_save_data(self) -> dict[str, list|dict]:
+        return {
+            'xy': list(self.rect.topleft),
+            'target ore': self.target_ore,
+            'output': self.output
+        }
 
 
 mech_sprite_dict = { # matches the sprite.item_holding variable to the class to be instantiated when the item is placed

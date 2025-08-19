@@ -10,14 +10,18 @@ from settings import TILES, TOOLS
 from player import Player
 
 class Inventory:
-    def __init__(self, contents: dict[str, int] = None):
-        self.contents = contents
+    def __init__(self, save_data: dict[str, any], default_contents: dict[str, dict[str, int]]=None):
+        if save_data:
+            self.contents = save_data['contents']
+        else:
+            self.contents = default_contents if default_contents else {}
+
         if self.contents:
             for i, item in enumerate(self.contents):
                 self.contents[item]['index'] = i
-                self.item_names = list(self.contents.keys())      
-
-        self.index = 0
+                self.item_names = list(self.contents.keys())  
+     
+        self.index = save_data['index'] if save_data else 0
         self.num_slots = 50
         self.slot_capacity = defaultdict(lambda: 999)
         self.set_slot_capacity()
@@ -50,15 +54,14 @@ class Inventory:
 
 
 class PlayerInventory(Inventory):
-    def __init__(self, contents: dict[str, int] = None):
-        default_contents = {
+    def __init__(self, save_data: dict[str, any]):
+        super().__init__(save_data, default_contents=None if save_data else {
             'stone': {'amount': 100}, 
             'wood': {'amount': 100}, 
             'wood torch': {'amount': 100},
             'stone axe': {'amount': 10}, 
             'stone pickaxe': {'amount': 10}
-        }
-        super().__init__(contents if contents else default_contents)
+        })
          
     def update_selected_index(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:
         for key in keyboard.num_keys:

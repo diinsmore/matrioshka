@@ -162,6 +162,7 @@ class InventoryUI:
                     )
                             
     def get_clicked_item(self) -> str:
+        print(self.inventory.contents)
         for item_name, item_data in self.inventory.contents.items():
             col = item_data['index'] % self.num_cols
             row = item_data['index'] // self.num_cols

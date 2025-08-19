@@ -8,6 +8,8 @@ import sys
 import os
 from os.path import join
 import json
+from collections import defaultdict
+import re
 
 from settings import RES, FPS, Z_LAYERS, MAP_SIZE, MAP_SIZE, TILE_SIZE
 from procgen import ProcGen
@@ -30,18 +32,18 @@ class Main:
         self.running = True
         self.clock = pg.time.Clock()
         screen = pg.display.set_mode(RES)
-        saved_data = self.get_saved_data()
-        if saved_data:
-            player_data = saved_data['sprites']['player']
+        save_data = self.get_save_data()
+        if save_data:
+            player_data = save_data['sprites']['player'][0] # index 0 to get the dictionary within the list
             player_xy = pg.Vector2(player_data['xy'])
-        
-        self.cam = Camera(player_xy if saved_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
+            
+        self.cam = Camera(player_xy if save_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
         
         self.input_mgr = InputManager()
         self.mouse = self.input_mgr.mouse
         self.keyboard = self.input_mgr.keyboard
 
-        self.proc_gen = ProcGen(screen, self.cam.offset, saved_data)
+        self.proc_gen = ProcGen(screen, self.cam.offset, save_data, player_xy if save_data else None)
         
         self.asset_mgr = AssetManager()
         assets = self.asset_mgr.assets
@@ -68,13 +70,13 @@ class Main:
             self.physics_engine.collision_map,
             self.mouse,
             self.keyboard,
-            saved_data
+            save_data
         )
         
-        self.player_inv = PlayerInventory(player_data['inventory'] if saved_data else None)
+        self.player_inv = PlayerInventory(player_data['inventory data'] if save_data else None)
 
         self.player = Player( 
-            player_xy if saved_data else self.proc_gen.player_spawn_point,
+            player_xy if save_data else self.proc_gen.player_spawn_point,
             load_subfolders(join('..', 'graphics', 'player')), 
             Z_LAYERS['player'],
             [self.sprite_mgr.all_sprites, self.sprite_mgr.active_sprites, self.sprite_mgr.player_sprite, 
@@ -83,7 +85,8 @@ class Main:
             self.proc_gen.tile_IDs,
             self.proc_gen.current_biome,
             self.proc_gen.biome_order,
-            self.player_inv
+            self.player_inv,
+            save_data=player_data if save_data else None
         )
         self.sprite_mgr.player = self.player
 
@@ -99,7 +102,7 @@ class Main:
             self.keyboard,
             self.player,
             assets,
-            saved_data
+            save_data
         )
         self.sprite_mgr.item_placement = self.item_placement
 
@@ -115,7 +118,7 @@ class Main:
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.proc_gen.tile_IDs_to_names,
-            saved_data
+            save_data
         )
         self.sprite_mgr.ui = self.ui
         self.sprite_mgr.init_machines() # machine sprites need access to UI & Player
@@ -137,32 +140,36 @@ class Main:
             self.proc_gen.tile_IDs,
             self.proc_gen.tile_IDs_to_names,
             self.proc_gen.current_biome,
-            self.proc_gen.biome_order
+            self.proc_gen.biome_order, 
+            save_data
         )
 
     def make_save(self, file: str) -> None:
         visited_tiles = self.ui.mini_map.visited_tiles
-        data = {
+        data = defaultdict(list, {
             'tile map': self.proc_gen.tile_map.tolist(),
             'height map': self.proc_gen.height_map.tolist(),
             'tree map': [list(xy) for xy in self.proc_gen.tree_map],
-            'cave maps': {biome: cave_map if type(cave_map) == list else cave_map.tolist() for biome, cave_map in self.proc_gen.cave_maps.items()},
+            'cave maps': {
+                biome: cave_map if isinstance(cave_map, list) else cave_map.tolist() 
+                for biome, cave_map in self.proc_gen.cave_maps.items()
+            },
             'machine map': self.item_placement.machine_map,
-            'visited tiles': visited_tiles if type(visited_tiles) == list else visited_tiles.tolist(),
+            'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(),
             'biome order': self.proc_gen.biome_order,
             'current biome': self.player.current_biome,
-            'sprites': {}
-        }
-        for sprite in self.sprite_mgr.all_sprites:
-            sprite_data = {'xy': list(sprite.rect.center)}
-            if hasattr(sprite, 'inventory'):
-                sprite_data['inventory'] = sprite.inventory.contents
-            data['sprites'][sprite.__class__.__name__.lower()] = sprite_data
-
+            'weather': self.graphics_engine.weather.sky.make_save(),
+            'sprites': defaultdict(list)
+        })
+        self.load_sprite_data(data)
         with open(file, 'w') as f:
             json.dump(data, f)
 
-    def get_saved_data(self) -> dict[str, list | dict] | None:
+    def load_sprite_data(self, data:dict[str, list]) -> None:
+        for sprite in [s for s in self.sprite_mgr.all_sprites if hasattr(s, 'get_save_data')]:
+            data['sprites'][re.sub(r'(?<!^)(?=[A-Z])', ' ', sprite.__class__.__name__).lower()].append(sprite.get_save_data())
+
+    def get_save_data(self) -> dict[str, list|dict]|None:
         data = None
         if os.path.exists('save.json'):
             with open('save.json', 'r') as f:

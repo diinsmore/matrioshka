@@ -149,17 +149,18 @@ class SpriteManager:
         if self.current_biome in TREE_BIOMES:
             image_folder = self.assets['graphics'][self.current_biome]['trees']
             tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
-            for xy in tree_map: 
+            for i, xy in enumerate(tree_map): 
                 Tree(
-                    coords = (pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, 
-                    image = choice(image_folder), 
-                    z = Z_LAYERS['bg'],
-                    sprite_groups = [self.all_sprites, self.nature_sprites, self.tree_sprites], 
-                    tree_map = self.tree_map, 
-                    tree_map_coords = xy,
-                    sprite_movement = self.sprite_movement,
-                    wood_image = self.assets['graphics']['wood'],
-                    wood_sprites = [self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites]
+                    xy=(pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, 
+                    image=choice(image_folder), 
+                    z=Z_LAYERS['bg'],
+                    sprite_groups=[self.all_sprites, self.nature_sprites, self.tree_sprites], 
+                    tree_map=self.tree_map, 
+                    tree_map_xy=xy,
+                    sprite_movement=self.sprite_movement,
+                    wood_image=self.assets['graphics']['wood'],
+                    wood_sprites=[self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites],
+                    save_data=self.saved_data['sprites']['tree'][i] if self.saved_data else None
                 )
         
         self.wood_gathering = WoodGathering(

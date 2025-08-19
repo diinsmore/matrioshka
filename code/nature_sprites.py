@@ -41,37 +41,34 @@ class Cloud(SpriteBase):
 class Tree(SpriteBase):
     def __init__(
         self, 
-        coords: pg.Vector2,
+        xy: pg.Vector2,
         image: pg.Surface,
         z: dict[str, int],
         sprite_groups: list[pg.sprite.Group],
         tree_map: list[tuple[int, int]],
-        tree_map_coords: tuple[int, int] | list[int, int], # the coords value before it was adjusted by the camera offset & tile size
-        # passing to the Wood class:
+        tree_map_xy: tuple[int, int] | list[int, int], # the xy value before it was adjusted by the camera offset & tile size
         wood_image: pg.Surface,
         wood_sprites: list[pg.sprite.Group],
-        sprite_movement: callable
+        sprite_movement: callable,
+        save_data: dict[str, any]
     ):
-        super().__init__(coords, image, z, sprite_groups)
+        super().__init__(xy, image, z, sprite_groups)
         self.image = self.image.copy()
-        self.rect = self.image.get_rect(midbottom = self.coords) # SpriteBase uses the topleft
+        self.rect = self.image.get_rect(midbottom=self.xy) # SpriteBase uses the topleft
         self.tree_map = tree_map
-        self.tree_map_coords = tree_map_coords if type(tree_map_coords) == tuple else tuple(tree_map_coords)
-
+        self.tree_map_xy = tree_map_xy if type(tree_map_xy) == tuple else tuple(tree_map_xy)
         self.wood_image = wood_image
         self.wood_sprites = wood_sprites
         self.sprite_movement = sprite_movement
 
-        self.max_strength, self.current_strength = 50, 50
+        self.max_strength = 50
+        self.current_strength = save_data['current strength'] if save_data else self.max_strength
         self.alpha = 255
-
         self.total_wood = ceil(self.image.height / 25)
-
-        self.delay_timer = Timer(length = 500) # prevents cut_down() from being called every frame
+        self.delay_timer = Timer(length=500) # prevents cut_down() from being called every frame
 
     def cut_down(self, sprite: pg.sprite.Sprite, get_tool_strength: callable, pick_up_item: callable) -> None:
         self.delay_timer.update()
-    
         if not self.delay_timer.running:
             sprite.state = 'chopping'
             axe_material = sprite.item_holding.split()[0]
@@ -83,8 +80,8 @@ class Tree(SpriteBase):
             self.alpha = max(0, self.alpha - rel_alpha)
             self.image.set_alpha(self.alpha)
           
-            if self.current_strength == 0 and self.tree_map_coords in self.tree_map:
-                self.tree_map.remove(self.tree_map_coords)  
+            if self.current_strength == 0 and self.tree_map_xy in self.tree_map:
+                self.tree_map.remove(self.tree_map_xy)  
                 self.kill()
                 sprite.state = 'idle'
                 self.produce_wood(sprite, pick_up_item)
@@ -96,7 +93,7 @@ class Tree(SpriteBase):
         for i in range(self.total_wood):
             left = choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50)))
             wood = Wood(
-                coords = pg.Vector2(left, self.rect.top + (self.wood_image.height * i)),
+                xy = pg.Vector2(left, self.rect.top + (self.wood_image.height * i)),
                 image = self.wood_image,
                 z = Z_LAYERS['main'],
                 sprite_groups = self.wood_sprites,
@@ -105,12 +102,15 @@ class Tree(SpriteBase):
                 sprite_movement = self.sprite_movement,
                 pick_up_item = pick_up_item
             )
+    # the tree map takes care of its coordinate position
+    def get_save_data(self) -> dict[str, int]:
+        return {'current strength': self.current_strength}
 
 
 class Wood(SpriteBase):
     def __init__(
         self, 
-        coords: pg.Vector2,
+        xy: pg.Vector2,
         image: pg.Surface,
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -119,7 +119,7 @@ class Wood(SpriteBase):
         sprite_movement: callable,
         pick_up_item: callable
     ):
-        super().__init__(coords, image, z, sprite_groups)
+        super().__init__(xy, image, z, sprite_groups)
         self.direction = direction
         self.speed = speed
         self.sprite_movement = sprite_movement
@@ -133,3 +133,6 @@ class Wood(SpriteBase):
             self.direction.x = 0
         
         self.pick_up_item(self, 'wood', self.rect)
+
+    def get_save_data(self) -> dict[str, list]:
+        return {'xy': list(self.rect.topleft)}

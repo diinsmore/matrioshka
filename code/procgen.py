@@ -9,17 +9,18 @@ from file_import_functions import load_image
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 class ProcGen:
-    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any] | None):
+    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any]|None, player_xy: pg.Vector2|None):
         self.screen = screen
         self.cam_offset = cam_offset
         self.saved_data = saved_data
+        self.player_xy = player_xy
         
         self.tile_IDs = self.get_tile_IDs()
         self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
         self.ramp_IDs = [self.tile_IDs[name] for name in self.tile_IDs.keys() if 'ramp' in name]
 
         if self.saved_data:
-            self.load_saved_data()
+            self.load_saved_data(player_xy)
         else:
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
@@ -35,13 +36,13 @@ class ProcGen:
             self.gen_world()
             self.player_spawn_point = self.get_player_spawn_point()
         
-    def load_saved_data(self) -> None:
+    def load_saved_data(self, player_xy: pg.Vector2|None) -> None:
         self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
         self.height_map = np.array(self.saved_data['height map'], dtype = np.float32)
         self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
         self.cave_maps = self.saved_data['cave maps']
         self.biome_order = self.saved_data['biome order']
-        self.player_spawn_point = self.saved_data['sprites']['player']['xy']
+        self.player_spawn_point = player_xy
         self.current_biome = self.saved_data['current biome']
 
     @staticmethod
