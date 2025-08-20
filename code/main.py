@@ -167,8 +167,7 @@ class Main:
 
     def load_sprite_data(self, data:dict[str, list]) -> None:
         for sprite in [s for s in self.sprite_mgr.all_sprites if hasattr(s, 'get_save_data')]:
-            key = re.sub(r'(?<!^)(?=[A-Z])', ' ', sprite.__class__.__name__).lower()
-            data['sprites'][key].append(sprite.get_save_data())
+            data['sprites'][re.sub(r'(?<!^)(?=[A-Z])', ' ', sprite.__class__.__name__).lower()].append(sprite.get_save_data())
 
     def get_save_data(self) -> dict[str, list|dict]|None:
         data = None

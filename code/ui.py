@@ -338,7 +338,8 @@ class FurnaceUI:
         assets: dict[str, dict[str, any]],
         gen_outline: callable, 
         gen_bg: callable,
-        rect_in_sprite_radius: callable
+        rect_in_sprite_radius: callable,
+        save_data: dict[str, any]
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -354,15 +355,19 @@ class FurnaceUI:
         self.rect_in_sprite_radius = rect_in_sprite_radius
 
         self.render = False
-        self.outline_w, self.outline_h = 150, 150
+        self.outline_w = self.outline_h = 150
         self.padding = 10
-        self.item_box_w, self.item_box_h = 50, 50
+        self.item_box_w = self.item_box_h = 50
         self.graphics = self.assets['graphics']
         
-        self.arrow_surf = self.assets['graphics']['ui']['arrow']
+        self.arrow_surf = self.graphics['ui']['arrow']
         self.furnace_mask = pg.mask.from_surface(self.furnace_surf)
         self.furnace_highlight_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
-        self.item_input = self.smelt_input = self.fuel_input = None
+        
+        self.smelt_input = save_data['smelt input'] if save_data else None
+        self.fuel_input = save_data['fuel input'] if save_data else None
+        self.output = save_data['output'] if save_data else None
+        self.inputting_item = False
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
         
@@ -376,8 +381,8 @@ class FurnaceUI:
         elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.screen_xy) and item in self.fuel_sources:
             self.fuel_input = item
 
-        self.item_input = self.smelt_input or self.fuel_input
-        return self.item_input
+        self.inputting_item = self.smelt_input or self.fuel_input
+        return self.inputting_item
 
     def input_item(self, item:str, amount:int=1) -> None: 
         self.player.inventory.contents[item]['amount'] -= min(amount, self.player.inventory.contents[item]['amount'])
@@ -434,7 +439,6 @@ class FurnaceUI:
 
     def run(self, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)
-
         if not self.render:
             self.render = rect_mouse_collide and self.mouse.click_states['left']
         else:

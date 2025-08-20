@@ -27,7 +27,7 @@ class ItemPlacement:
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        saved_data: dict[str, any] | None
+        save_data: dict[str, any]|None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -40,9 +40,9 @@ class ItemPlacement:
         self.keyboard = keyboard
         self.player = player
         self.assets = assets
-        self.saved_data = saved_data
+        self.save_data = save_data
        
-        self.machine_map = defaultdict(list, self.saved_data['machine map']) if self.saved_data else defaultdict(list)
+        self.machine_map = defaultdict(list, self.save_data['machine map']) if self.save_data else defaultdict(list)
         self.machine_names = set(MACHINES.keys()) 
         
         self.gen_outline = self.gen_bg = None # waiting for the UI class to be initialized
@@ -161,4 +161,5 @@ class ItemPlacement:
             gen_outline=self.gen_outline,
             gen_bg=self.gen_bg,
             rect_in_sprite_radius=self.sprite_mgr.rect_in_sprite_radius,
+            save_data=self.save_data['sprites'][item] if self.save_data else None
         )

@@ -25,7 +25,8 @@ class Furnace(SpriteBase):
         assets: dict[str, dict[str, any]],
         gen_outline: callable,
         gen_bg: callable,
-        rect_in_sprite_radius: callable
+        rect_in_sprite_radius: callable,
+        save_data: dict[str, any]
     ):
         super().__init__(coords, image, z, sprite_groups)
         self.screen = screen
@@ -45,7 +46,6 @@ class Furnace(SpriteBase):
             'iron': {'speed': 5000, 'output': 'iron plate'},
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
-        self.smelt_input = self.fuel_input = self.output = {}
         
         self.ui = FurnaceUI(
             self.screen, 
@@ -59,7 +59,8 @@ class Furnace(SpriteBase):
             self.assets,
             self.gen_outline, 
             self.gen_bg,
-            self.rect_in_sprite_radius
+            self.rect_in_sprite_radius,
+            save_data=save_data
         )
     
     def smelt(self) -> None:
@@ -71,9 +72,9 @@ class Furnace(SpriteBase):
     def get_save_data(self) -> dict[str, list|str]:
         return {
             'xy': list(self.rect.topleft),
-            'smelt input': self.smelt_input,
-            'fuel input': self.fuel_input,
-            'output': self.output
+            'smelt input': self.ui.smelt_input,
+            'fuel input': self.ui.fuel_input,
+            'output': self.ui.output
         }
 
 
@@ -92,7 +93,8 @@ class BurnerFurnace(Furnace):
         assets: dict[str, dict[str, any]],
         gen_outline: callable,
         gen_bg: callable,
-        rect_in_sprite_radius: callable
+        rect_in_sprite_radius: callable,
+        save_data: dict[str, any]
     ):
         super().__init__(
             coords, 
@@ -107,7 +109,8 @@ class BurnerFurnace(Furnace):
             assets, 
             gen_outline, 
             gen_bg, 
-            rect_in_sprite_radius
+            rect_in_sprite_radius,
+            save_data
         )
         self.variant = 'burner'
         self.ui.variant = self.variant
@@ -130,7 +133,8 @@ class ElectricFurnace(Furnace):
         assets: dict[str, dict[str, any]],
         gen_outline: callable,
         gen_bg: callable,
-        rect_in_sprite_radius: callable
+        rect_in_sprite_radius: callable,
+        save_data: dict[str, any]
     ):
         super().__init__(
             coords, 
@@ -144,7 +148,8 @@ class ElectricFurnace(Furnace):
             player, 
             assets, 
             gen_outline, 
-            get_visbility
+            get_visbility,
+            save_data
         )
         self.variant = 'electric'
         self.ui.variant = self.variant
@@ -168,7 +173,8 @@ class Drill(SpriteBase):
         assets: dict[str, dict[str, any]],
         gen_outline: callable,
         gen_bg: callable,
-        rect_in_sprite_radius: callable
+        rect_in_sprite_radius: callable,
+        save_data: dict[str, any]
     ):
         super().__init__(coords, image, z, sprite_groups, cam_offset, rect_in_sprite_radius)
         self.screen = screen
@@ -180,8 +186,8 @@ class Drill(SpriteBase):
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
 
-        self.target_ore = {} # key: ore, value: amount available
-        self.output = {}
+        self.target_ore = save_data['target ore'] if save_data else {} # key: ore, value: amount available
+        self.output = save_data['output'] if save_data else {}
         self.reach_radius = ((image.width // TILE_SIZE) + 2, RES[1] // 5)
 
     def get_save_data(self) -> dict[str, list|dict]:

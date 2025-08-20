@@ -37,9 +37,9 @@ class ProcGen:
             self.player_spawn_point = self.get_player_spawn_point()
         
     def load_saved_data(self) -> None:
-        self.tile_map = np.array(self.saved_data['tile map'], dtype = np.uint8)
-        self.height_map = np.array(self.saved_data['height map'], dtype = np.float32)
-        self.tree_map = set(tuple(coord) for coord in self.saved_data['tree map'])
+        self.tile_map = np.array(self.saved_data['tile map'], dtype=np.uint8)
+        self.height_map = np.array(self.saved_data['height map'], dtype=np.float32)
+        self.tree_map = self.saved_data['tree map']
         self.cave_maps = self.saved_data['cave maps']
         self.biome_order = self.saved_data['biome order']
         self.player_spawn_point = self.player_xy

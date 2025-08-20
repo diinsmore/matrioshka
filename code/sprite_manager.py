@@ -35,7 +35,7 @@ class SpriteManager:
         collision_map: CollisionMap,
         mouse: Mouse,
         keyboard: Keyboard,
-        saved_data: dict[str, any] | None
+        save_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -51,7 +51,7 @@ class SpriteManager:
         self.collision_map = collision_map
         self.mouse = mouse
         self.keyboard = keyboard
-        self.saved_data = saved_data
+        self.save_data = save_data
 
         self.all_sprites = pg.sprite.Group()
         self.active_sprites = pg.sprite.Group() # has an update method
@@ -148,7 +148,7 @@ class SpriteManager:
     def init_trees(self) -> None:
         if self.current_biome in TREE_BIOMES:
             image_folder = self.assets['graphics'][self.current_biome]['trees']
-            tree_map = self.tree_map if not self.saved_data else self.saved_data['tree map']
+            tree_map = self.tree_map if not self.save_data else self.save_data['tree map']
             for i, xy in enumerate(tree_map): 
                 Tree(
                     xy=(pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, 
@@ -160,7 +160,7 @@ class SpriteManager:
                     sprite_movement=self.sprite_movement,
                     wood_image=self.assets['graphics']['wood'],
                     wood_sprites=[self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites],
-                    save_data=self.saved_data['sprites']['tree'][i] if self.saved_data else None
+                    save_data=self.save_data['sprites']['tree'][i] if self.save_data else None
                 )
         
         self.wood_gathering = WoodGathering(
@@ -175,7 +175,7 @@ class SpriteManager:
         )
     
     def init_machines(self) -> None:
-        for machine, xy_list in self.item_placement.machine_map.items():
+        for i, (machine, xy_list) in enumerate(self.item_placement.machine_map.items()):
             cls = mech_sprite_dict[machine]
             for xy in xy_list:
                 cls(
@@ -191,7 +191,8 @@ class SpriteManager:
                     assets=self.assets,
                     gen_outline=self.ui.gen_outline,
                     gen_bg=self.ui.gen_bg,
-                    rect_in_sprite_radius=self.rect_in_sprite_radius
+                    rect_in_sprite_radius=self.rect_in_sprite_radius,
+                    save_data=self.save_data['sprites'][machine][i] if self.save_data else None
                 )
         
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
