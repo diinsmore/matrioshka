@@ -367,22 +367,22 @@ class FurnaceUI:
         self.smelt_input = save_data['smelt input'] if save_data else None
         self.fuel_input = save_data['fuel input'] if save_data else None
         self.output = save_data['output'] if save_data else None
-        self.inputting_item = False
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
         
         self.variant = self.fuel_sources = None # initialized with the subclass
     
     def check_input(self) -> bool:
+        inpt = False
         item = self.player.item_holding
         if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and item in self.items_smelted:
             self.smelt_input = item
-        
+            inpt = True
+
         elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.screen_xy) and item in self.fuel_sources:
             self.fuel_input = item
-
-        self.inputting_item = self.smelt_input or self.fuel_input
-        return self.inputting_item
+            inpt = True
+        return inpt
 
     def input_item(self, item:str, amount:int=1) -> None: 
         self.player.inventory.contents[item]['amount'] -= min(amount, self.player.inventory.contents[item]['amount'])
