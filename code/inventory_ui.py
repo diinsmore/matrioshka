@@ -135,9 +135,9 @@ class InventoryUI:
             if self.drag:
                 for machine in self.get_sprites_in_radius(self.player.rect, self.mech_sprites):
                     if machine.ui.render and self.player.item_holding:
-                        inpt = machine.ui.check_input()
-                        if inpt:
-                            machine.ui.input_item(self.player.item_holding)
+                        input_type = machine.ui.check_input()
+                        if input_type:
+                            machine.ui.input_item(self.player.item_holding, input_type)
                             self.end_drag(machine_input=True)
                             return
                 self.end_drag()

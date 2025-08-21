@@ -60,7 +60,7 @@ class Furnace(SpriteBase):
             self.gen_outline, 
             self.gen_bg,
             self.rect_in_sprite_radius,
-            save_data=save_data
+            save_data
         )
     
     def smelt(self) -> None:

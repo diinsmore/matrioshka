@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import numpy as np
 
 import pygame as pg
+from collections import defaultdict
 
 from settings import TILE_SIZE, RES
 from mini_map import MiniMap
@@ -364,36 +365,39 @@ class FurnaceUI:
         self.furnace_mask = pg.mask.from_surface(self.furnace_surf)
         self.furnace_highlight_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
         
-        self.smelt_input = save_data['smelt input'] if save_data else None
-        self.fuel_input = save_data['fuel input'] if save_data else None
-        self.output = save_data['output'] if save_data else None
+        self.smelt_input = save_data['smelt input'] if save_data else defaultdict(lambda: {'amount': 0})
+        self.fuel_input = save_data['fuel input'] if save_data else defaultdict(lambda: {'amount': 0})
+        self.output = save_data['output'] if save_data else defaultdict(lambda: {'amount': 0})
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
         
         self.variant = self.fuel_sources = None # initialized with the subclass
     
-    def check_input(self) -> bool:
-        inpt = False
+    def check_input(self) -> str|None:
+        input_type = None
         item = self.player.item_holding
         if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and item in self.items_smelted:
-            self.smelt_input = item
-            inpt = True
+            input_type = 'smelt'
 
         elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.screen_xy) and item in self.fuel_sources:
-            self.fuel_input = item
-            inpt = True
-        return inpt
+            input_type = 'fuel'
+        return input_type
 
-    def input_item(self, item:str, amount:int=1) -> None: 
-        self.player.inventory.contents[item]['amount'] -= min(amount, self.player.inventory.contents[item]['amount'])
+    def input_item(self, item:str, input_type:str, amount:int=1) -> None: 
+        self.player.inventory.contents[item]['amount'] -= amount
+        if input_type == 'smelt':
+            self.smelt_input[item]['amount'] += amount
+        else:
+            self.fuel_input[item]['amount'] += amount
 
     def render_item_input(self) -> None:
         if self.smelt_input:
-            surf = self.graphics[self.smelt_input] 
+            item_name = next(iter(self.smelt_input))
+            surf = self.graphics[item_name]
             self.screen.blit(surf, surf.get_frect(center=self.smelt_input_box.center))
-        
+
         elif self.fuel_input:
-            surf = self.graphics[self.fuel_input] 
+            surf = self.graphics[next(iter(self.fuel_input))]
             self.screen.blit(surf, surf.get_frect(center=self.fuel_input_box.center))
 
     def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:

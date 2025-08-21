@@ -47,7 +47,7 @@ class Player(pg.sprite.Sprite):
         self.gravity = GRAVITY
         self.jump_height = 350 
         self.health = save_data['health'] if save_data else 100
-        self.item_holding = self.inventory.item_names[self.inventory.index] if save_data else 0
+        self.item_holding = save_data['item holding'] if save_data else None
         self.arm_strength = 4
         self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0} # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
 
@@ -68,5 +68,6 @@ class Player(pg.sprite.Sprite):
             'current biome': self.current_biome,
             'inventory data': {'contents': self.inventory.contents, 'index': self.inventory.index},
             'facing left': self.facing_left,
-            'health': self.health
+            'health': self.health,
+            'item holding': self.item_holding
         }
