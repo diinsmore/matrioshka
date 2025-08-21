@@ -358,12 +358,14 @@ class FurnaceUI:
         self.render = False
         self.outline_w = self.outline_h = 150
         self.padding = 10
-        self.item_box_w = self.item_box_h = 50
+        self.item_box_w = self.item_box_h = 40
         self.graphics = self.assets['graphics']
         
-        self.arrow_surf = self.graphics['ui']['arrow']
+        self.highlight_color = self.assets['colors']['ui bg highlight']
+        self.right_arrow = self.graphics['ui']['right arrow']
+        self.fuel_icon = self.graphics['ui']['fuel icon']
         self.furnace_mask = pg.mask.from_surface(self.furnace_surf)
-        self.furnace_highlight_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
+        self.furnace_mask_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
         
         self.smelt_input = save_data['smelt input'] if save_data else defaultdict(lambda: {'amount': 0})
         self.fuel_input = save_data['fuel input'] if save_data else defaultdict(lambda: {'amount': 0})
@@ -390,6 +392,49 @@ class FurnaceUI:
         else:
             self.fuel_input[item]['amount'] += amount
 
+    def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
+        if rect_mouse_collide:
+            self.screen.blit(self.furnace_mask_surf, self.furnace_rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_ADD)
+
+    def render_interface(self) -> None:
+        bg_rect = pg.Rect(self.furnace_rect.midtop - pg.Vector2(self.outline_w//2, self.outline_h + self.padding), (self.outline_w, self.outline_h))
+        if not self.rect_in_sprite_radius(self.player, bg_rect):
+            self.render = False 
+            return
+        bg_rect.topleft -= self.cam_offset # converting to world-space now to not mess with the radius check above
+        self.render_slots(bg_rect)
+        self.render_item_input()
+
+    def render_slots(self, bg_rect: pg.Rect) -> None:
+        y_offset = self.outline_h // 2
+        if self.variant == 'burner':
+            y_offset -= self.item_box_h + self.padding
+            self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.item_box_w, self.item_box_h))
+            self.fuel_input_box = self.smelt_input_box.copy()
+            self.fuel_input_box.midtop = self.smelt_input_box.midbottom + pg.Vector2(0, (bg_rect.centery - self.smelt_input_box.bottom) * 2)
+            self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_input_box.midbottom))   
+        else:
+            y_offset -= self.item_box_h // 2
+            self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.item_box_w, self.item_box_h))
+            self.fuel_input_box = None
+      
+        self.output_box = self.smelt_input_box.copy()
+        self.output_box.midright = bg_rect.midright - pg.Vector2(self.padding, 0)
+        
+        boxes = [bg_rect, self.smelt_input_box, self.output_box, self.fuel_input_box]
+        for box in boxes if self.fuel_input_box else boxes[:-1]:  
+            color = 'black'
+            transparent = False
+            if box == bg_rect:
+                transparent = True
+            else:
+                if box.collidepoint(self.mouse.screen_xy):
+                    color = self.highlight_color
+            self.gen_bg(box, color, transparent)
+            self.gen_outline(box)
+
+        self.screen.blit(self.right_arrow, self.right_arrow.get_rect(center=bg_rect.center))
+          
     def render_item_input(self) -> None:
         if self.smelt_input:
             item_name = next(iter(self.smelt_input))
@@ -397,49 +442,9 @@ class FurnaceUI:
             self.screen.blit(surf, surf.get_frect(center=self.smelt_input_box.center))
 
         elif self.fuel_input:
-            surf = self.graphics[next(iter(self.fuel_input))]
+            item_name = next(iter(self.fuel_input))
+            surf = self.graphics[item_name]
             self.screen.blit(surf, surf.get_frect(center=self.fuel_input_box.center))
-
-    def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
-        if rect_mouse_collide:
-            self.screen.blit(self.furnace_highlight_surf, self.furnace_rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_ADD)
-
-    def render_interface(self) -> None:
-        bg_rect = pg.Rect(self.furnace_rect.topright - pg.Vector2(0, self.outline_w), (self.outline_w, self.outline_h))
-        if not self.rect_in_sprite_radius(self.player, bg_rect):
-            self.render = False 
-            return
-        bg_rect.topleft -= self.cam_offset # converting to world-space now to not mess with the radius check above
-
-        offset = 0 if self.variant == 'burner' else (self.outline_h // 2) - (self.item_box_h // 2) - self.padding
-        self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, self.padding + offset), (self.item_box_w, self.item_box_h))
-
-        self.fuel_input_box = None
-        if self.variant == 'burner':
-            self.fuel_input_box = self.smelt_input_box.copy()
-            self.fuel_input_box.topleft += pg.Vector2(0, bg_rect.bottom - self.smelt_input_box.bottom - self.padding)
-
-        self.output_box = self.smelt_input_box.copy()
-        self.output_box.topleft += pg.Vector2(
-            bg_rect.right - (self.smelt_input_box.right + self.padding), 
-            0 if self.variant == 'electric' else (self.outline_h // 2) - (self.item_box_h // 2) - self.padding
-        )
-
-        boxes = [bg_rect, self.smelt_input_box, self.output_box, self.fuel_input_box]
-        for box in boxes if self.fuel_input_box else boxes[:-1]:
-            color = 'black'
-            transparent = False
-            if box == bg_rect:
-                transparent = True
-            else:
-                if box.collidepoint(self.mouse.screen_xy):
-                    color = self.assets['colors']['ui bg highlight']
-                    
-            self.gen_bg(box, color, transparent)
-            self.gen_outline(box)
-
-        self.screen.blit(self.arrow_surf, self.arrow_surf.get_rect(center=bg_rect.center))
-        self.render_item_input()
 
     def run(self, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)
