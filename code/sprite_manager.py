@@ -192,6 +192,7 @@ class SpriteManager:
                     gen_outline=self.ui.gen_outline,
                     gen_bg=self.ui.gen_bg,
                     rect_in_sprite_radius=self.rect_in_sprite_radius,
+                    render_item_amount=self.ui.render_item_amount,
                     save_data=self.save_data['sprites'][machine][i] if self.save_data else None
                 )
         

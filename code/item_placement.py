@@ -27,6 +27,9 @@ class ItemPlacement:
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
+        render_item_amount: callable,
+        gen_outline: callable,
+        gen_bg: callable,
         save_data: dict[str, any]|None
     ):
         self.screen = screen
@@ -40,12 +43,13 @@ class ItemPlacement:
         self.keyboard = keyboard
         self.player = player
         self.assets = assets
+        self.render_item_amount = render_item_amount
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
         self.save_data = save_data
        
         self.machine_map = defaultdict(list, self.save_data['machine map']) if self.save_data else defaultdict(list)
         self.machine_names = set(MACHINES.keys()) 
-        
-        self.gen_outline = self.gen_bg = None # waiting for the UI class to be initialized
 
     def place_item(self, sprite: pg.sprite.Sprite, image: pg.Surface, tile_xy: tuple[int, int]) -> None:
         if image.get_size() == (TILE_SIZE, TILE_SIZE):
@@ -161,5 +165,6 @@ class ItemPlacement:
             gen_outline=self.gen_outline,
             gen_bg=self.gen_bg,
             rect_in_sprite_radius=self.sprite_mgr.rect_in_sprite_radius,
+            render_item_amount=self.render_item_amount,
             save_data=self.save_data['sprites'][item] if self.save_data else None
         )

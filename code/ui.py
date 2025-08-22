@@ -73,7 +73,8 @@ class UI:
             self.render_inventory_item_name,
             self.get_scaled_image,
             self.get_grid_xy,
-            self.sprite_manager.get_sprites_in_radius
+            self.sprite_manager.get_sprites_in_radius,
+            self.render_item_amount
         )
 
         self.craft_window = CraftWindow(
@@ -210,6 +211,16 @@ class UI:
         if pressed_keys[self.toggle_HUD_ui]:
             self.HUD.render = not self.HUD.render
 
+    def render_item_amount(self, amount: int, coords: tuple[int, int], add_x_offset: bool=True) -> None:
+        image = self.assets['fonts']['number'].render(str(amount), False, self.assets['colors']['text'])
+        x_offset = 0
+        if add_x_offset: # making it optional in case the amount will never reach a lengthy value
+            num_digits = len(str(amount))
+            x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0 # move 3+ digit values to the left by 5px for every remaining digit 
+        rect = image.get_rect(center = (coords[0] + x_offset, coords[1] - 2))
+        self.gen_bg(rect, transparent=True)
+        self.screen.blit(image, rect)
+
     def update(self) -> None:
         self.mouse_grid.update()
         self.HUD.update()
@@ -340,6 +351,7 @@ class FurnaceUI:
         gen_outline: callable, 
         gen_bg: callable,
         rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         self.screen = screen
@@ -354,6 +366,7 @@ class FurnaceUI:
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
         self.rect_in_sprite_radius = rect_in_sprite_radius
+        self.render_item_amount = render_item_amount
 
         self.render = False
         self.outline_w = self.outline_h = 150
@@ -403,48 +416,44 @@ class FurnaceUI:
             return
         bg_rect.topleft -= self.cam_offset # converting to world-space now to not mess with the radius check above
         self.render_slots(bg_rect)
-        self.render_item_input()
 
-    def render_slots(self, bg_rect: pg.Rect) -> None:
-        y_offset = self.outline_h // 2
-        if self.variant == 'burner':
-            y_offset -= self.item_box_h + self.padding
-            self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.item_box_w, self.item_box_h))
-            self.fuel_input_box = self.smelt_input_box.copy()
-            self.fuel_input_box.midtop = self.smelt_input_box.midbottom + pg.Vector2(0, (bg_rect.centery - self.smelt_input_box.bottom) * 2)
-            self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_input_box.midbottom))   
-        else:
-            y_offset -= self.item_box_h // 2
-            self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.item_box_w, self.item_box_h))
-            self.fuel_input_box = None
-      
-        self.output_box = self.smelt_input_box.copy()
-        self.output_box.midright = bg_rect.midright - pg.Vector2(self.padding, 0)
+    def render_slots(self, bg_rect: pg.Rect) -> None: 
+        y_offset = (self.outline_h // 2) - ((self.item_box_h + self.padding) if self.variant == 'burner' else self.item_box_h // 2) 
+        self.smelt_input_box = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.item_box_w, self.item_box_h)) 
         
-        boxes = [bg_rect, self.smelt_input_box, self.output_box, self.fuel_input_box]
-        for box in boxes if self.fuel_input_box else boxes[:-1]:  
-            color = 'black'
-            transparent = False
-            if box == bg_rect:
-                transparent = True
-            else:
-                if box.collidepoint(self.mouse.screen_xy):
-                    color = self.highlight_color
-            self.gen_bg(box, color, transparent)
-            self.gen_outline(box)
-
+        self.fuel_input_box = None 
+        if self.variant == 'burner': 
+            self.fuel_input_box = self.smelt_input_box.copy() 
+            self.fuel_input_box.midtop = self.smelt_input_box.midbottom + pg.Vector2(0, (bg_rect.centery - self.smelt_input_box.bottom) * 2) 
+            self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_input_box.midbottom)) 
+        
+        self.output_box = self.smelt_input_box.copy() 
+        self.output_box.midright = bg_rect.midright - pg.Vector2(self.padding, 0) 
+            
+        boxes = [bg_rect, self.smelt_input_box, self.output_box, self.fuel_input_box] 
+        for box in boxes if self.fuel_input_box else boxes[:-1]: 
+            self.gen_bg(
+                box, 
+                color=self.highlight_color if box != bg_rect and box.collidepoint(self.mouse.screen_xy) else 'black', 
+                transparent=False if box != bg_rect else True
+            ) 
+            self.gen_outline(box) 
+        
+        self.render_slot_contents()
         self.screen.blit(self.right_arrow, self.right_arrow.get_rect(center=bg_rect.center))
           
-    def render_item_input(self) -> None:
+    def render_slot_contents(self) -> None:
         if self.smelt_input:
             item_name = next(iter(self.smelt_input))
             surf = self.graphics[item_name]
             self.screen.blit(surf, surf.get_frect(center=self.smelt_input_box.center))
+            self.render_item_amount(self.smelt_input[item_name]['amount'], self.smelt_input_box.bottomright)
 
         elif self.fuel_input:
             item_name = next(iter(self.fuel_input))
             surf = self.graphics[item_name]
             self.screen.blit(surf, surf.get_frect(center=self.fuel_input_box.center))
+            self.render_item_amount(self.fuel_input[item_name]['amount'], self.fuel_input_box.bottomright - pg.Vector2(5, 5))
 
     def run(self, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)

@@ -26,6 +26,7 @@ class Furnace(SpriteBase):
         gen_outline: callable,
         gen_bg: callable,
         rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(coords, image, z, sprite_groups)
@@ -60,6 +61,7 @@ class Furnace(SpriteBase):
             self.gen_outline, 
             self.gen_bg,
             self.rect_in_sprite_radius,
+            render_item_amount,
             save_data
         )
     
@@ -94,6 +96,7 @@ class BurnerFurnace(Furnace):
         gen_outline: callable,
         gen_bg: callable,
         rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -110,6 +113,7 @@ class BurnerFurnace(Furnace):
             gen_outline, 
             gen_bg, 
             rect_in_sprite_radius,
+            render_item_amount,
             save_data
         )
         self.variant = 'burner'
@@ -134,6 +138,7 @@ class ElectricFurnace(Furnace):
         gen_outline: callable,
         gen_bg: callable,
         rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -149,6 +154,7 @@ class ElectricFurnace(Furnace):
             assets, 
             gen_outline, 
             get_visbility,
+            render_item_amount,
             save_data
         )
         self.variant = 'electric'
@@ -174,6 +180,7 @@ class Drill(SpriteBase):
         gen_outline: callable,
         gen_bg: callable,
         rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(coords, image, z, sprite_groups, cam_offset, rect_in_sprite_radius)
@@ -185,6 +192,7 @@ class Drill(SpriteBase):
         self.assets = assets
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
+        self.render_item_amount = render_item_amount
 
         self.target_ore = save_data['target ore'] if save_data else {} # key: ore, value: amount available
         self.output = save_data['output'] if save_data else {}

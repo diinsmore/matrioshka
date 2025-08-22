@@ -90,22 +90,6 @@ class Main:
         )
         self.sprite_mgr.player = self.player
 
-        self.item_placement = ItemPlacement(
-            screen,
-            self.cam.offset,
-            self.proc_gen.tile_map,
-            self.proc_gen.tile_IDs,
-            self.physics_engine.collision_map,
-            self.player_inv,
-            self.sprite_mgr,
-            self.mouse,
-            self.keyboard,
-            self.player,
-            assets,
-            save_data
-        )
-        self.sprite_mgr.item_placement = self.item_placement
-
         self.ui = UI(
             screen, 
             self.cam.offset,
@@ -121,9 +105,26 @@ class Main:
             save_data
         )
         self.sprite_mgr.ui = self.ui
-        self.sprite_mgr.init_machines() # machine sprites need access to UI & Player
-        self.item_placement.gen_outline = self.ui.gen_outline
-        self.item_placement.gen_bg = self.ui.gen_bg
+
+        self.item_placement = ItemPlacement(
+            screen,
+            self.cam.offset,
+            self.proc_gen.tile_map,
+            self.proc_gen.tile_IDs,
+            self.physics_engine.collision_map,
+            self.player_inv,
+            self.sprite_mgr,
+            self.mouse,
+            self.keyboard,
+            self.player,
+            assets,
+            self.ui.render_item_amount,
+            self.ui.gen_outline,
+            self.ui.gen_bg,
+            save_data
+        )
+        self.sprite_mgr.item_placement = self.item_placement
+        self.sprite_mgr.init_machines()
         
         self.chunk_mgr = ChunkManager(self.cam.offset)
         

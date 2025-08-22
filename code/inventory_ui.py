@@ -26,7 +26,8 @@ class InventoryUI:
         render_inventory_item_name: callable,
         get_scaled_image: callable,
         get_grid_xy: callable,
-        get_sprites_in_radius: callable
+        get_sprites_in_radius: callable,
+        render_item_amount: callable
     ):  
         self.screen = screen
         self.cam_offset = cam_offset
@@ -43,6 +44,7 @@ class InventoryUI:
         self.get_scaled_image = get_scaled_image
         self.get_grid_xy = get_grid_xy
         self.get_sprites_in_radius = get_sprites_in_radius
+        self.render_item_amount = render_item_amount
         
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
@@ -95,40 +97,21 @@ class InventoryUI:
     def render_icons(self) -> None:
         for item_name, item_data in list(self.player.inventory.contents.items()): # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
             try:
-                icon_image = self.get_icon_image(item_name)
-
+                surf = self.get_item_surf(item_name)
                 row, col = divmod(item_data['index'], self.num_cols) # determine the slot an item corresponds to
-                
-                left = self.outline.left + (col * self.box_width)
-                top = self.outline.top + (row * self.box_height)
-                
-                padding_x = (self.box_width - icon_image.get_width()) // 2
-                padding_y = (self.box_height - icon_image.get_height()) // 2
-
-                blit_x = left + padding_x
-                blit_y = top + padding_y
-
-                icon_rect = icon_image.get_rect(topleft = (blit_x, blit_y))
-                self.screen.blit(icon_image, icon_rect)
-
-                self.render_item_amount(item_data['amount'], (blit_x, blit_y))
-                self.render_inventory_item_name(icon_rect, item_name)
+                topleft = self.outline.topleft + pg.Vector2(col * self.box_width, row * self.box_height)
+                padding = (pg.Vector2(self.box_width, self.box_height) - surf.get_size()) // 2
+                blit_xy = topleft + padding
+                rect = surf.get_rect(topleft=blit_xy)
+                self.screen.blit(surf, rect)
+                self.render_item_amount(item_data['amount'], blit_xy)
+                self.render_inventory_item_name(rect, item_name)
             except KeyError:
                 pass
 
-    def get_icon_image(self, item_name: str) -> pg.Surface:
-        image = self.graphics[item_name] 
-        return image if image.get_size() == self.icon_size else self.get_scaled_image(image, item_name, *self.icon_size)
-
-    def render_item_amount(self, amount: int, coords: tuple[int, int]) -> None:
-        image = self.fonts['number'].render(str(amount), False, self.assets['colors']['text'])
-        
-        num_digits = len(str(amount))
-        x_offset = 5 * (num_digits - 2) if num_digits > 2 else 0 # move 3+ digit values to the left by 5px for every remaining digit 
-
-        rect = image.get_rect(center = (coords[0] + x_offset, coords[1] - 2))
-        self.gen_bg(rect, transparent=True)
-        self.screen.blit(image, rect)
+    def get_item_surf(self, name: str) -> pg.Surface:
+        surf = self.graphics[name] 
+        return surf if surf.get_size() == self.icon_size else self.get_scaled_image(surf, name, *self.icon_size)
     
     def check_drag(self) -> None:
         if self.mouse.click_states['left']:
