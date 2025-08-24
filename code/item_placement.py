@@ -49,7 +49,8 @@ class ItemPlacement:
         self.save_data = save_data
        
         self.machine_map = defaultdict(list, self.save_data['machine map']) if self.save_data else defaultdict(list)
-        self.machine_names = set(MACHINES.keys()) 
+        self.machine_names = list(MACHINES.keys()) 
+        self.tile_names = list(tile_IDs.keys())
 
     def place_item(self, sprite: pg.sprite.Sprite, image: pg.Surface, tile_xy: tuple[int, int]) -> None:
         if image.get_size() == (TILE_SIZE, TILE_SIZE):
@@ -66,6 +67,7 @@ class ItemPlacement:
                 self.can_reach_tile(tile_xy, sprite.rect.center),
                 self.tile_map[tile_xy] == self.tile_IDs['air'],
                 self.valid_item_border(tile_xy, single_tile=True),
+                sprite.item_holding in self.tile_names
             ))
         else:
             grounded = all((self.valid_item_border(xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))

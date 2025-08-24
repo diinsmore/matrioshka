@@ -125,6 +125,7 @@ class Main:
         )
         self.sprite_mgr.item_placement = self.item_placement
         self.sprite_mgr.init_machines()
+        self.ui.inventory_ui.item_placement = self.item_placement
         
         self.chunk_mgr = ChunkManager(self.cam.offset)
         
@@ -181,7 +182,6 @@ class Main:
         self.input_mgr.update(self.cam.offset)
         self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
         self.graphics_engine.update(self.player.current_biome, dt) 
-        self.cam.update(pg.Vector2(self.player.rect.center)) 
         self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
         self.player_inv.update_selected_index(self.keyboard, self.player)
 

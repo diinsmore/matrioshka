@@ -19,7 +19,6 @@ class InventoryUI:
         mouse: Mouse,
         top: int,
         player: Player,
-        item_placement: ItemPlacement,
         mech_sprites: pg.sprite.Group,
         gen_outline: callable,
         gen_bg: callable,
@@ -36,7 +35,6 @@ class InventoryUI:
         self.padding = 5
         self.top = top + self.padding
         self.player = player
-        self.item_placement = item_placement
         self.mech_sprites = mech_sprites
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
@@ -54,16 +52,18 @@ class InventoryUI:
         self.num_slots = self.inventory.num_slots
         self.num_cols = 5
         self.num_rows = 2
-        self.box_width, self.box_height = TILE_SIZE * 2, TILE_SIZE * 2
+        self.box_width = self.box_height = TILE_SIZE * 2
         self.total_width = self.box_width * self.num_cols
         self.total_height = self.box_height * self.num_rows
-        self.icon_size = (TILE_SIZE, TILE_SIZE)
+        self.icon_size = pg.Vector2(TILE_SIZE, TILE_SIZE)
         self.render = True
         self.expand = False
         self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
 
         self.drag = False
-        self.image_to_drag, self.rect_to_drag = None, None
+        self.image_to_drag = self.rect_to_drag = None
+
+        self.item_placement = None # not initialized yet
     
     def update_dimensions(self) -> None:
         self.num_rows = 2 if not self.expand else self.num_slots // self.num_cols
@@ -116,20 +116,28 @@ class InventoryUI:
     def check_drag(self) -> None:
         if self.mouse.click_states['left']:
             if self.drag:
-                for machine in self.get_sprites_in_radius(self.player.rect, self.mech_sprites):
-                    if machine.ui.render and self.player.item_holding:
-                        input_type = machine.ui.check_input()
-                        if input_type:
-                            machine.ui.input_item(self.player.item_holding, input_type)
-                            self.end_drag(machine_input=True)
-                            return
+                for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
+                    input_type = machine.ui.check_input()
+                    if input_type:
+                        machine.ui.input_item(self.player.item_holding, input_type)
+                        self.end_drag(machine_input=True)
+                        return
                 self.end_drag()
             else:
-                item = self.get_clicked_item()
-                if item:
-                    self.player.item_holding = item
-                    self.player.inventory.index = self.player.inventory.contents[item]['index']  
-                    self.start_drag(item)       
+                if self.outline.collidepoint(self.mouse.screen_xy):
+                    item = self.get_clicked_item()
+                    if item:
+                        self.player.item_holding = item
+                        self.player.inventory.index = self.player.inventory.contents[item]['index']  
+                        self.start_drag(item)    
+                else:
+                    for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
+                        boxes = [machine.ui.smelt_input_box, machine.ui.output_box]
+                        if machine.variant == 'burner':
+                            boxes.append(machine.ui.fuel_input_box)
+                            for box in boxes:
+                                if box.collidepoint(self.mouse.screen_xy):
+                                    machine.ui.extract_item(box)
         else:
             if self.drag: 
                 item = self.player.item_holding
@@ -144,10 +152,9 @@ class InventoryUI:
                         self.player
                     )
                             
-    def get_clicked_item(self) -> str:
+    def get_clicked_item(self) -> str|None:
         for item_name, item_data in self.inventory.contents.items():
-            col = item_data['index'] % self.num_cols
-            row = item_data['index'] // self.num_cols
+            row, col = divmod(item_data['index'], self.num_cols)
 
             left = self.outline.left + (col * self.box_width)
             top = self.outline.top + (row * self.box_height)

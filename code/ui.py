@@ -66,7 +66,6 @@ class UI:
             self.mouse,
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
-            self.sprite_manager.item_placement,
             self.sprite_manager.mech_sprites,
             self.gen_outline,
             self.gen_bg,
@@ -380,30 +379,63 @@ class FurnaceUI:
         self.furnace_mask = pg.mask.from_surface(self.furnace_surf)
         self.furnace_mask_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
         
-        self.smelt_input = save_data['smelt input'] if save_data else defaultdict(lambda: {'amount': 0})
-        self.fuel_input = save_data['fuel input'] if save_data else defaultdict(lambda: {'amount': 0})
-        self.output = save_data['output'] if save_data else defaultdict(lambda: {'amount': 0})
-
+        self.smelt_input = self.get_default_dict(save_data.get('smelt input') if save_data else None) 
+        self.fuel_input = self.get_default_dict(save_data.get('fuel input') if save_data else None)
+        self.output = self.get_default_dict(save_data.get('output') if save_data else None)
+        
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
         
         self.variant = self.fuel_sources = None # initialized with the subclass
     
+    @staticmethod
+    def get_default_dict(data: dict[str, dict]) -> defaultdict[str, dict]:
+        return defaultdict(lambda: {'amount': 0}, data or {})
+
     def check_input(self) -> str|None:
         input_type = None
         item = self.player.item_holding
-        if self.smelt_input_box.collidepoint(self.mouse.screen_xy) and item in self.items_smelted:
-            input_type = 'smelt'
+        if self.smelt_input_box.collidepoint(self.mouse.screen_xy):
+            if item and item in self.items_smelted:
+                input_type = 'smelt'
 
-        elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.screen_xy) and item in self.fuel_sources:
-            input_type = 'fuel'
+        elif self.variant == 'burner' and self.fuel_input_box.collidepoint(self.mouse.screen_xy):
+            if item and item in self.fuel_sources:
+                input_type = 'fuel'
+
         return input_type
 
-    def input_item(self, item:str, input_type:str, amount:int=1) -> None: 
-        self.player.inventory.contents[item]['amount'] -= amount
+    def extract_item(self, box: pg.Rect) -> None:
+        click = self.mouse.click_states
+        left_click, right_click = click['left'], click['right']
+        if left_click or right_click:
+            box_contents = self.smelt_input if box == self.smelt_input_box else self.fuel_input
+            if bool(box_contents): # not empty
+                item_name = next(iter(box_contents.keys()))
+                item_amount = 1 if left_click else min(box_contents[item_name]['amount'], 5)
+                box_contents[item_name]['amount'] -= item_amount
+                self.player.inventory.contents[item_name]['amount'] += item_amount
+                self.player.item_holding = item_name
+                if box_contents[item_name]['amount'] == 0:
+                    del box_contents[item_name]
+                
+    def input_item(self, item: str, input_type: str, amount: int=1) -> None: 
         if input_type == 'smelt':
-            self.smelt_input[item]['amount'] += amount
+            item_in_box = self.get_item_in_box(self.smelt_input_box)
+            if not item_in_box or item == item_in_box: # only allow 1 item type
+                self.player.inventory.contents[item]['amount'] -= amount
+                self.smelt_input[item]['amount'] += amount
         else:
-            self.fuel_input[item]['amount'] += amount
+            item_in_box = self.get_item_in_box(self.fuel_input_box)
+            if not item_in_box or item == item_in_box:
+                self.player.inventory.contents[item]['amount'] -= amount
+                self.fuel_input[item]['amount'] += amount
+
+    def get_item_in_box(self, box: pg.Rect) -> str|None:
+        item = None
+        box_data = self.smelt_input.keys() if box == self.smelt_input_box else self.fuel_input.keys()
+        if bool(box_data): # not empty
+            item = next(iter(box_data))
+        return item
 
     def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
         if rect_mouse_collide:
