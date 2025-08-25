@@ -5,13 +5,13 @@ if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from sprite_manager import SpriteManager
     from player import Player
+    from sprite_base import SpriteBase
 
 import pygame as pg
 from math import ceil
 from collections import defaultdict
 
 from settings import MAP_SIZE, TILE_SIZE, TILES, TILE_REACH_RADIUS, Z_LAYERS, MACHINES
-from mech_sprites import mech_sprite_dict
 
 class ItemPlacement:
     def __init__(
@@ -30,6 +30,7 @@ class ItemPlacement:
         render_item_amount: callable,
         gen_outline: callable,
         gen_bg: callable,
+        machine_cls_map: dict[str, type[SpriteBase]],
         save_data: dict[str, any]|None
     ):
         self.screen = screen
@@ -46,6 +47,7 @@ class ItemPlacement:
         self.render_item_amount = render_item_amount
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
+        self.machine_cls_map = machine_cls_map
         self.save_data = save_data
        
         self.machine_map = defaultdict(list, self.save_data['machine map']) if self.save_data else defaultdict(list)
@@ -152,7 +154,7 @@ class ItemPlacement:
         return [xy for xy in tile_xy if xy[1] == max_y]
 
     def init_item_class(self, item: str, img_topleft: tuple[int, int]) -> None:
-        item_cls = mech_sprite_dict[item]
+        item_cls = self.machine_cls_map[item]
         item_cls(
             coords=pg.Vector2(img_topleft[0] * TILE_SIZE, img_topleft[1] * TILE_SIZE),
             image=self.assets['graphics'][item],

@@ -61,7 +61,7 @@ class InventoryUI:
         self.outline = pg.Rect(self.padding, self.top, self.total_width, self.total_height)
 
         self.drag = False
-        self.image_to_drag = self.rect_to_drag = None
+        self.image_to_drag = self.rect_to_drag = self.item_drag_amount = None
 
         self.item_placement = None # not initialized yet
     
@@ -114,63 +114,36 @@ class InventoryUI:
         return surf if surf.get_size() == self.icon_size else self.get_scaled_image(surf, name, *self.icon_size)
     
     def check_drag(self) -> None:
-        if self.mouse.click_states['left']:
+        clicks = self.mouse.click_states
+        l_click, r_click = clicks['left'], clicks['right']
+        if l_click or r_click:
             if self.drag:
-                for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
-                    input_type = machine.ui.check_input()
-                    if input_type:
-                        machine.ui.input_item(self.player.item_holding, input_type)
-                        self.end_drag(machine_input=True)
-                        return
-                self.end_drag()
+                item = self.player.item_holding
+                if item:
+                    self.place_item_in_machine(item)
+                else:
+                    self.end_drag()
             else:
                 if self.outline.collidepoint(self.mouse.screen_xy):
                     item = self.get_clicked_item()
                     if item:
-                        self.player.item_holding = item
-                        self.player.inventory.index = self.player.inventory.contents[item]['index']  
-                        self.start_drag(item)    
+                        self.start_drag(item, 'left' if l_click else 'right')    
                 else:
-                    for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
-                        boxes = [machine.ui.smelt_input_box, machine.ui.output_box]
-                        if machine.variant == 'burner':
-                            boxes.append(machine.ui.fuel_input_box)
-                            for box in boxes:
-                                if box.collidepoint(self.mouse.screen_xy):
-                                    machine.ui.extract_item(box)
+                    machines_with_ui_open = [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]
+                    if machines_with_ui_open: 
+                        self.check_machine_box_input(machines_with_ui_open, l_click, r_click)
         else:
             if self.drag: 
-                item = self.player.item_holding
-                self.rect_to_drag.topleft = self.get_grid_xy()
-                self.screen.blit(self.image_to_drag, self.rect_to_drag)
-                if item in PLACEABLE_ITEMS:
-                    item_xy_world = (pg.Vector2(self.rect_to_drag.topleft) + self.cam_offset) // TILE_SIZE
-                    self.item_placement.render_ui(
-                        self.image_to_drag, 
-                        self.rect_to_drag, 
-                        (int(item_xy_world.x), int(item_xy_world.y)),
-                        self.player
-                    )
-                            
-    def get_clicked_item(self) -> str|None:
-        for item_name, item_data in self.inventory.contents.items():
-            row, col = divmod(item_data['index'], self.num_cols)
-
-            left = self.outline.left + (col * self.box_width)
-            top = self.outline.top + (row * self.box_height)
-
-            padding_x = (self.box_width - self.icon_size[0]) // 2
-            padding_y = (self.box_height - self.icon_size[1]) // 2
-
-            icon_rect = pg.Rect(left + padding_x, top + padding_y, *self.icon_size)
-            if icon_rect.collidepoint(self.mouse.screen_xy):
-                return item_name
-
-    def start_drag(self, item: str) -> None:
+                self.render_item_drag()
+                
+    def start_drag(self, item: str, click_type: str) -> None:
         self.drag = True
+        self.player.item_holding = item
+        self.player.inventory.index = self.player.inventory.contents[item]['index']  
         self.image_to_drag = self.graphics[item].copy() # a copy to not alter the alpha value of the original
         self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
         self.rect_to_drag = self.image_to_drag.get_rect(center=self.mouse.world_xy)
+        self.item_drag_amount = 1 if click_type == 'left' else min(self.player.inventory.contents[item]['amount'], 5)
  
     def end_drag(self, machine_input: bool = False) -> None: 
         if not machine_input:
@@ -180,7 +153,47 @@ class InventoryUI:
                 (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE)
             )
         self.drag = False
-        self.image_to_drag = self.rect_to_drag = self.player.item_holding = None
+        self.image_to_drag = self.rect_to_drag = self.item_drag_amount = self.player.item_holding = None 
+    
+    def get_clicked_item(self) -> str|None:
+        for item_name, item_data in self.inventory.contents.items():
+            row, col = divmod(item_data['index'], self.num_cols)
+            topleft = self.outline.topleft + pg.Vector2(col * self.box_width, row * self.box_height)
+            padding = ((self.box_width, self.box_height) - self.icon_size) // 2
+            icon_rect = pg.Rect(topleft + padding, self.icon_size)
+            if icon_rect.collidepoint(self.mouse.screen_xy):
+                return item_name
+    
+    def render_item_drag(self) -> None:
+        self.rect_to_drag.topleft = self.get_grid_xy()
+        self.screen.blit(self.image_to_drag, self.rect_to_drag)
+        if self.player.item_holding in PLACEABLE_ITEMS:
+            item_xy_world = (pg.Vector2(self.rect_to_drag.topleft) + self.cam_offset) // TILE_SIZE
+            self.item_placement.render_ui(
+                self.image_to_drag, 
+                self.rect_to_drag, 
+                (int(item_xy_world.x), int(item_xy_world.y)),
+                self.player
+            )
+
+    def place_item_in_machine(self, item: str) -> None:
+        for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
+            input_type = machine.ui.check_input(item)
+            if input_type:
+                machine.ui.input_item(item, input_type, self.item_drag_amount)
+                self.end_drag(machine_input=True)
+                return
+    
+    def check_machine_box_input(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
+        for machine in machines:
+            ui = machine.ui
+            boxes = [ui.smelt_input_box, ui.output_box]
+            if machine.variant == 'burner':
+                boxes.append(ui.fuel_input_box)
+            for box in boxes:
+                if box.collidepoint(self.mouse.screen_xy) and (l_click or r_click):
+                    click_type = 'left' if l_click else 'right'
+                    machine.ui.extract_item(box, click_type)
 
     def update(self) -> None:
         if self.render:

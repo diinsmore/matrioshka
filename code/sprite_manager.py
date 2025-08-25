@@ -6,17 +6,19 @@ if TYPE_CHECKING:
     from player import Player
     from physics_engine import CollisionMap
     from input_manager import Mouse, Keyboard
+    from sprite_base import SpriteBase
 
 import pygame as pg
 from os.path import join
 from random import choice, randint
 
-from file_import_functions import load_image
+from helper_functions import load_image, cls_name_to_str
 from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
 from player import Player
 from timer import Timer
-from mech_sprites import mech_sprite_dict
 from nature_sprites import Tree, Cloud
+from furnaces import BurnerFurnace, ElectricFurnace
+from drills import Drill
 
 class SpriteManager:
     def __init__(
@@ -80,6 +82,8 @@ class SpriteManager:
         self.crafting = Crafting()
 
         self.init_trees()
+        self.machine_cls_map = self.get_machine_cls_map()
+
         self.ui = self.item_placement = self.player = None # not initialized until after the sprite manager
         
     @staticmethod
@@ -173,10 +177,17 @@ class SpriteManager:
             self.pick_up_item,
             self.rect_in_sprite_radius
         )
-    
+
+    @staticmethod
+    def get_machine_cls_map() -> dict[str, type[SpriteBase]]:
+        machine_cls_map = {}
+        for cls in [BurnerFurnace, ElectricFurnace, Drill]:
+            machine_cls_map[cls_name_to_str(cls)] = cls
+            return machine_cls_map
+
     def init_machines(self) -> None:
         for i, (machine, xy_list) in enumerate(self.item_placement.machine_map.items()):
-            cls = mech_sprite_dict[machine]
+            cls = self.machine_cls_map[machine]
             for xy in xy_list:
                 cls(
                     coords=pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),

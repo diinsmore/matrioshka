@@ -1,6 +1,7 @@
 import pygame as pg
 from os import walk
 from os.path import join
+import re
 
 def load_image(dir_path: str) -> pg.Surface:
     return pg.image.load(dir_path).convert_alpha()
@@ -31,3 +32,6 @@ def load_frames(dir_path: str) -> list[pg.Surface]:
     for path, _, files in walk(dir_path):   
         for file in sorted(files, key = lambda name: int(name.split('.')[0])): 
             frames.append(load_image(join(path, file)))
+
+def cls_name_to_str(obj: type|pg.sprite.Sprite) -> str:
+    return re.sub(r'(?<!^)(?=[A-Z])', ' ', obj.__name__ if isinstance(obj, type) else obj.__class__.__name__).lower()

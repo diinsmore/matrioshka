@@ -23,7 +23,7 @@ from sprite_manager import SpriteManager
 from input_manager import InputManager
 from ui import UI
 from item_placement import ItemPlacement
-from file_import_functions import load_subfolders
+from helper_functions import load_subfolders, cls_name_to_str
 
 class Main:
     def __init__(self):
@@ -121,6 +121,7 @@ class Main:
             self.ui.render_item_amount,
             self.ui.gen_outline,
             self.ui.gen_bg,
+            self.sprite_mgr.machine_cls_map,
             save_data
         )
         self.sprite_mgr.item_placement = self.item_placement
@@ -167,9 +168,9 @@ class Main:
         with open(file, 'w') as f:
             json.dump(data, f)
 
-    def load_sprite_data(self, data:dict[str, list]) -> None:
+    def load_sprite_data(self, data: dict[str, list]) -> None:
         for sprite in [s for s in self.sprite_mgr.all_sprites if hasattr(s, 'get_save_data')]:
-            data['sprites'][re.sub(r'(?<!^)(?=[A-Z])', ' ', sprite.__class__.__name__).lower()].append(sprite.get_save_data())
+            data['sprites'][cls_name_to_str(sprite)].append(sprite.get_save_data())
 
     def get_save_data(self) -> dict[str, list|dict]|None:
         data = None

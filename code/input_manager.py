@@ -60,13 +60,13 @@ class Mouse:
             self.click_states['left'] = True
         elif clicked[2]:
             self.click_states['right'] = True
-            
+
         held = pg.mouse.get_pressed()
         if held[0]:
             self.buttons_held['left'] = True
         elif held[1]:
             self.buttons_held['right'] = True
-        
+
     def reset_click_states(self) -> None:
         self.buttons_held['left'] = self.buttons_held['right'] = self.click_states['left'] = self.click_states['right'] = False
 

@@ -1,12 +1,8 @@
 import pygame as pg
+from os.path import join
 
 from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES, MATERIALS
-from file_import_functions import *
-
-import pygame as pg
-
-from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES
-from file_import_functions import *
+from helper_functions import load_image, load_folder, load_subfolders, load_frames
 
 class AssetManager:
     def __init__(self):
