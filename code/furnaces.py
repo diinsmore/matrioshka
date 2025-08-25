@@ -232,27 +232,28 @@ class FurnaceUI:
 
         return input_type
 
-    def input_item(self, item: str, input_type: str, amount: int=1) -> None: 
+    def input_item(self, item: str, input_type: str, amount: int) -> None: 
         if input_type == 'smelt':
             item_in_box = self.get_item_in_box(self.smelt_input_box)
             if not item_in_box or item == item_in_box: # only allow 1 item type
-                self.player.inventory.contents[item]['amount'] -= amount
+                self.player.inventory.remove_item(item, amount)
                 self.smelt_input[item]['amount'] += amount
         else:
             item_in_box = self.get_item_in_box(self.fuel_input_box)
             if not item_in_box or item == item_in_box:
-                self.player.inventory.contents[item]['amount'] -= amount
+                self.player.inventory.remove_item(item, amount)
                 self.fuel_input[item]['amount'] += amount
     
     def extract_item(self, box: pg.Rect, click_type: str) -> None:
         box_contents = self.smelt_input if box == self.smelt_input_box else self.fuel_input
         if bool(box_contents): # not empty
             item_name = next(iter(box_contents.keys()))
-            item_amount = 1 if click_type == 'left' else min(box_contents[item_name]['amount'], 5)
-            box_contents[item_name]['amount'] -= item_amount
+            item_amount = box_contents[item_name]['amount']
+            extract_total = item_amount if click_type == 'left' else (item_amount // 2) if item_amount > 1 else 1
+            box_contents[item_name]['amount'] -= extract_total
             if box_contents[item_name]['amount'] == 0:
                 del box_contents[item_name]
-            self.player.inventory.contents[item_name]['amount'] += item_amount
+            self.player.inventory.add_item(item_name, extract_total)
             self.player.item_holding = item_name
             
     def get_item_in_box(self, box: pg.Rect) -> str|None:

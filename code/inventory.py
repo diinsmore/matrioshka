@@ -15,12 +15,12 @@ class Inventory:
             self.contents = save_data['contents']
         else:
             self.contents = default_contents if default_contents else {}
-
+            
         if self.contents:
             for i, item in enumerate(self.contents):
                 self.contents[item]['index'] = i
-                self.item_names = list(self.contents.keys())  
-     
+            self.item_names = list(self.contents.keys())
+
         self.index = save_data['index'] if save_data else 0
         self.num_slots = 50
         self.slot_capacity = defaultdict(lambda: 999)
@@ -33,17 +33,16 @@ class Inventory:
         for tool in TOOLS.keys():
             self.slot_capacity[tool] = 99   
 
-    def add_item(self, item: str) -> None:
-        if item not in self.contents.keys():
-            num_slots_taken = len(self.contents.keys())
+    def add_item(self, item: str, amount: int) -> None:
+        if item not in self.item_names:
+            num_slots_taken = len(self.item_names)
             if num_slots_taken < self.num_slots:
-                self.contents[item] = {'amount': 1, 'index': num_slots_taken}
+                self.contents[item] = {'amount': amount, 'index': num_slots_taken}
                 self.item_names.append(item)
         else:
-            if self.contents[item]['amount'] + 1 <= self.slot_capacity[item]:
-               self.contents[item]['amount'] += 1
-
-    def remove_item(self, item: str, amount: int = 1) -> None:
+            self.contents[item]['amount'] += min(amount, self.slot_capacity[item] - self.contents[item]['amount'])
+            
+    def remove_item(self, item: str, amount: int) -> None:
         if self.contents[item]['amount'] - amount >= 1:
             self.contents[item]['amount'] -= amount
         else:
