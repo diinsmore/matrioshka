@@ -64,6 +64,7 @@ class UI:
             self.cam_offset,
             self.assets,
             self.mouse,
+            self.keyboard,
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
             self.sprite_manager.mech_sprites,

@@ -17,6 +17,7 @@ class InventoryUI:
         cam_offset: pg.Vector2,
         assets: dict[str, dict[str, any]], 
         mouse: Mouse,
+        keyboard: Keyboard,
         top: int,
         player: Player,
         mech_sprites: pg.sprite.Group,
@@ -32,6 +33,7 @@ class InventoryUI:
         self.cam_offset = cam_offset
         self.assets = assets
         self.mouse = mouse
+        self.keyboard = keyboard
         self.padding = 5
         self.top = top + self.padding
         self.player = player
@@ -114,14 +116,13 @@ class InventoryUI:
         return surf if surf.get_size() == self.icon_size else self.get_scaled_image(surf, name, *self.icon_size)
     
     def check_drag(self) -> None:
-        clicks = self.mouse.click_states
-        l_click, r_click = clicks['left'], clicks['right']
+        l_click, r_click = self.mouse.click_states.values()
         if l_click or r_click:
-            if self.drag:
-                item = self.player.item_holding
-                if item:
-                    self.place_item_in_machine(item)
+            if self.drag and self.player.item_holding:
+                if r_click and self.item_drag_amount:
+                    self.item_drag_amount //= 2
                 else:
+                    self.place_item_in_machine(self.player.item_holding)
                     self.end_drag()
             else:
                 if self.outline.collidepoint(self.mouse.screen_xy):
@@ -133,8 +134,10 @@ class InventoryUI:
                     if machines_with_ui_open: 
                         self.check_machine_box_input(machines_with_ui_open, l_click, r_click)
         else:
-            if self.drag: 
+            if self.drag:
                 self.render_item_drag()
+                if self.keyboard.pressed_keys[pg.K_q]:
+                    self.end_drag()
                 
     def start_drag(self, item: str, click_type: str) -> None:
         self.drag = True
@@ -143,10 +146,11 @@ class InventoryUI:
         self.image_to_drag = self.graphics[item].copy() # a copy to not alter the alpha value of the original
         self.image_to_drag.set_alpha(150) # slightly transparent until it's placed
         self.rect_to_drag = self.image_to_drag.get_rect(center=self.mouse.world_xy)
-        self.item_drag_amount = 1 if click_type == 'left' else min(self.player.inventory.contents[item]['amount'], 5)
+        item_amount = self.player.inventory.contents[item]['amount']
+        self.item_drag_amount = item_amount if click_type == 'left' else item_amount // 2
  
-    def end_drag(self, machine_input: bool = False) -> None: 
-        if not machine_input:
+    def end_drag(self, machine_input: bool=False) -> None: 
+        if not machine_input and self.player.item_holding:
             self.item_placement.place_item(
                 self.player, 
                 self.graphics[self.player.item_holding], 
