@@ -9,11 +9,12 @@ import pygame as pg
 from sprite_base import SpriteBase
 from settings import MACHINES
 from furnace_ui import FurnaceUI
+from timer import Timer
 
 class Furnace(SpriteBase):
     def __init__(
         self, 
-        coords: pg.Vector2, 
+        xy: pg.Vector2, 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -29,54 +30,33 @@ class Furnace(SpriteBase):
         render_item_amount: callable,
         save_data: dict[str, any]
     ):
-        super().__init__(coords, image, z, sprite_groups)
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.mouse = mouse
-        self.keyboard = keyboard
-        self.player = player
-        self.assets = assets
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
-        self.rect_in_sprite_radius = rect_in_sprite_radius
-        
+        super().__init__(xy, image, z, sprite_groups)
         self.active = False
         self.max_capacity = {'smelting': 100, 'fuel': 50}
-        self.items_smelted = {
+        self.can_smelt = {
             'copper': {'speed': 4000, 'output': 'copper plate'}, 
             'iron': {'speed': 5000, 'output': 'iron plate'},
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
+        self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': None}
+        self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': None}
+        self.output = save_data['output'] if save_data else {'item': None, 'amount': None}
+        self.smelt_timer = self.fuel_timer = None
         
-        self.ui = FurnaceUI(
-            self.screen, 
-            self.cam_offset,
-            self.image, 
-            self.rect,
-            self.items_smelted,
-            self.mouse, 
-            self.keyboard,
-            self.player,
-            self.assets,
-            self.gen_outline, 
-            self.gen_bg,
-            self.rect_in_sprite_radius,
-            render_item_amount,
-            save_data
-        )
-    
     def smelt(self) -> None:
+        smelt_item, fuel_item = self.smelt_input['item'], self.fuel_input['item']
+        if smelt_item and fuel_item:  
+            self.smelt_timer = Timer(length=self.items_smelted[smelt_item], function=self)
+    
+    def remove_item(self) -> None:
         pass
-
-    def update(self, dt) -> None:
-        self.ui.update()
 
     def get_save_data(self) -> dict[str, list|str]:
         return {
             'xy': list(self.rect.topleft),
-            'smelt input': self.ui.smelt_input,
-            'fuel input': self.ui.fuel_input,
-            'output': self.ui.output
+            'smelt input': self.smelt_input,
+            'fuel input': self.fuel_input,
+            'output': self.output
         }
 
 
@@ -117,11 +97,24 @@ class BurnerFurnace(Furnace):
             save_data
         )
         self.variant = 'burner'
-        self.ui.variant = self.variant
         self.recipe = MACHINES['burner furnace']['recipe']
-        self.fuel_sources = {'wood': {'capacity': 99}, 'coal': {'capacity': 99}}
-        self.ui.fuel_sources = self.fuel_sources
+        self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
+        self.ui = FurnaceUI(
+            self,
+            screen,
+            cam_offset,
+            mouse,
+            keyboard,
+            player,
+            assets,
+            gen_outline,
+            gen_bg,
+            rect_in_sprite_radius,
+            render_item_amount
+        )
 
+    def update(self, dt: float) -> None:
+        self.ui.update()
 
 class ElectricFurnace(Furnace):
     def __init__(
@@ -158,7 +151,21 @@ class ElectricFurnace(Furnace):
             save_data
         )
         self.variant = 'electric'
-        self.ui.variant = self.variant
         self.recipe = MACHINES['electric furnace']['recipe']
         self.fuel_sources = {'electric poles'}
-        self.ui.fuel_sources = self.fuel_sources
+        self.ui = FurnaceUI(
+            self,
+            screen,
+            cam_offset,
+            mouse,
+            keyboard,
+            player,
+            assets,
+            gen_outline,
+            gen_bg,
+            rect_in_sprite_radius,
+            render_item_amount
+        )
+
+    def update(self, dt: float) -> None:
+        self.ui.update()

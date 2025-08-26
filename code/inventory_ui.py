@@ -191,9 +191,9 @@ class InventoryUI:
     def check_machine_box_input(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
             ui = machine.ui
-            boxes = [ui.smelt_input_box, ui.output_box]
+            boxes = [ui.smelt_compartment, ui.output_compartment]
             if machine.variant == 'burner':
-                boxes.append(ui.fuel_input_box)
+                boxes.append(ui.fuel_compartment)
             for box in boxes:
                 if box.collidepoint(self.mouse.screen_xy) and (l_click or r_click):
                     click_type = 'left' if l_click else 'right'
