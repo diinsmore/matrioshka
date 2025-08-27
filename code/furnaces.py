@@ -42,6 +42,22 @@ class Furnace(SpriteBase):
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': None}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': None}
         self.smelt_timer = self.fuel_timer = None
+        # not initializing self.ui until the furnace variant is determined
+        self.ui_params = {
+            'screen': screen,
+            'cam_offset': cam_offset,
+            'mouse': mouse,
+            'keyboard': keyboard,
+            'player': player,
+            'assets': assets,
+            'gen_outline': gen_outline,
+            'gen_bg': gen_bg,
+            'rect_in_sprite_radius': rect_in_sprite_radius,
+            'render_item_amount': render_item_amount
+        }
+    
+    def init_ui(self) -> None: 
+        self.ui = FurnaceUI(furnace=self, **self.ui_params)
         
     def smelt(self) -> None:
         smelt_item, fuel_item = self.smelt_input['item'], self.fuel_input['item']
@@ -58,6 +74,9 @@ class Furnace(SpriteBase):
             'fuel input': self.fuel_input,
             'output': self.output
         }
+
+    def update(self, dt: float) -> None:
+        self.ui.update()
 
 
 class BurnerFurnace(Furnace):
@@ -99,22 +118,7 @@ class BurnerFurnace(Furnace):
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
-        self.ui = FurnaceUI(
-            self,
-            screen,
-            cam_offset,
-            mouse,
-            keyboard,
-            player,
-            assets,
-            gen_outline,
-            gen_bg,
-            rect_in_sprite_radius,
-            render_item_amount
-        )
-
-    def update(self, dt: float) -> None:
-        self.ui.update()
+        self.init_ui()
 
 class ElectricFurnace(Furnace):
     def __init__(
@@ -153,19 +157,4 @@ class ElectricFurnace(Furnace):
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']
         self.fuel_sources = {'electric poles'}
-        self.ui = FurnaceUI(
-            self,
-            screen,
-            cam_offset,
-            mouse,
-            keyboard,
-            player,
-            assets,
-            gen_outline,
-            gen_bg,
-            rect_in_sprite_radius,
-            render_item_amount
-        )
-
-    def update(self, dt: float) -> None:
-        self.ui.update()
+        self.init_ui()

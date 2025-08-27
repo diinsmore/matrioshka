@@ -186,25 +186,24 @@ class SpriteManager:
             return machine_cls_map
 
     def init_machines(self) -> None:
-        for i, (machine, xy_list) in enumerate(self.item_placement.machine_map.items()):
-            cls = self.machine_cls_map[machine]
+        for i, (machine, xy_list) in enumerate(self.item_placement.machine_map.items()): 
             for xy in xy_list:
-                cls(
-                    coords=pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
-                    image=self.assets['graphics'][machine],
-                    z=Z_LAYERS['main'],
-                    sprite_groups=[self.all_sprites, self.active_sprites, self.mech_sprites],
-                    screen=self.screen,
-                    cam_offset=self.cam_offset,
-                    mouse=self.mouse,
-                    keyboard=self.keyboard,
-                    player=self.player,
-                    assets=self.assets,
-                    gen_outline=self.ui.gen_outline,
-                    gen_bg=self.ui.gen_bg,
-                    rect_in_sprite_radius=self.rect_in_sprite_radius,
-                    render_item_amount=self.ui.render_item_amount,
-                    save_data=self.save_data['sprites'][machine][i] if self.save_data else None
+                self.machine_cls_map[machine](
+                    pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
+                    self.assets['graphics'][machine],
+                    Z_LAYERS['main'],
+                    [self.all_sprites, self.active_sprites, self.mech_sprites],
+                    self.screen,
+                    self.cam_offset,
+                    self.mouse,
+                    self.keyboard,
+                    self.player,
+                    self.assets,
+                    self.ui.gen_outline,
+                    self.ui.gen_bg,
+                    self.rect_in_sprite_radius,
+                    self.ui.render_item_amount,
+                    self.save_data['sprites'][machine][i] if self.save_data else None
                 )
         
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:

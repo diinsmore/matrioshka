@@ -39,14 +39,13 @@ class FurnaceUI:
         self.compartment_w = self.compartment_h = 40 
         self.padding = 10
         self.graphics = self.assets['graphics']
-
         self.right_arrow_surf = self.graphics['ui']['right arrow']
-        self.highlight_color = self.assets['colors']['ui bg highlight']
-        self.furnace_mask = pg.mask.from_surface(self.furnace.image)
-        self.furnace_mask_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
-        if self.furnace.variant == 'burner':
+        if furnace.variant == 'burner':
             self.fuel_icon = self.graphics['ui']['fuel icon']
-
+        self.highlight_color = self.assets['colors']['ui bg highlight']
+        self.furnace_mask = pg.mask.from_surface(furnace.image)
+        self.furnace_mask_surf = self.furnace_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
+        
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
 
     def check_input(self, item: str) -> str|None:
