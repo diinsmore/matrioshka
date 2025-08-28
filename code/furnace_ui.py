@@ -60,14 +60,9 @@ class FurnaceUI:
 
         return input_type
 
-    def input_item(self, item: str, input_type: str, amount: int) -> None: 
-        if input_type == 'smelt':
-            if not self.furnace.smelt_input['item']: 
-                self.furnace.smelt_input['item'] = item
-
-            if item == self.furnace.smelt_input['item']: 
-                self.player.inventory.remove_item(item, amount)
-                self.furnace.smelt_input['amount'] += amount
+    def input_item(self, item: str, compartment: str, amount: int) -> None: 
+        if compartment == 'smelt':
+            self.furnace.add_item(item, compartment, amount)
         else:
             if not self.furnace.fuel_input['item']:
                 self.furnace.fuel_input['item'] = item
@@ -91,64 +86,61 @@ class FurnaceUI:
         if rect_mouse_collide:
             self.screen.blit(self.furnace_mask_surf, self.furnace.rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_ADD)
     
-    def add_compartments(self, bg_rect: pg.Rect) -> tuple[pg.Rect, pg.Rect|None, pg.Rect]:
+    def get_compartments(self, bg_rect: pg.Rect) -> tuple[pg.Rect, pg.Rect|None, pg.Rect]:
         y_offset = (self.bg_h // 2) - ((self.compartment_h + self.padding) if self.furnace.variant == 'burner' else self.compartment_h // 2) 
-        self.smelt_compartment = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.compartment_w, self.compartment_h))
-        self.fuel_compartment = None
+        smelt_compartment = pg.Rect(bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.compartment_w, self.compartment_h))
+        fuel_compartment = None
         if self.furnace.variant == 'burner': 
-            self.fuel_compartment = self.smelt_compartment.copy() 
-            self.fuel_compartment.midtop = self.smelt_compartment.midbottom + pg.Vector2(0, (bg_rect.centery - self.smelt_compartment.bottom) * 2) 
-        self.output_compartment = self.smelt_compartment.copy() 
-        self.output_compartment.midright = bg_rect.midright - pg.Vector2(self.padding, 0)
-        return self.smelt_compartment, self.fuel_compartment, self.output_compartment 
+            fuel_compartment = smelt_compartment.copy() 
+            fuel_compartment.midtop = smelt_compartment.midbottom + pg.Vector2(0, (bg_rect.centery - smelt_compartment.bottom) * 2) 
+        output_compartment = smelt_compartment.copy() 
+        output_compartment.midright = bg_rect.midright - pg.Vector2(self.padding, 0)
+        return smelt_compartment, fuel_compartment, output_compartment 
         
-    def render_boxes(self, bg_rect: pg.Rect) -> None: 
-        boxes = [bg_rect, *self.add_compartments(bg_rect)]
-        if self.furnace.variant == 'electric':
-            boxes.remove(self.fuel_compartment)
-        for box in boxes:
-            self.gen_bg(
-                box, 
-                color=self.highlight_color if box != bg_rect and box.collidepoint(self.mouse.screen_xy) else 'black', 
-                transparent=False if box != bg_rect else True
-            ) 
-            self.gen_outline(box)
-            if self.furnace.variant == 'burner' and box == self.fuel_compartment:
-                self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_compartment.midbottom)) 
-
-        self.render_compartment_input()
+    def render_compartments(self, bg_rect: pg.Rect) -> None: 
+        self.smelt_compartment, self.fuel_compartment, self.output_compartment = self.get_compartments(bg_rect)
+        data = {
+            'smelt': {'contents': self.furnace.smelt_input, 'rect': self.smelt_compartment}, 
+            'output': {'contents': self.furnace.output, 'rect': self.output_compartment}
+        }
+        if self.furnace.variant == 'burner':
+            data['fuel'] = {'contents': self.furnace.fuel_input, 'rect': self.fuel_compartment}
+            self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_compartment.midbottom)) 
         
-    def render_compartment_input(self) -> None:
-        if self.furnace.smelt_input['item']:
-            item_name, item_amount = self.furnace.smelt_input['item'], self.furnace.smelt_input['amount']
-            surf = self.graphics[item_name]
-            self.screen.blit(surf, surf.get_frect(center=self.smelt_compartment.center))
-            self.render_item_amount(item_amount, self.smelt_compartment.bottomright - pg.Vector2(5, 5))
-
-        elif self.furnace.fuel_input['item']:
-            item_name, item_amount = self.furnace.fuel_input['item'], self.furnace.fuel_input['amount']
-            surf = self.graphics[item_name]
-            self.screen.blit(surf, surf.get_frect(center=self.fuel_compartment.center))
-            self.render_item_amount(item_amount, self.fuel_compartment.bottomright - pg.Vector2(5, 5))
+        for key in data:
+            contents, rect = data[key]['contents'], data[key]['rect']
+            self.gen_bg(rect, color=self.highlight_color if rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
+            self.gen_outline(rect)
+            if contents['item']: 
+                self.render_compartment_contents(contents, rect)          
+        
+    def render_compartment_contents(self, data: dict[str, str|int], compartment_rect: pg.Rect) -> None:
+        surf = self.graphics[data['item']]
+        self.screen.blit(surf, surf.get_frect(center=compartment_rect.center))
+        self.render_item_amount(data['amount'], compartment_rect.bottomright - pg.Vector2(5, 5))
 
     def render_interface(self) -> None:
         bg_rect = pg.Rect(self.furnace.rect.midtop - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
-        if not self.rect_in_sprite_radius(self.player, bg_rect):
-            self.render = False 
-            return
-        bg_rect.topleft -= self.cam_offset # converting to world-space now to not mess with the radius check above
-        self.render_boxes(bg_rect)
-        self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=bg_rect.center))
+        if self.rect_in_sprite_radius(self.player, bg_rect):
+            bg_rect.topleft -= self.cam_offset # converting to world-space now to not mess with the radius check above
+            self.gen_bg(bg_rect, color='black', transparent=True) 
+            self.gen_outline(bg_rect)
+            self.render_compartments(bg_rect)
+            self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=bg_rect.center))
+        else:
+            self.render = False
 
     def run(self, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)
         if not self.render:
             self.render = rect_mouse_collide and self.mouse.click_states['left']
-        else:
-            if self.keyboard.held_keys[self.key_close_ui]:
-                self.render = False
-            else:
-                self.render_interface()
+            return
+        
+        elif self.keyboard.held_keys[self.key_close_ui]:
+            self.render = False
+            return
+
+        self.render_interface()
             
     def update(self) -> None:
         self.run(self.furnace.rect.collidepoint(self.mouse.world_xy))
