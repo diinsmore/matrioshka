@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from settings import TILE_SIZE, PLACEABLE_ITEMS
+from settings import TILE_SIZE, PLACEABLE_ITEMS, MATERIALS
 
 class InventoryUI:
     def __init__(
@@ -64,7 +64,7 @@ class InventoryUI:
 
         self.drag = False
         self.image_to_drag = self.rect_to_drag = self.item_drag_amount = None
-
+        self.material_names = set(MATERIALS.keys())
         self.item_placement = None # not initialized yet
     
     def update_dimensions(self) -> None:
@@ -122,7 +122,6 @@ class InventoryUI:
                 if r_click and self.item_drag_amount:
                     self.item_drag_amount //= 2
                 else:
-                    self.place_item_in_machine(self.player.item_holding)
                     self.end_drag()
             else:
                 if self.outline.collidepoint(self.mouse.screen_xy):
@@ -149,13 +148,11 @@ class InventoryUI:
         item_amount = self.player.inventory.contents[item]['amount']
         self.item_drag_amount = item_amount if click_type == 'left' else item_amount // 2
  
-    def end_drag(self, machine_input: bool=False) -> None: 
-        if not machine_input and self.player.item_holding:
-            self.item_placement.place_item(
-                self.player, 
-                self.graphics[self.player.item_holding], 
-                (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE)
-            )
+    def end_drag(self) -> None: 
+        if self.player.item_holding in self.material_names:
+            self.place_item_in_machine()
+        else:
+            self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))
         self.drag = False
         self.image_to_drag = self.rect_to_drag = self.item_drag_amount = self.player.item_holding = None 
     
@@ -180,24 +177,23 @@ class InventoryUI:
                 self.player
             )
 
-    def place_item_in_machine(self, item: str) -> None:
+    def place_item_in_machine(self) -> None:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
-            input_type = machine.ui.check_input(item)
-            if input_type:
-                machine.ui.input_item(item, input_type, self.item_drag_amount)
-                self.end_drag(machine_input=True)
+            box_data = machine.ui.get_box_data()
+            input_box_name = machine.ui.check_input(box_data)
+            if input_box_name:
+                machine.ui.input_item(input_box_name, self.item_drag_amount, box_data[input_box_name])
                 return
     
     def check_machine_box_input(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
             ui = machine.ui
-            boxes = [ui.smelt_compartment, ui.output_compartment]
+            boxes = [('smelt', ui.smelt_box), ('output', ui.output_box)]
             if machine.variant == 'burner':
-                boxes.append(ui.fuel_compartment)
-            for box in boxes:
-                if box.collidepoint(self.mouse.screen_xy) and (l_click or r_click):
-                    click_type = 'left' if l_click else 'right'
-                    machine.ui.extract_item(box, click_type)
+                boxes.append(('fuel', ui.fuel_box))
+            for name, rect in boxes:
+                if rect.collidepoint(self.mouse.screen_xy) and (l_click or r_click):
+                    ui.extract_item(name, 'left' if l_click else 'right')
 
     def update(self) -> None:
         if self.render:

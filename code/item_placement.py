@@ -54,14 +54,15 @@ class ItemPlacement:
         self.machine_names = list(MACHINES.keys()) 
         self.tile_names = list(tile_IDs.keys())
 
-    def place_item(self, sprite: pg.sprite.Sprite, image: pg.Surface, tile_xy: tuple[int, int]) -> None:
-        if image.get_size() == (TILE_SIZE, TILE_SIZE):
+    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> None:
+        surf = self.assets['graphics'][sprite.item_holding]
+        if surf.get_size() == (TILE_SIZE, TILE_SIZE):
             if self.valid_placement(tile_xy, sprite):
                 self.place_single_tile_item(tile_xy, sprite)
         else:
-            tile_xy_list = self.get_tile_xy_list(tile_xy, image)
+            tile_xy_list = self.get_tile_xy_list(tile_xy, surf)
             if self.valid_placement(tile_xy_list, sprite):
-                self.place_multi_tile_item(tile_xy_list, image, sprite)
+                self.place_multi_tile_item(tile_xy_list, surf, sprite)
     
     def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
         if isinstance(tile_xy, tuple):

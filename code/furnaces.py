@@ -58,18 +58,6 @@ class Furnace(SpriteBase):
     
     def init_ui(self) -> None: 
         self.ui = FurnaceUI(furnace=self, **self.ui_params)
-        
-    def add_item(self, item: str, compartment: str, amount: int) -> None:
-        if compartment == 'smelt':
-            if not self.smelt_input['item']: 
-                self.furnace.smelt_input['item'] = item
-
-                if item == self.furnace.smelt_input['item']: 
-                    self.player.inventory.remove_item(item, amount)
-                    self.furnace.smelt_input['amount'] += amount
-
-    def remove_item(self, item: str, compartment: str, amount: int) -> None:
-        pass
     
     def smelt(self) -> None:
         smelt_item, fuel_item = self.smelt_input['item'], self.fuel_input['item']

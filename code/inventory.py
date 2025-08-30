@@ -40,7 +40,10 @@ class Inventory:
                 self.contents[item] = {'amount': amount, 'index': num_slots_taken}
                 self.item_names.append(item)
         else:
-            self.contents[item]['amount'] += min(amount, self.slot_capacity[item] - self.contents[item]['amount'])
+            max_amount = amount
+            if item in self.slot_capacity.keys():
+                max_amount = min(amount, self.slot_capacity['item'] - self.contents[item]['amount'])
+            self.contents[item]['amount'] += max_amount
             
     def remove_item(self, item: str, amount: int=1) -> None:
         if self.contents[item]['amount'] - amount >= 1:
