@@ -63,7 +63,7 @@ class FurnaceUI:
         self.smelt_box, self.fuel_box, self.output_box = self.get_box_rects()
         data = {
             'smelt': {'contents': self.furnace.smelt_input, 'valid inputs': self.furnace.can_smelt.keys(), 'rect': self.smelt_box}, 
-            'output': {'contents': self.furnace.output, 'valid inputs': self.furnace.output['item'], 'rect': self.output_box} # only allow input if adding to the existing total, to prevent items the furnace can't produce from being inserted
+            'output': {'contents': self.furnace.output, 'valid input': self.furnace.output['item'], 'rect': self.output_box}
         }
         if self.furnace.variant == 'burner':
             data['fuel'] = {'contents': self.furnace.fuel_input, 'valid inputs': self.furnace.fuel_sources, 'rect': self.fuel_box}
@@ -77,8 +77,9 @@ class FurnaceUI:
         return box_name
 
     def input_item(self, box_name: str, amount: int, box_data: dict[str, dict]) -> None: 
-        if self.player.item_holding in box_data['valid inputs']:
-            if box_name != 'output' and box_data['contents']['item'] is None: # the previous check would have failed for the output box (requires an existing item to accept input)
+        if (box_name != 'output' and self.player.item_holding in box_data['valid inputs']) or \
+           (box_name == 'output' and self.player.item_holding == box_data['valid input']): # only allow input if adding to the existing total, to prevent items the furnace can't produce from being inserted
+            if box_name != 'output' and box_data['contents']['item'] is None: # the previous check would have failed for the output box since the item = the valid input index
                 box_data['contents']['item'] = self.player.item_holding
             if self.player.item_holding == box_data['contents']['item']:
                 box_data['contents']['amount'] += amount

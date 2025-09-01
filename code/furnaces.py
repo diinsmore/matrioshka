@@ -34,9 +34,9 @@ class Furnace(SpriteBase):
         self.active = False
         self.max_capacity = {'smelt': 100, 'fuel': 50}
         self.can_smelt = {
-            'copper': {'speed': 2500, 'output': 'copper plate'}, 
-            'iron': {'speed': 4000, 'output': 'iron plate'},
-            'iron plate': {'speed': 9000, 'output': 'steel plate'},
+            'copper': {'speed': 3000, 'output': 'copper plate'}, 
+            'iron': {'speed': 5000, 'output': 'iron plate'},
+            'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
@@ -74,19 +74,19 @@ class Furnace(SpriteBase):
         if not self.timers:
             smelt_item = self.smelt_input['item']
             self.timers['smelt'] = Timer(
-                length=self.can_smelt[smelt_item]['speed'], 
+                length=self.can_smelt[smelt_item]['speed'] // self.speed_factor, 
                 function=self.update_box, 
                 auto_start=True, 
-                loop=False, 
+                loop=True, 
                 smelt_item=smelt_item
             )
             if self.variant == 'burner':
                 fuel_item = self.fuel_input['item']
                 self.timers['fuel'] = Timer(
-                    length=self.fuel_sources[fuel_item]['burn speed'], 
+                    length=self.fuel_sources[fuel_item]['burn speed'] // self.speed_factor, 
                     function=self.update_box, 
                     auto_start=True, 
-                    loop=False, 
+                    loop=True, 
                     fuel_item=fuel_item
                 )
         for timer in self.timers.values():
@@ -100,12 +100,12 @@ class Furnace(SpriteBase):
             self.active = False
         
         if smelt_item:
+            output_item = self.can_smelt[smelt_item]['output']
             if not self.output['item']:
-                self.output['item'] = smelt_item
-                self.output['amount'] = 1
-            else:
-                if self.output['item'] == smelt_item:
-                    self.output['amount'] += 1
+                self.output['item'] = output_item
+            
+            if output_item == self.output['item']:
+                self.output['amount'] += 1
 
     def get_save_data(self) -> dict[str, list|str]:
         return {

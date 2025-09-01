@@ -65,6 +65,7 @@ class InventoryUI:
         self.drag = False
         self.image_to_drag = self.rect_to_drag = self.item_drag_amount = None
         self.material_names = set(MATERIALS.keys())
+        self.tile_names = set(TILES.keys())
         self.item_placement = None # not initialized yet
     
     def update_dimensions(self) -> None:
@@ -149,8 +150,7 @@ class InventoryUI:
         self.item_drag_amount = item_amount if click_type == 'left' else item_amount // 2
  
     def end_drag(self) -> None: 
-        if self.player.item_holding in self.material_names or \
-        self.player.item_holding in TILES.keys() and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
+        if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
             self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))
