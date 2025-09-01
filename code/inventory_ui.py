@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from settings import TILE_SIZE, PLACEABLE_ITEMS, MATERIALS
+from settings import TILE_SIZE, TILES, PLACEABLE_ITEMS, MATERIALS
 
 class InventoryUI:
     def __init__(
@@ -118,8 +118,8 @@ class InventoryUI:
     def check_drag(self) -> None:
         l_click, r_click = self.mouse.click_states.values()
         if l_click or r_click:
-            if self.drag and self.player.item_holding:
-                if r_click and self.item_drag_amount:
+            if self.drag:
+                if r_click:
                     self.item_drag_amount //= 2
                 else:
                     self.end_drag()
@@ -131,7 +131,7 @@ class InventoryUI:
                 else:
                     machines_with_ui_open = [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]
                     if machines_with_ui_open: 
-                        self.check_machine_box_input(machines_with_ui_open, l_click, r_click)
+                        self.check_machine_extract(machines_with_ui_open, l_click, r_click)
         else:
             if self.drag:
                 self.render_item_drag()
@@ -149,7 +149,8 @@ class InventoryUI:
         self.item_drag_amount = item_amount if click_type == 'left' else item_amount // 2
  
     def end_drag(self) -> None: 
-        if self.player.item_holding in self.material_names:
+        if self.player.item_holding in self.material_names or \
+        self.player.item_holding in TILES.keys() and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
             self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))
@@ -185,7 +186,7 @@ class InventoryUI:
                 machine.ui.input_item(input_box_name, self.item_drag_amount, box_data[input_box_name])
                 return
     
-    def check_machine_box_input(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
+    def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
             ui = machine.ui
             boxes = [('smelt', ui.smelt_box), ('output', ui.output_box)]

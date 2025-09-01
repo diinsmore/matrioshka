@@ -140,7 +140,8 @@ TOOLS = {
 
 MACHINES = {
     'burner furnace': {'recipe': {'stone': 7, 'wood torch': 1}, 'rgb': (47, 15, 15)}, 
-    'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4, 'glass': 4}, 'rgb': (49, 63, 71)},
+    'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4}, 'rgb': (49, 63, 71)},
+    'steel furnace': {'recipe': {'steel': 7, 'circuit': 4}, 'rgb': (84, 84, 84)},
     'burner drill': {'recipe': {'iron plate': 7, 'iron gear': 5, 'burner furnace': 1}, 'rgb': (137, 126, 126),},
     'electric drill': {'recipe': {'iron plate': 7, 'circuit': 5, 'electric furnace': 1}, 'rgb': (111, 122, 112),},
     'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'wood torch': 1}, 'rgb': (47, 29, 29),}, 

@@ -32,16 +32,16 @@ class Furnace(SpriteBase):
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.active = False
-        self.max_capacity = {'smelting': 100, 'fuel': 50}
+        self.max_capacity = {'smelt': 100, 'fuel': 50}
         self.can_smelt = {
-            'copper': {'speed': 4000, 'output': 'copper plate'}, 
-            'iron': {'speed': 5000, 'output': 'iron plate'},
-            'iron plate': {'speed': 7000, 'output': 'steel plate'},
+            'copper': {'speed': 2500, 'output': 'copper plate'}, 
+            'iron': {'speed': 4000, 'output': 'iron plate'},
+            'iron plate': {'speed': 9000, 'output': 'steel plate'},
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
-        self.smelt_timer = self.fuel_timer = None
+        self.timers = {}
         # not initializing self.ui until the furnace variant is determined
         self.ui_params = {
             'screen': screen,
@@ -58,11 +58,54 @@ class Furnace(SpriteBase):
     
     def init_ui(self) -> None: 
         self.ui = FurnaceUI(furnace=self, **self.ui_params)
+
+    def get_active_state(self) -> bool:
+        if not self.active:
+            smelt_item, fuel_item = self.smelt_input['item'], self.fuel_input['item']
+            if smelt_item and fuel_item:
+                self.active = True
+    
+            elif not smelt_item and not fuel_item:
+                self.timers.clear()
+
+        return self.active
     
     def smelt(self) -> None:
-        smelt_item, fuel_item = self.smelt_input['item'], self.fuel_input['item']
-        if smelt_item and fuel_item:  
-            self.smelt_timer = Timer(length=self.items_smelted[smelt_item], function=self)
+        if not self.timers:
+            smelt_item = self.smelt_input['item']
+            self.timers['smelt'] = Timer(
+                length=self.can_smelt[smelt_item]['speed'], 
+                function=self.update_box, 
+                auto_start=True, 
+                loop=False, 
+                smelt_item=smelt_item
+            )
+            if self.variant == 'burner':
+                fuel_item = self.fuel_input['item']
+                self.timers['fuel'] = Timer(
+                    length=self.fuel_sources[fuel_item]['burn speed'], 
+                    function=self.update_box, 
+                    auto_start=True, 
+                    loop=False, 
+                    fuel_item=fuel_item
+                )
+        for timer in self.timers.values():
+            timer.update()
+
+    def update_box(self, smelt_item: str = None, fuel_item: str = None) -> None:
+        input_data = self.smelt_input if smelt_item else self.fuel_input # 'None' will never be passed for both
+        input_data['amount'] -= 1
+        if input_data['amount'] == 0:
+            input_data['item'] = None
+            self.active = False
+        
+        if smelt_item:
+            if not self.output['item']:
+                self.output['item'] = smelt_item
+                self.output['amount'] = 1
+            else:
+                if self.output['item'] == smelt_item:
+                    self.output['amount'] += 1
 
     def get_save_data(self) -> dict[str, list|str]:
         return {
@@ -74,7 +117,9 @@ class Furnace(SpriteBase):
 
     def update(self, dt: float) -> None:
         self.ui.update()
-
+        if self.get_active_state():
+            self.smelt()
+        
 
 class BurnerFurnace(Furnace):
     def __init__(
@@ -115,7 +160,56 @@ class BurnerFurnace(Furnace):
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
+        self.speed_factor = 1
         self.init_ui()
+
+
+class SteelFurnace(Furnace):
+    def __init__(
+        self,
+        coords: pg.Vector2, 
+        image: dict[str, dict[str, pg.Surface]],
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group],
+        screen: pg.Surface,
+        cam_offset: pg.Vector2,
+        mouse: Mouse,
+        keyboard: Keyboard,
+        assets: dict[str, dict[str, any]],
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
+        save_data: dict[str, any]
+    ):
+        super().__init__(
+            coords, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            get_visbility,
+            render_item_amount,
+            save_data
+        )
+        self.variant = 'steel'
+        self.recipe = MACHINES['steel furnace']['recipe']
+        self.fuel_sources = {
+            'non-electric': {
+                'wood': {'capacity': 99, 'burn speed': 3000}, 
+                'coal': {'capacity': 99, 'burn speed': 6000}
+            },
+            'electric': {'electric poles'}
+        }
+        self.speed_factor = 2
+        self.init_ui()
+
 
 class ElectricFurnace(Furnace):
     def __init__(
@@ -154,4 +248,5 @@ class ElectricFurnace(Furnace):
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']
         self.fuel_sources = {'electric poles'}
+        self.speed_factor = 2.5
         self.init_ui()

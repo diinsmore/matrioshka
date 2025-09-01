@@ -62,7 +62,7 @@ class FurnaceUI:
     def get_box_data(self) -> dict[str, dict]:
         self.smelt_box, self.fuel_box, self.output_box = self.get_box_rects()
         data = {
-            'smelt': {'contents': self.furnace.smelt_input, 'valid inputs': self.furnace.can_smelt, 'rect': self.smelt_box}, 
+            'smelt': {'contents': self.furnace.smelt_input, 'valid inputs': self.furnace.can_smelt.keys(), 'rect': self.smelt_box}, 
             'output': {'contents': self.furnace.output, 'valid inputs': self.furnace.output['item'], 'rect': self.output_box} # only allow input if adding to the existing total, to prevent items the furnace can't produce from being inserted
         }
         if self.furnace.variant == 'burner':
@@ -87,7 +87,7 @@ class FurnaceUI:
     def extract_item(self, box_type: str, click_type: str) -> None:
         box_inv = self.get_box_data()[box_type]['contents']
         if box_inv['item'] is not None:
-            extract_total = box_inv['amount'] if click_type == 'left' else max(1, box_inv['amount'] // 2)
+            extract_total = box_inv['amount'] if click_type == 'left' else (box_inv['amount'] // 2)
             box_inv['amount'] -= extract_total
             self.player.inventory.add_item(box_inv['item'], extract_total)
             self.player.item_holding = box_inv['item']

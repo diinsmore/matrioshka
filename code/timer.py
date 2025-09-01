@@ -1,33 +1,32 @@
 import pygame as pg
 
 class Timer:
-    def __init__(self, length: int, function: callable = False, auto_start: bool = False, loop: bool = False):
+    def __init__(self, length: int, function: callable = None, auto_start: bool = False, loop: bool = False, *args, **kwargs):
         self.length = length
         self.function = function
-        self.auto_start = auto_start
         self.loop = loop
+        self.args = args
+        self.kwargs = kwargs
         
         self.running = False
-
-        if self.auto_start: 
+        if auto_start: 
             self.start()
 
-    def start(self):
+    def start(self) -> None:
         self.running = True
         self.start_time = pg.time.get_ticks()
 
-    def end(self):
+    def end(self) -> None:
         self.running = False
         self.start_time = 0
         
         if self.function:
-            self.function()
+            self.function(*self.args, **self.kwargs)
 
         if self.loop:
             self.start()
 
-    def update(self):
+    def update(self) -> None:
         if self.running:
-            time = pg.time.get_ticks()
-            if time - self.start_time >= self.length: # expired
+            if pg.time.get_ticks() - self.start_time >= self.length: # expired
                 self.end()
