@@ -61,12 +61,12 @@ class Furnace(SpriteBase):
 
     def get_active_state(self) -> bool:
         if not self.active:
-            smelt_item, fuel_item = self.smelt_input['item'], self.fuel_input['item']
-            if smelt_item and fuel_item:
+            if self.smelt_input['item'] and self.fuel_input['item']:
                 self.active = True
     
-            elif not smelt_item and not fuel_item:
-                self.timers.clear()
+        elif not (self.smelt_input['item'] and self.fuel_input['item']):
+            self.active = False
+            self.timers.clear()
 
         return self.active
     
