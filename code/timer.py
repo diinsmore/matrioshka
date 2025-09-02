@@ -1,10 +1,22 @@
 import pygame as pg
 
 class Timer:
-    def __init__(self, length: int, function: callable = None, auto_start: bool = False, loop: bool = False, *args, **kwargs):
+    def __init__(
+        self, 
+        length: int, 
+        function: callable = None, 
+        auto_start: bool = False, 
+        loop: bool = False, 
+        store_progress: bool = False, 
+        *args, 
+        **kwargs
+    ):
         self.length = length
         self.function = function
         self.loop = loop
+        self.store_progress = store_progress
+        if store_progress:
+            self.progress_percent = 0
         self.args = args
         self.kwargs = kwargs
         
@@ -28,5 +40,8 @@ class Timer:
 
     def update(self) -> None:
         if self.running:
-            if pg.time.get_ticks() - self.start_time >= self.length: # expired
+            progress = pg.time.get_ticks() - self.start_time
+            if self.store_progress:
+                self.progress_percent = (progress / self.length) * 100
+            if progress >= self.length: # expired
                 self.end()

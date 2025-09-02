@@ -78,6 +78,7 @@ class Furnace(SpriteBase):
                 function=self.update_box, 
                 auto_start=True, 
                 loop=True, 
+                store_progress=True,
                 smelt_item=smelt_item
             )
             if self.variant == 'burner':
@@ -87,6 +88,7 @@ class Furnace(SpriteBase):
                     function=self.update_box, 
                     auto_start=True, 
                     loop=True, 
+                    store_progress=True,
                     fuel_item=fuel_item
                 )
         for timer in self.timers.values():
@@ -159,7 +161,7 @@ class BurnerFurnace(Furnace):
         )
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
-        self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
+        self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         self.speed_factor = 1
         self.init_ui()
 

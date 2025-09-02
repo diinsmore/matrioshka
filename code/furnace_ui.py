@@ -34,11 +34,12 @@ class FurnaceUI:
         self.rect_in_sprite_radius = rect_in_sprite_radius
         self.render_item_amount = render_item_amount
 
+        self.graphics = self.assets['graphics']
         self.render = False
         self.bg_w = self.bg_h = 150
-        self.box_w = self.box_h = 40 
+        self.box_w = self.box_h = self.progress_bar_w = 40 
+        self.progress_bar_h = 4
         self.padding = 10
-        self.graphics = self.assets['graphics']
         self.right_arrow_surf = self.graphics['ui']['right arrow']
         if furnace.variant == 'burner':
             self.fuel_icon = self.graphics['ui']['fuel icon']
@@ -113,6 +114,16 @@ class FurnaceUI:
         self.screen.blit(surf, surf.get_frect(center=box_rect.center))
         self.render_item_amount(content_data['amount'], box_rect.bottomright - pg.Vector2(5, 5))
 
+    def render_progress_bar(self, box: pg.Rect, progress_percent: float) -> None:
+        bar = pg.Rect(box.bottomleft, (self.progress_bar_w, self.progress_bar_h))
+        bar_outline_w = 1
+        pg.draw.rect(self.screen, 'black', bar, bar_outline_w)
+        progress_rect = pg.Rect(
+            bar.topleft + pg.Vector2(bar_outline_w, bar_outline_w), 
+            ((bar.width - (bar_outline_w * 2)) * (progress_percent / 100), bar.height - (bar_outline_w * 2))
+        )
+        pg.draw.rect(self.screen, 'green' if box == self.smelt_box else 'red', progress_rect)
+
     def render_interface(self) -> None:
         self.bg_rect = pg.Rect(self.furnace.rect.midtop - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
         if self.rect_in_sprite_radius(self.player, self.bg_rect):
@@ -122,7 +133,7 @@ class FurnaceUI:
             self.render_boxes()
             self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=self.bg_rect.center))
             if self.furnace.variant == 'burner':
-                self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_box.midbottom))
+                self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(midtop=self.fuel_box.midbottom + pg.Vector2(0, self.progress_bar_h)))
         else:
             self.render = False
 
@@ -140,3 +151,7 @@ class FurnaceUI:
             
     def update(self) -> None:
         self.run(self.furnace.rect.collidepoint(self.mouse.world_xy))
+        if self.furnace.active:
+            self.render_progress_bar(self.smelt_box, self.furnace.timers['smelt'].progress_percent)
+            if self.furnace.variant == 'burner':
+                self.render_progress_bar(self.fuel_box, self.furnace.timers['fuel'].progress_percent)
