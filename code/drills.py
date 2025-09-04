@@ -49,3 +49,79 @@ class Drill(SpriteBase):
             'target ore': self.target_ore,
             'output': self.output
         }
+
+
+class BurnerDrill(Drill):
+    def __init__(
+        self, 
+        coords: pg.Vector2, 
+        image: dict[str, dict[str, pg.Surface]],
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group],
+        screen: pg.Surface,
+        cam_offset: pg.Vector2,
+        mouse: Mouse,
+        keyboard: Keyboard,
+        player: Player,
+        assets: dict[str, dict[str, any]],
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
+        save_data: dict[str, any]
+    ):
+        super().__init__(
+            coords, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )
+
+
+class ElectricDrill(Drill):
+    def __init__(
+        self, 
+        coords: pg.Vector2, 
+        image: dict[str, dict[str, pg.Surface]],
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group],
+        screen: pg.Surface,
+        cam_offset: pg.Vector2,
+        mouse: Mouse,
+        keyboard: Keyboard,
+        player: Player,
+        assets: dict[str, dict[str, any]],
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
+        save_data: dict[str, any]
+    ):
+        super().__init__(
+            coords, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )

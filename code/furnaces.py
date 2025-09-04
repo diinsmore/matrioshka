@@ -8,6 +8,7 @@ import pygame as pg
 
 from sprite_base import SpriteBase
 from settings import MACHINES
+from machine_ui import MachineUIHelpers
 from furnace_ui import FurnaceUI
 from timer import Timer
 
@@ -24,13 +25,20 @@ class Furnace(SpriteBase):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
+        helpers: MachineUIHelpers,
         save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
+        self.ui_params = { # not initializing self.ui until the furnace variant is determined
+            'screen': screen,
+            'cam_offset': cam_offset,
+            'mouse': mouse,
+            'keyboard': keyboard,
+            'player': player,
+            'assets': assets,
+            'helpers': helpers
+        }
+
         self.active = False
         self.max_capacity = {'smelt': 100, 'fuel': 50}
         self.can_smelt = {
@@ -42,20 +50,7 @@ class Furnace(SpriteBase):
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
         self.timers = {}
-        # not initializing self.ui until the furnace variant is determined
-        self.ui_params = {
-            'screen': screen,
-            'cam_offset': cam_offset,
-            'mouse': mouse,
-            'keyboard': keyboard,
-            'player': player,
-            'assets': assets,
-            'gen_outline': gen_outline,
-            'gen_bg': gen_bg,
-            'rect_in_sprite_radius': rect_in_sprite_radius,
-            'render_item_amount': render_item_amount
-        }
-    
+        
     def init_ui(self) -> None: 
         self.ui = FurnaceUI(furnace=self, **self.ui_params)
 
@@ -136,10 +131,7 @@ class BurnerFurnace(Furnace):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
+        helpers: MachineUIHelpers,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -153,10 +145,7 @@ class BurnerFurnace(Furnace):
             keyboard, 
             player, 
             assets, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius,
-            render_item_amount,
+            helpers,
             save_data
         )
         self.variant = 'burner'
@@ -178,10 +167,7 @@ class SteelFurnace(Furnace):
         mouse: Mouse,
         keyboard: Keyboard,
         assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
+        helpers,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -195,9 +181,7 @@ class SteelFurnace(Furnace):
             keyboard, 
             player, 
             assets, 
-            gen_outline, 
-            get_visbility,
-            render_item_amount,
+            helpers,
             save_data
         )
         self.variant = 'steel'
@@ -224,11 +208,9 @@ class ElectricFurnace(Furnace):
         cam_offset: pg.Vector2,
         mouse: Mouse,
         keyboard: Keyboard,
+        player: Player,
         assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
+        helpers: MachineUIHelpers,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -242,9 +224,7 @@ class ElectricFurnace(Furnace):
             keyboard, 
             player, 
             assets, 
-            gen_outline, 
-            get_visbility,
-            render_item_amount,
+            helpers,
             save_data
         )
         self.variant = 'electric'

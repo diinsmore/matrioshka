@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from sprite_manager import SpriteManager
     from player import Player
     from sprite_base import SpriteBase
+    from machine_ui import MachineUIHelpers
 
 import pygame as pg
 from math import ceil
@@ -27,9 +28,7 @@ class ItemPlacement:
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        render_item_amount: callable,
-        gen_outline: callable,
-        gen_bg: callable,
+        helpers: MachineUIHelpers,
         machine_cls_map: dict[str, type[SpriteBase]],
         save_data: dict[str, any]|None
     ):
@@ -44,9 +43,7 @@ class ItemPlacement:
         self.keyboard = keyboard
         self.player = player
         self.assets = assets
-        self.render_item_amount = render_item_amount
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
+        self.helpers = helpers
         self.machine_cls_map = machine_cls_map
         self.save_data = save_data
        
@@ -119,7 +116,7 @@ class ItemPlacement:
         
         if item in self.machine_names:
             self.machine_map[item].append(surf_topleft)
-            self.init_item_class(item, surf_topleft)
+            self.init_machine_class(item, surf_topleft)
 
         sprite.inventory.remove_item(item)
         sprite.item_holding = None
@@ -154,9 +151,8 @@ class ItemPlacement:
         max_y = max([xy[1] for xy in tile_xy])
         return [xy for xy in tile_xy if xy[1] == max_y]
 
-    def init_item_class(self, item: str, img_topleft: tuple[int, int]) -> None:
-        item_cls = self.machine_cls_map[item]
-        item_cls(
+    def init_machine_class(self, item: str, img_topleft: tuple[int, int]) -> None:
+        self.machine_cls_map[item](
             coords=pg.Vector2(img_topleft[0] * TILE_SIZE, img_topleft[1] * TILE_SIZE),
             image=self.assets['graphics'][item],
             z=Z_LAYERS['main'],
@@ -167,9 +163,6 @@ class ItemPlacement:
             keyboard=self.keyboard,
             player=self.player,
             assets=self.assets,
-            gen_outline=self.gen_outline,
-            gen_bg=self.gen_bg,
-            rect_in_sprite_radius=self.sprite_mgr.rect_in_sprite_radius,
-            render_item_amount=self.render_item_amount,
+            helpers=self.helpers,
             save_data=self.save_data['sprites'][item] if self.save_data else None
         )

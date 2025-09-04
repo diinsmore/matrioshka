@@ -199,10 +199,7 @@ class SpriteManager:
                     self.keyboard,
                     self.player,
                     self.assets,
-                    self.ui.gen_outline,
-                    self.ui.gen_bg,
-                    self.rect_in_sprite_radius,
-                    self.ui.render_item_amount,
+                    self.item_placement.helpers,
                     self.save_data['sprites'][machine][i] if self.save_data else None
                 )
         
