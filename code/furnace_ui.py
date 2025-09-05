@@ -12,7 +12,7 @@ from machine_ui import MachineUI
 class FurnaceUI(MachineUI):
     def __init__(
         self, 
-        furnace: BurnerFurnace|ElectricFurnace,
+        machine: BurnerFurnace|ElectricFurnace,
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
         mouse: Mouse, 
@@ -21,13 +21,13 @@ class FurnaceUI(MachineUI):
         assets: dict[str, dict[str, any]],
         helpers: MachineUIHelpers
     ):
-        super().__init__(furnace, screen, cam_offset, mouse, keyboard, player, assets, helpers)
+        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, helpers)
         self.bg_w = self.bg_h = 150
         self.box_w = self.box_h = 40
         self.progress_bar_w, self.progress_bar_h = self.box_w, 4
         self.padding = 10
         self.right_arrow_surf = self.icons['right arrow']
-        if furnace.variant == 'burner':
+        if machine.variant == 'burner':
             self.fuel_icon = self.icons['fuel'].convert()
             self.fuel_icon.set_colorkey((255, 255, 255))  # RGB for white
 

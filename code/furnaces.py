@@ -6,13 +6,13 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from sprite_base import SpriteBase
+from sprite_base import MachineSpriteBase
 from settings import MACHINES
 from machine_ui import MachineUIHelpers
 from furnace_ui import FurnaceUI
 from timer import Timer
 
-class Furnace(SpriteBase):
+class Furnace(MachineSpriteBase):
     def __init__(
         self, 
         xy: pg.Vector2, 
@@ -28,18 +28,7 @@ class Furnace(SpriteBase):
         helpers: MachineUIHelpers,
         save_data: dict[str, any]
     ):
-        super().__init__(xy, image, z, sprite_groups)
-        self.ui_params = { # not initializing self.ui until the furnace variant is determined
-            'screen': screen,
-            'cam_offset': cam_offset,
-            'mouse': mouse,
-            'keyboard': keyboard,
-            'player': player,
-            'assets': assets,
-            'helpers': helpers
-        }
-
-        self.active = False
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
         self.max_capacity = {'smelt': 100, 'fuel': 50}
         self.can_smelt = {
             'copper': {'speed': 3000, 'output': 'copper plate'}, 
@@ -47,12 +36,6 @@ class Furnace(SpriteBase):
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
-        self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
-        self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
-        self.timers = {}
-        
-    def init_ui(self) -> None: 
-        self.ui = FurnaceUI(furnace=self, **self.ui_params)
 
     def get_active_state(self) -> bool:
         if not self.active:
@@ -121,7 +104,7 @@ class Furnace(SpriteBase):
 class BurnerFurnace(Furnace):
     def __init__(
         self,
-        coords: pg.Vector2, 
+        xy: pg.Vector2, 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -134,31 +117,18 @@ class BurnerFurnace(Furnace):
         helpers: MachineUIHelpers,
         save_data: dict[str, any]
     ):
-        super().__init__(
-            coords, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            mouse, 
-            keyboard, 
-            player, 
-            assets, 
-            helpers,
-            save_data
-        )
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         self.speed_factor = 1
-        self.init_ui()
+        self.init_ui(FurnaceUI)
 
 
 class SteelFurnace(Furnace):
     def __init__(
         self,
-        coords: pg.Vector2, 
+        xy: pg.Vector2, 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -170,20 +140,7 @@ class SteelFurnace(Furnace):
         helpers,
         save_data: dict[str, any]
     ):
-        super().__init__(
-            coords, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            mouse, 
-            keyboard, 
-            player, 
-            assets, 
-            helpers,
-            save_data
-        )
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
         self.variant = 'steel'
         self.recipe = MACHINES['steel furnace']['recipe']
         self.fuel_sources = {
@@ -194,13 +151,13 @@ class SteelFurnace(Furnace):
             'electric': {'electric poles'}
         }
         self.speed_factor = 2
-        self.init_ui()
+        self.init_ui(FurnaceUI)
 
 
 class ElectricFurnace(Furnace):
     def __init__(
         self,
-        coords: pg.Vector2, 
+        xy: pg.Vector2, 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -213,22 +170,9 @@ class ElectricFurnace(Furnace):
         helpers: MachineUIHelpers,
         save_data: dict[str, any]
     ):
-        super().__init__(
-            coords, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            mouse, 
-            keyboard, 
-            player, 
-            assets, 
-            helpers,
-            save_data
-        )
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']
         self.fuel_sources = {'electric poles'}
         self.speed_factor = 2.5
-        self.init_ui()
+        self.init_ui(FurnaceUI)
