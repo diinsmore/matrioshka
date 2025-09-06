@@ -116,7 +116,7 @@ class ItemPlacement:
         
         if item in self.machine_names:
             self.machine_map[item].append(surf_topleft)
-            self.init_machine_class(item, surf_topleft)
+            self.init_machine_cls(item, surf_topleft)
 
         sprite.inventory.remove_item(item)
         sprite.item_holding = None
@@ -151,18 +151,5 @@ class ItemPlacement:
         max_y = max([xy[1] for xy in tile_xy])
         return [xy for xy in tile_xy if xy[1] == max_y]
 
-    def init_machine_class(self, item: str, img_topleft: tuple[int, int]) -> None:
-        self.machine_cls_map[item](
-            coords=pg.Vector2(img_topleft[0] * TILE_SIZE, img_topleft[1] * TILE_SIZE),
-            image=self.assets['graphics'][item],
-            z=Z_LAYERS['main'],
-            sprite_groups=[self.sprite_mgr.all_sprites, self.sprite_mgr.active_sprites, self.sprite_mgr.mech_sprites],
-            screen=self.screen,
-            cam_offset=self.cam_offset,
-            mouse=self.mouse,
-            keyboard=self.keyboard,
-            player=self.player,
-            assets=self.assets,
-            helpers=self.helpers,
-            save_data=self.save_data['sprites'][item] if self.save_data else None
-        )
+    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int]) -> None:
+        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft))

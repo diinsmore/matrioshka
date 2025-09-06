@@ -29,7 +29,7 @@ class Furnace(MachineSpriteBase):
         save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
-        self.max_capacity = {'smelt': 100, 'fuel': 50}
+        self.max_capacity['smelt'] = 99
         self.can_smelt = {
             'copper': {'speed': 3000, 'output': 'copper plate'}, 
             'iron': {'speed': 5000, 'output': 'iron plate'},
@@ -39,10 +39,10 @@ class Furnace(MachineSpriteBase):
 
     def get_active_state(self) -> bool:
         if not self.active:
-            if self.smelt_input['item'] and self.fuel_input['item']:
+            if self.smelt_input['item'] and self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']:
                 self.active = True
     
-        elif not (self.smelt_input['item'] and self.fuel_input['item']):
+        elif not (self.smelt_input['item'] and self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']):
             self.active = False
             self.timers.clear()
 
@@ -85,6 +85,7 @@ class Furnace(MachineSpriteBase):
                 self.output['item'] = output_item
             
             if output_item == self.output['item']:
+
                 self.output['amount'] += 1
 
     def get_save_data(self) -> dict[str, list|str]:

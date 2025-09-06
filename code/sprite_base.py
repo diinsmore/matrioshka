@@ -52,7 +52,8 @@ class MachineSpriteBase(SpriteBase):
         self.active = False
         self.timers = {}
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
-        self.output = save_data['output'] if save_data else {'item': None, 'amount': None}
+        self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
+        self.max_capacity = {'fuel': 50, 'output': 99}
 
     def init_ui(self, ui_cls: any) -> None:
         self.ui = ui_cls(machine=self, **self.ui_params)

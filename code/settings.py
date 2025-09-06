@@ -106,6 +106,7 @@ TILES = {
 RAMP_TILES = ['dirt', 'sand', 'stone', 'ice']
 
 TILE_REACH_RADIUS = 5
+TILE_ORE_RATIO = 50 # amount of ore 1 tile is worth
 
 # 'producers' specifies who/what can craft a given item
 TOOLS = {

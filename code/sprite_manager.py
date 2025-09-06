@@ -18,7 +18,7 @@ from player import Player
 from timer import Timer
 from nature_sprites import Tree, Cloud
 from furnaces import BurnerFurnace, ElectricFurnace
-from drills import Drill
+from drills import BurnerDrill, ElectricDrill
 
 class SpriteManager:
     def __init__(
@@ -181,28 +181,34 @@ class SpriteManager:
     @staticmethod
     def get_machine_cls_map() -> dict[str, type[SpriteBase]]:
         machine_cls_map = {}
-        for cls in [BurnerFurnace, ElectricFurnace, Drill]:
+        for cls in [BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill]:
             machine_cls_map[cls_name_to_str(cls)] = cls
-            return machine_cls_map
+        return machine_cls_map
 
     def init_machines(self) -> None:
-        for i, (machine, xy_list) in enumerate(self.item_placement.machine_map.items()): 
-            for xy in xy_list:
-                self.machine_cls_map[machine](
-                    pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
-                    self.assets['graphics'][machine],
-                    Z_LAYERS['main'],
-                    [self.all_sprites, self.active_sprites, self.mech_sprites],
-                    self.screen,
-                    self.cam_offset,
-                    self.mouse,
-                    self.keyboard,
-                    self.player,
-                    self.assets,
-                    self.item_placement.helpers,
-                    self.save_data['sprites'][machine][i] if self.save_data else None
-                )
-        
+        for name, xy_list in self.item_placement.machine_map.items(): 
+            for i, xy in enumerate(xy_list):
+                self.machine_cls_map[name](**self.get_machine_params(i, xy, name))
+
+    def get_machine_params(self, name: str, xy: tuple[int, int], i: int = None) -> dict[str, any]:
+        params = {
+            'xy': pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
+            'image': self.assets['graphics'][name],
+            'z': Z_LAYERS['main'],
+            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites],
+            'screen': self.screen,
+            'cam_offset': self.cam_offset,
+            'mouse': self.mouse,
+            'keyboard': self.keyboard,
+            'player': self.player,
+            'assets': self.assets,
+            'helpers': self.item_placement.helpers,
+            'save_data': self.save_data['sprites'][name][i] if i and self.save_data else None
+        }
+        if 'drill' in name:
+            params.update([('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
+        return params
+
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
         for sprite in self.active_sprites:
             sprite.update(dt)
