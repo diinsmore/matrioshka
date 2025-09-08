@@ -103,8 +103,9 @@ class SpriteManager:
     def pick_up_item(self, obj: object, name: str, rect: pg.Rect) -> None:
         for sprite in self.get_sprites_in_radius(rect, self.human_sprites):
             inv = sprite.inventory
-            if sprite.rect.colliderect(rect) and inv.contents[name]['amount'] < inv.slot_capacity[name]:
-                inv.add_item(name)
+            if sprite.rect.colliderect(rect):
+                if not (name in inv.contents.keys() and inv.contents[name]['amount'] == inv.slot_capacity[name]):
+                    inv.add_item(name)
                 self.ui.render_new_item_name(name, rect)
                 obj.kill()
                 return
@@ -316,10 +317,8 @@ class WoodGathering:
     def make_cut(self, sprite: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
         if mouse_button_held['left']:
             if sprite.item_holding and sprite.item_holding.split()[-1] == 'axe':
-                for tree in [t for t in self.tree_sprites if self.rect_in_sprite_radius(sprite, t.rect)]:
-                    if tree.rect.collidepoint(mouse_world_xy):
-                        tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
-                        return
+                if tree := next((t for t in self.tree_sprites if self.rect_in_sprite_radius(sprite, t.rect) and t.rect.collidepoint(mouse_world_xy)), None):
+                    tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
 
     def update(self, player: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
         self.make_cut(player, mouse_button_held, mouse_world_xy)
