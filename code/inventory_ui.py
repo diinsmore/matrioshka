@@ -5,10 +5,8 @@ if TYPE_CHECKING:
     from player import Player
     from item_placement import ItemPlacement
     from input_manager import Mouse
-    from ui import InvUIHelpers
 
 import pygame as pg
-from dataclasses import dataclass
 
 from settings import TILE_SIZE, TILES, PLACEABLE_ITEMS, MATERIALS
 
@@ -23,7 +21,13 @@ class InventoryUI:
         top: int,
         player: Player,
         mech_sprites: pg.sprite.Group,
-        helpers: InvUIHelpers
+        gen_outline: callable,
+        gen_bg: callable,
+        render_inv_item_name: callable,
+        get_scaled_img: callable,
+        get_grid_xy: callable,
+        get_sprites_in_radius: callable,
+        render_item_amount: callable
     ):  
         self.screen = screen
         self.cam_offset = cam_offset
@@ -34,7 +38,13 @@ class InventoryUI:
         self.top = top + self.padding
         self.player = player
         self.mech_sprites = mech_sprites
-        self.helpers = helpers
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
+        self.render_inv_item_name = render_inv_item_name
+        self.get_scaled_img = get_scaled_img
+        self.get_grid_xy = get_grid_xy
+        self.get_sprites_in_radius = get_sprites_in_radius
+        self.render_item_amount = render_item_amount
         
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
@@ -60,8 +70,14 @@ class InventoryUI:
             mouse, 
             keyboard, 
             self.inventory,
-            InvUIDimensions(self.outline, self.slot_w, self.slot_h, self.num_rows, self.num_cols, self.icon_size, self.icon_padding),
-            helpers.get_grid_xy
+            self.outline, 
+            self.slot_w, 
+            self.slot_h, 
+            self.num_rows, 
+            self.num_cols, 
+            self.icon_size, 
+            self.icon_padding,
+            self.get_grid_xy
         )
 
         self.item_placement = None # not initialized yet
@@ -72,8 +88,8 @@ class InventoryUI:
 
     def render_bg(self) -> None:
         rect = pg.Rect(self.padding, self.top, self.total_w, self.total_h)
-        self.helpers.gen_outline(rect)
-        self.helpers.gen_bg(rect, transparent=True)
+        self.gen_outline(rect)
+        self.gen_bg(rect, transparent=True)
         
     def render_slots(self) -> None:
         selected_idx = self.inventory.index
@@ -101,14 +117,14 @@ class InventoryUI:
                 blit_xy = topleft + padding
                 rect = surf.get_rect(topleft=blit_xy)
                 self.screen.blit(surf, rect)
-                self.helpers.render_item_amount(item_data['amount'], blit_xy)
-                self.helpers.render_inv_item_name(rect, item_name)
+                self.render_item_amount(item_data['amount'], blit_xy)
+                self.render_inv_item_name(rect, item_name)
             except KeyError:
                 pass
 
     def get_item_surf(self, name: str) -> pg.Surface:
         surf = self.graphics[name] 
-        return surf if surf.get_size() == self.icon_size else self.helpers.get_scaled_img(surf, name, *self.icon_size)
+        return surf if surf.get_size() == self.icon_size else self.get_scaled_img(surf, name, *self.icon_size)
 
     def update(self) -> None:
         if self.render:
@@ -117,17 +133,6 @@ class InventoryUI:
             self.render_slots()
             self.render_icons()
             self.item_drag.update()
-
-
-@dataclass
-class InvUIDimensions:
-    outline: pg.Rect
-    slot_w: int
-    slot_h: int
-    num_rows: int
-    num_cols: int
-    icon_size: int
-    icon_padding: int
 
 
 class ItemDrag:
@@ -140,7 +145,13 @@ class ItemDrag:
         mouse: Mouse, 
         keyboard: Keyboard, 
         inventory: Inventory,
-        dims: InvUIDimensions,
+        outline: pg.Rect,
+        slot_w: int,
+        slot_h: int,
+        num_rows: int,
+        num_cols: int,
+        icon_size: pg.Vector2,
+        icon_padding: pg.Vector2,
         get_grid_xy: callable
     ):
         self.screen = screen
@@ -150,12 +161,18 @@ class ItemDrag:
         self.mouse = mouse
         self.keyboard = keyboard
         self.inventory = inventory
-        self.dims = dims
+        self.outline = outline
+        self.slot_w = slot_w
+        self.slot_h = slot_h
+        self.num_rows = num_rows
+        self.num_cols = num_cols
+        self.icon_size = icon_size
+        self.icon_padding = icon_padding
         self.get_grid_xy = get_grid_xy
 
         self.active = False
         self.image = self.rect = self.amount = None
-        self.rect_base = pg.Rect(self.dims.icon_padding, self.dims.icon_size)
+        self.rect_base = pg.Rect(self.icon_padding, self.icon_size)
         self.material_names = set(MATERIALS.keys())
         self.tile_names = set(TILES.keys())
 
@@ -163,9 +180,8 @@ class ItemDrag:
 
     def get_clicked_item(self) -> str|None:
         for item_name, item_data in self.inventory.contents.items():
-            row, col = divmod(item_data['index'], self.dims.num_cols)
-            offset = self.dims.outline.topleft + pg.Vector2(col * self.dims.slot_w, row * self.dims.slot_h)
-            if (icon_rect := pg.Rect((self.rect_base.topleft + offset), self.rect_base.size)).collidepoint(self.mouse.screen_xy):
+            row, col = divmod(item_data['index'], self.num_cols)
+            if (icon_rect := self.rect_base.move(self.outline.topleft + pg.Vector2(col * self.slot_w, row * self.slot_h))).collidepoint(self.mouse.screen_xy):
                 return item_name
 
     def check_drag(self) -> None:
@@ -177,12 +193,12 @@ class ItemDrag:
                 else:
                     self.end_drag()
             else:
-                if self.dims.outline.collidepoint(self.mouse.screen_xy):
+                if self.outline.collidepoint(self.mouse.screen_xy):
                     if item := self.get_clicked_item():
                         self.start_drag(item, 'left' if l_click else 'right')    
                 else:
                     if machines_can_extract_from := [
-                        m for m in self.helpers.get_sprites_in_radius(self.player.rect, self.mech_sprites) 
+                        m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) 
                         if m.ui.render and hasattr(m, 'can_extract_from')
                     ]:
                         self.check_machine_extract(machines_can_extract_from, l_click, r_click)
@@ -203,7 +219,8 @@ class ItemDrag:
         self.amount = item_amount if click_type == 'left' else item_amount // 2
  
     def end_drag(self) -> None: 
-        if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
+        if self.player.item_holding in (self.material_names|self.tile_names) and\
+        not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
             self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))

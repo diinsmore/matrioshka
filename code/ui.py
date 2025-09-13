@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 import pygame as pg
 from collections import defaultdict
-from dataclasses import dataclass
 
 from settings import TILE_SIZE, RES
 from mini_map import MiniMap
@@ -69,15 +68,13 @@ class UI:
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
             self.sprite_manager.mech_sprites,
-            InvUIHelpers(
-                self.gen_outline, 
-                self.gen_bg, 
-                self.render_inventory_item_name, 
-                self.get_scaled_image, 
-                self.get_grid_xy,
-                self.sprite_manager.get_sprites_in_radius,
-                self.render_item_amount
-            )
+            self.gen_outline, 
+            self.gen_bg, 
+            self.render_inventory_item_name, 
+            self.get_scaled_image, 
+            self.get_grid_xy,
+            self.sprite_manager.get_sprites_in_radius,
+            self.render_item_amount
         )
 
         self.craft_window = CraftWindow(
@@ -88,7 +85,11 @@ class UI:
             self.inventory_ui, 
             self.sprite_manager,
             self.player,
-            CraftWindowHelpers(self.get_craft_window_height, self.gen_outline, self.gen_bg, self.render_inventory_item_name, self.get_scaled_image)
+            self.get_craft_window_height, 
+            self.gen_outline, 
+            self.gen_bg, 
+            self.render_inventory_item_name, 
+            self.get_scaled_image
         )
 
         self.HUD = HUD(
@@ -332,23 +333,3 @@ class ItemName:
         screen_coords = self.world_coords - self.cam_offset
         self.screen.blit(self.font, self.font.get_rect(midbottom = screen_coords))
         self.world_coords[1] -= index + 1 # move north across the screen
-
-
-@dataclass(frozen=True, slots=True)
-class CraftWindowHelpers:
-    get_height: callable
-    gen_outline: callable
-    gen_bg: callable
-    render_inv_item_name: callable
-    get_scaled_img: callable
-
-
-@dataclass(frozen=True, slots=True)
-class InvUIHelpers():
-    gen_outline: callable
-    gen_bg: callable
-    render_inv_item_name: callable
-    get_scaled_img: callable
-    get_grid_xy: callable
-    get_sprites_in_radius: callable
-    render_item_amount: callable

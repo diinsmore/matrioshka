@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from player import Player
-    from machine_ui import MachineUIHelpers
 
 import pygame as pg
 
@@ -35,7 +34,10 @@ class MachineSpriteBase(SpriteBase):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
@@ -46,7 +48,10 @@ class MachineSpriteBase(SpriteBase):
             'keyboard': keyboard,
             'player': player,
             'assets': assets,
-            'helpers': helpers
+            'gen_outline': gen_outline,
+            'gen_bg': gen_bg,
+            'rect_in_sprite_radius': rect_in_sprite_radius,
+            'render_item_amount': render_item_amount
         }
 
         self.active = False

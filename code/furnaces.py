@@ -8,7 +8,6 @@ import pygame as pg
 
 from sprite_base import MachineSpriteBase
 from settings import MACHINES
-from machine_ui import MachineUIHelpers
 from furnace_ui import FurnaceUI
 from timer import Timer
 
@@ -25,10 +24,29 @@ class Furnace(MachineSpriteBase):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )
         self.max_capacity['smelt'] = 99
         self.can_smelt = {
             'copper': {'speed': 3000, 'output': 'copper plate'}, 
@@ -116,10 +134,29 @@ class BurnerFurnace(Furnace):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
         save_data: dict[str, any]
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
@@ -139,10 +176,29 @@ class SteelFurnace(Furnace):
         mouse: Mouse,
         keyboard: Keyboard,
         assets: dict[str, dict[str, any]],
-        helpers,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
         save_data: dict[str, any]
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )
         self.variant = 'steel'
         self.recipe = MACHINES['steel furnace']['recipe']
         self.fuel_sources = {
@@ -169,10 +225,29 @@ class ElectricFurnace(Furnace):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
         save_data: dict[str, any]
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']
         self.fuel_sources = {'electric poles'}

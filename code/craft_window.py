@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse
-    from inventory_ui import InventoryUI, CraftWindowHelpers
+    from inventory_ui import InventoryUI
     from sprite_manager import SpriteManager
     from player import Player
 
@@ -21,7 +21,11 @@ class CraftWindow:
         inventory_ui: InventoryUI,
         sprite_manager: SpriteManager,
         player: Player,
-        helpers: CraftWindowHelpers
+        get_height: callable,
+        gen_outline: callable,
+        gen_bg: callable,
+        render_inv_item_name: callable,
+        get_scaled_img: callable
     ):
         self.mouse = mouse
         self.screen = screen
@@ -30,13 +34,16 @@ class CraftWindow:
         self.inventory_ui = inventory_ui
         self.sprite_manager = sprite_manager
         self.player = player
-        self.helpers = helpers
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
+        self.render_inv_item_name = render_inv_item_name
+        self.get_scaled_img = get_scaled_img
 
         self.graphics = self.assets['graphics']
         self.fonts = self.assets['fonts']
         self.colors = self.assets['colors']
         
-        self.height = self.helpers.get_height()
+        self.height = get_height()
         self.width = int(self.inventory_ui.outline.width * 1.3)
         self.padding = 5
         # defining the outline as a class attribute to allow the HUD and potentially other ui elements to access its location
@@ -55,8 +62,8 @@ class CraftWindow:
             self.fonts, 
             self.colors,
             self.padding,
-            self.helpers.gen_outline, 
-            self.helpers.gen_bg, 
+            self.gen_outline, 
+            self.gen_bg, 
         )
 
         self.item_grid = ItemGrid(
@@ -69,9 +76,9 @@ class CraftWindow:
             self.category_grid.selected_category,
             self.sprite_manager,
             self.player,
-            self.helpers.gen_outline, 
-            self.helpers.render_inv_item_name,
-            self.helpers.get_scaled_img
+            self.gen_outline, 
+            self.render_inv_item_name,
+            self.get_scaled_img
         )
 
     def render(self) -> None:

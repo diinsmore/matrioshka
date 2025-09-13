@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from player import Player
     from furnaces import BurnerFurnace, ElectricFurnace
-    from machine_ui import MachineUIHelpers, MachineUIDimensions
+    from machine_ui import MachineUIDimensions
 
 import pygame as pg
 from machine_ui import MachineUI
@@ -19,9 +19,12 @@ class FurnaceUI(MachineUI):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable
     ):
-        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, helpers)
+        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
         self.right_arrow_surf = self.icons['right arrow']
         if machine.variant == 'burner':
             self.fuel_icon = self.icons['fuel'].convert()
@@ -50,10 +53,10 @@ class FurnaceUI(MachineUI):
 
     def render_interface(self) -> None:
         self.bg_rect = pg.Rect(self.machine.rect.midtop - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
-        if self.helpers.rect_in_sprite_radius(self.player, self.bg_rect):
+        if self.rect_in_sprite_radius(self.player, self.bg_rect):
             self.bg_rect.topleft -= self.cam_offset # converting to screen-space now to not mess with the radius check above
-            self.helpers.gen_bg(self.bg_rect, color='black', transparent=True) 
-            self.helpers.gen_outline(self.bg_rect)
+            self.gen_bg(self.bg_rect, color='black', transparent=True) 
+            self.gen_outline(self.bg_rect)
             self.render_boxes()
             self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=self.bg_rect.center))
 

@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from player import Player
-    from machine_ui import MachineUIHelpers
     import numpy as np
 
 import pygame as pg
@@ -28,13 +27,32 @@ class Drill(MachineSpriteBase):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any],
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         tile_IDs_to_names: dict[int, str]
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, helpers, save_data)
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
+        )
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
@@ -166,7 +184,10 @@ class BurnerDrill(Drill):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
         save_data: dict[str, any],
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
@@ -184,7 +205,10 @@ class BurnerDrill(Drill):
             keyboard, 
             player, 
             assets, 
-            helpers, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
             save_data, 
             tile_map, 
             tile_IDs, 
@@ -207,7 +231,10 @@ class ElectricDrill(Drill):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
         save_data: dict[str, any],
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
@@ -225,7 +252,10 @@ class ElectricDrill(Drill):
             keyboard, 
             player, 
             assets, 
-            helpers, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
             save_data, 
             tile_map, 
             tile_IDs, 

@@ -4,7 +4,6 @@ if TYPE_CHECKING:
     from sprite_base import SpriteBase
 
 import pygame as pg
-from dataclasses import dataclass
 
 class MachineUI:
     def __init__(
@@ -16,7 +15,10 @@ class MachineUI:
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable
     ):
         self.machine = machine
         self.screen = screen
@@ -25,12 +27,16 @@ class MachineUI:
         self.keyboard = keyboard
         self.player = player
         self.assets = assets
-        self.helpers = helpers
+        self.gen_outline = gen_outline
+        self.gen_bg = gen_bg
+        self.rect_in_sprite_radius = rect_in_sprite_radius
+        self.render_item_amount = render_item_amount
 
         self.bg_w = self.bg_h = 150
         self.box_w = self.box_h = 40
         self.progress_bar_w, self.progress_bar_h = self.box_w, 4
         self.padding = 10
+
         self.graphics = self.assets['graphics']
         self.icons = self.graphics['icons']
         self.render = False
@@ -77,15 +83,15 @@ class MachineUI:
         data = self.get_box_data()
         for key in data:
             contents, rect = data[key]['contents'], data[key]['rect']
-            self.helpers.gen_bg(rect, color=self.highlight_color if rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
-            self.helpers.gen_outline(rect)
+            self.gen_bg(rect, color=self.highlight_color if rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
+            self.gen_outline(rect)
             if contents['item']: 
                 self.render_box_contents(contents, rect)          
         
     def render_box_contents(self, content_data: dict[str, str|int], box_rect: pg.Rect) -> None:
         surf = self.graphics[content_data['item']]
         self.screen.blit(surf, surf.get_frect(center=box_rect.center))
-        self.helpers.render_item_amount(content_data['amount'], box_rect.bottomright - pg.Vector2(5, 5))
+        self.render_item_amount(content_data['amount'], box_rect.bottomright - pg.Vector2(5, 5))
 
     def render_progress_bar(self, box: pg.Rect, progress_percent: float) -> None:
         bar = pg.Rect(box.bottomleft, (self.box_w, self.progress_bar_h))
@@ -116,11 +122,3 @@ class MachineUI:
             
     def update(self, machine_name: str) -> None:
         self.run(machine_name, self.machine.rect.collidepoint(self.mouse.world_xy))
-
-
-@dataclass(frozen=True, slots=True)
-class MachineUIHelpers():
-    gen_outline: callable
-    gen_bg: callable
-    rect_in_sprite_radius: callable
-    render_item_amount: callable

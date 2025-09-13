@@ -22,7 +22,6 @@ from physics_engine import PhysicsEngine
 from sprite_manager import SpriteManager
 from input_manager import InputManager
 from ui import UI
-from machine_ui import MachineUIHelpers
 from item_placement import ItemPlacement
 from helper_functions import load_subfolders, cls_name_to_str
 
@@ -119,7 +118,10 @@ class Main:
             self.keyboard,
             self.player,
             assets,
-            MachineUIHelpers(self.ui.gen_outline, self.ui.gen_bg, self.sprite_mgr.rect_in_sprite_radius, self.ui.render_item_amount),
+            self.ui.gen_outline, 
+            self.ui.gen_bg, 
+            self.sprite_mgr.rect_in_sprite_radius, 
+            self.ui.render_item_amount,
             self.sprite_mgr.machine_cls_map,
             save_data
         )

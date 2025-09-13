@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from player import Player
 
 import pygame as pg
-from machine_ui import MachineUI, MachineUIHelpers
+from machine_ui import MachineUI
 
 class DrillUI(MachineUI):
     def __init__(
@@ -18,9 +18,12 @@ class DrillUI(MachineUI):
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable
     ):
-        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, helpers)
+        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
 
     def render_interface(self) -> None:
         pass

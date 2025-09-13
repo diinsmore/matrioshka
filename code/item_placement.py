@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from sprite_manager import SpriteManager
     from player import Player
     from sprite_base import SpriteBase
-    from machine_ui import MachineUIHelpers
 
 import pygame as pg
 from math import ceil
@@ -28,7 +27,10 @@ class ItemPlacement:
         keyboard: Keyboard,
         player: Player,
         assets: dict[str, dict[str, any]],
-        helpers: MachineUIHelpers,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
         machine_cls_map: dict[str, type[SpriteBase]],
         save_data: dict[str, any]|None
     ):
@@ -43,7 +45,10 @@ class ItemPlacement:
         self.keyboard = keyboard
         self.player = player
         self.assets = assets
-        self.helpers = helpers
+        self.gen_outline = gen_outline, 
+        self.gen_bg = gen_bg, 
+        self.rect_in_sprite_radius = rect_in_sprite_radius, 
+        self.render_item_amount = render_item_amount, 
         self.machine_cls_map = machine_cls_map
         self.save_data = save_data
        
