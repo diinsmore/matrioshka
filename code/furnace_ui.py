@@ -22,14 +22,10 @@ class FurnaceUI(MachineUI):
         helpers: MachineUIHelpers
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, helpers)
-        self.bg_w = self.bg_h = 150
-        self.box_w = self.box_h = 40
-        self.progress_bar_w, self.progress_bar_h = self.box_w, 4
-        self.padding = 10
         self.right_arrow_surf = self.icons['right arrow']
         if machine.variant == 'burner':
             self.fuel_icon = self.icons['fuel'].convert()
-            self.fuel_icon.set_colorkey((255, 255, 255))  # RGB for white
+            self.fuel_icon.set_colorkey((255, 255, 255))
 
     def get_box_rects(self) -> tuple[pg.Rect, pg.Rect|None, pg.Rect]:
         y_offset = self.padding if self.machine.variant == 'burner' else (self.box_h // 2)
@@ -72,9 +68,3 @@ class FurnaceUI(MachineUI):
                     self.render_progress_bar(self.fuel_box, self.machine.timers['fuel'].progress_percent)
         else:
             self.render = False
-
-    def update_fuel_status(self) -> None:
-        if not self.machine.fuel_input['item']:
-            if self.machine.variant == 'burner' and not self.machine.smelt_input['item']: # always alert empty fuel for electrics, only alert for burners if containing an item to smelt
-                return
-            self.screen.blit(self.empty_fuel_surf, self.empty_fuel_surf.get_rect(center=self.machine.rect.center - self.cam_offset))

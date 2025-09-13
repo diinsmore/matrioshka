@@ -148,6 +148,7 @@ class Drill(MachineSpriteBase):
         return self.active
     
     def update(self, dt: float) -> None:
+        self.ui.update('drill')
         if self.get_active_state():
             self.extract()
 
@@ -189,6 +190,8 @@ class BurnerDrill(Drill):
             tile_IDs, 
             tile_IDs_to_names
         )
+        self.variant = 'burner'
+        self.init_ui(DrillUI)
 
 
 class ElectricDrill(Drill):
@@ -228,4 +231,5 @@ class ElectricDrill(Drill):
             tile_IDs, 
             tile_IDs_to_names
         )
-        
+        self.variant = 'electric'
+        self.init_ui(DrillUI)  

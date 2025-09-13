@@ -36,6 +36,7 @@ class Furnace(MachineSpriteBase):
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
+        self.can_extract_from = True
 
     def get_active_state(self) -> bool:
         if not self.active:
@@ -97,7 +98,7 @@ class Furnace(MachineSpriteBase):
         }
 
     def update(self, dt: float) -> None:
-        self.ui.update()
+        self.ui.update('furnace')
         if self.get_active_state():
             self.smelt()
         

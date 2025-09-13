@@ -11,7 +11,7 @@ from machine_ui import MachineUI, MachineUIHelpers
 class DrillUI(MachineUI):
     def __init__(
         self, 
-        drill: BurnerDrill|ElectricDrill,
+        machine: BurnerDrill|ElectricDrill,
         screen: pg.Surface,
         cam_offset: pg.Vector2,
         mouse: Mouse, 
@@ -20,4 +20,7 @@ class DrillUI(MachineUI):
         assets: dict[str, dict[str, any]],
         helpers: MachineUIHelpers
     ):
-        super().__init__(drill, screen, cam_offset, mouse, keyboard, player, assets, dimensions, helpers)
+        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, helpers)
+
+    def render_interface(self) -> None:
+        pass

@@ -125,7 +125,9 @@ class Main:
         )
         self.sprite_mgr.item_placement = self.item_placement
         self.sprite_mgr.init_machines()
-        self.ui.inventory_ui.item_placement = self.item_placement
+        inv_ui = self.ui.inventory_ui
+        inv_ui.item_placement = self.item_placement
+        inv_ui.item_drag.item_placement = self.item_placement
         
         self.chunk_mgr = ChunkManager(self.cam.offset)
         

@@ -27,10 +27,14 @@ class MachineUI:
         self.assets = assets
         self.helpers = helpers
 
+        self.bg_w = self.bg_h = 150
+        self.box_w = self.box_h = 40
+        self.progress_bar_w, self.progress_bar_h = self.box_w, 4
+        self.padding = 10
         self.graphics = self.assets['graphics']
         self.icons = self.graphics['icons']
         self.render = False
-        self.empty_fuel_surf = pg.transform.scale(self.icons['empty fuel'].convert_alpha(), pg.Vector2(machine.image.get_size()) * 1.2)
+        self.empty_fuel_surf = pg.transform.scale(self.icons['empty fuel'].convert_alpha(), pg.Vector2(machine.image.get_size()) * 0.8)
         self.empty_fuel_surf.set_colorkey((255, 255, 255))
         self.empty_fuel_surf.set_alpha(150)
         self.highlight_color = self.assets['colors']['ui bg highlight']
@@ -68,7 +72,7 @@ class MachineUI:
     def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
         if rect_mouse_collide:
             self.screen.blit(self.machine_mask_surf, self.machine.rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_ADD)
-    
+
     def render_boxes(self) -> None: 
         data = self.get_box_data()
         for key in data:
@@ -93,9 +97,15 @@ class MachineUI:
         )
         pg.draw.rect(self.screen, 'green' if box == self.smelt_box else 'red', progress_rect)
 
-    def run(self, rect_mouse_collide: bool) -> None:
+    def update_fuel_status(self, machine_name: str) -> None:
+        if not self.machine.fuel_input['item']:
+            if 'furnace' in machine_name and self.machine.variant == 'burner' and not self.machine.smelt_input['item']: # always alert empty fuel for electrics, only alert for burners if containing an item to smelt
+                return
+            self.screen.blit(self.empty_fuel_surf, self.empty_fuel_surf.get_rect(center=self.machine.rect.center - self.cam_offset))
+
+    def run(self, machine_name: str, rect_mouse_collide: bool) -> None:
         self.highlight_surf_when_hovered(rect_mouse_collide)
-        self.update_fuel_status()
+        self.update_fuel_status(machine_name)
         if not self.render:
             self.render = rect_mouse_collide and self.mouse.click_states['left']
             return
@@ -104,12 +114,12 @@ class MachineUI:
             return
         self.render_interface()
             
-    def update(self) -> None:
-        self.run(self.machine.rect.collidepoint(self.mouse.world_xy))
+    def update(self, machine_name: str) -> None:
+        self.run(machine_name, self.machine.rect.collidepoint(self.mouse.world_xy))
 
 
-@dataclass
-class MachineUIHelpers:
+@dataclass(frozen=True, slots=True)
+class MachineUIHelpers():
     gen_outline: callable
     gen_bg: callable
     rect_in_sprite_radius: callable

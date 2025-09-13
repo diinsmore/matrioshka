@@ -79,9 +79,8 @@ class ItemPlacement:
         return valid
         
     def can_reach_tile(self, tile_xy_world: tuple[int, int], sprite_xy_world: tuple[int, int]) -> bool:
-        tile_world_px = pg.Vector2(tile_xy_world) * TILE_SIZE
-        px_dist = (tile_world_px - pg.Vector2(sprite_xy_world)).length() 
-        return px_dist // TILE_SIZE <= TILE_REACH_RADIUS
+        sprite_tile_xy_world = pg.Vector2(sprite_xy_world) // TILE_SIZE
+        return abs(tile_xy_world[0] - sprite_tile_xy_world.x) <= TILE_REACH_RADIUS and abs(tile_xy_world[1] - sprite_tile_xy_world.y) <= TILE_REACH_RADIUS 
 
     def valid_item_border(self, tile_xy: tuple[int, int], single_tile: bool = False, multi_tile: bool = False) -> bool:
         '''

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 from collections import defaultdict
+from dataclasses import dataclass
 
 from settings import TILE_SIZE, RES
 from mini_map import MiniMap
@@ -68,13 +69,15 @@ class UI:
             self.mini_map.outline_h + self.mini_map.padding,
             self.player,
             self.sprite_manager.mech_sprites,
-            self.gen_outline,
-            self.gen_bg,
-            self.render_inventory_item_name,
-            self.get_scaled_image,
-            self.get_grid_xy,
-            self.sprite_manager.get_sprites_in_radius,
-            self.render_item_amount
+            InvUIHelpers(
+                self.gen_outline, 
+                self.gen_bg, 
+                self.render_inventory_item_name, 
+                self.get_scaled_image, 
+                self.get_grid_xy,
+                self.sprite_manager.get_sprites_in_radius,
+                self.render_item_amount
+            )
         )
 
         self.craft_window = CraftWindow(
@@ -85,11 +88,7 @@ class UI:
             self.inventory_ui, 
             self.sprite_manager,
             self.player,
-            self.get_craft_window_height(),
-            self.gen_outline,
-            self.gen_bg,
-            self.render_inventory_item_name,
-            self.get_scaled_image
+            CraftWindowHelpers(self.get_craft_window_height, self.gen_outline, self.gen_bg, self.render_inventory_item_name, self.get_scaled_image)
         )
 
         self.HUD = HUD(
@@ -110,10 +109,10 @@ class UI:
             setattr(self, '_'.join(key.split(' ')), self.keyboard.key_bindings[key])
 
         self.active_item_names = []
-
+    
     def get_craft_window_height(self) -> int:
-        inv_grid_max_height = self.inventory_ui.box_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
-        return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
+        inv_grid_max_h = self.inventory_ui.slot_h * (self.inventory.num_slots // self.inventory_ui.num_cols)
+        return inv_grid_max_h + self.mini_map.outline_h + self.mini_map.padding
 
     def gen_outline(
         self,
@@ -232,7 +231,6 @@ class UI:
         
 
 class MouseGrid:
-    '''a grid around the mouse position to guide block placement'''
     def __init__(self, mouse: Mouse, screen: pg.Surface, cam_offset: pg.Vector2, get_grid_xy: callable):
         self.mouse = mouse
         self.screen = screen
@@ -334,3 +332,23 @@ class ItemName:
         screen_coords = self.world_coords - self.cam_offset
         self.screen.blit(self.font, self.font.get_rect(midbottom = screen_coords))
         self.world_coords[1] -= index + 1 # move north across the screen
+
+
+@dataclass(frozen=True, slots=True)
+class CraftWindowHelpers:
+    get_height: callable
+    gen_outline: callable
+    gen_bg: callable
+    render_inv_item_name: callable
+    get_scaled_img: callable
+
+
+@dataclass(frozen=True, slots=True)
+class InvUIHelpers():
+    gen_outline: callable
+    gen_bg: callable
+    render_inv_item_name: callable
+    get_scaled_img: callable
+    get_grid_xy: callable
+    get_sprites_in_radius: callable
+    render_item_amount: callable

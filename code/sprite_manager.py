@@ -103,9 +103,8 @@ class SpriteManager:
     def pick_up_item(self, obj: object, name: str, rect: pg.Rect) -> None:
         for sprite in self.get_sprites_in_radius(rect, self.human_sprites):
             inv = sprite.inventory
-            if sprite.rect.colliderect(rect):
-                if not (name in inv.contents.keys() and inv.contents[name]['amount'] == inv.slot_capacity[name]):
-                    inv.add_item(name)
+            if sprite.rect.colliderect(rect) and not (name in inv.contents.keys() and inv.contents[name]['amount'] == inv.slot_capacity[name]):
+                inv.add_item(name)
                 self.ui.render_new_item_name(name, rect)
                 obj.kill()
                 return
