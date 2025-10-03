@@ -58,7 +58,7 @@ class Drill(MachineSpriteBase):
         self.tile_IDs_to_names = tile_IDs_to_names
 
         self.target_ore = save_data['target ore'] if save_data else {} # key: ore, value: amount available
-        self.available_ore = save_data['available ore'] if save_data else None
+        self.available_ore = save_data['available ore'] if save_data else 0
         self.reach_radius = save_data['reach radius'] if save_data else (
             self.rect.width // TILE_SIZE, min(MAP_SIZE[1] - (self.rect.bottom // TILE_SIZE), RES[1] // 5)
         )
@@ -76,6 +76,7 @@ class Drill(MachineSpriteBase):
                 loop=True
             )
         }
+        self.has_inv = True
 
     def calc_available_ore(self) -> None:
         left, right = self.rect.left // TILE_SIZE, self.rect.right // TILE_SIZE
@@ -156,7 +157,7 @@ class Drill(MachineSpriteBase):
 
     def get_active_state(self) -> bool:
         if not self.active:
-            if self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']:
+            if self.target_ore and self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']:
                 self.active = True
     
         elif not (self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']):
@@ -215,6 +216,7 @@ class BurnerDrill(Drill):
             tile_IDs_to_names
         )
         self.variant = 'burner'
+        self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
         self.init_ui(DrillUI)
 
 
@@ -262,4 +264,5 @@ class ElectricDrill(Drill):
             tile_IDs_to_names
         )
         self.variant = 'electric'
+        self.fuel_sources = {'electric poles'}
         self.init_ui(DrillUI)  

@@ -31,23 +31,22 @@ class MachineUI:
         self.gen_bg = gen_bg
         self.rect_in_sprite_radius = rect_in_sprite_radius
         self.render_item_amount = render_item_amount
-
-        self.bg_w = self.bg_h = 150
-        self.box_w = self.box_h = 40
-        self.progress_bar_w, self.progress_bar_h = self.box_w, 4
-        self.padding = 10
-
+        
+        self.render = False
         self.graphics = self.assets['graphics']
         self.icons = self.graphics['icons']
-        self.render = False
         self.empty_fuel_surf = pg.transform.scale(self.icons['empty fuel'].convert_alpha(), pg.Vector2(machine.image.get_size()) * 0.8)
         self.empty_fuel_surf.set_colorkey((255, 255, 255))
         self.empty_fuel_surf.set_alpha(150)
         self.highlight_color = self.assets['colors']['ui bg highlight']
         self.machine_mask = pg.mask.from_surface(machine.image)
         self.machine_mask_surf = self.machine_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
+        self.padding = 10
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
+
+    def get_bg_rect(self) -> pg.Rect:
+        return pg.Rect(self.machine.rect.midtop - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
 
     def check_input(self, box_data: dict[str, dict]) -> str|None:
         box_name = None

@@ -77,7 +77,9 @@ class InventoryUI:
             self.num_cols, 
             self.icon_size, 
             self.icon_padding,
-            self.get_grid_xy
+            self.mech_sprites,
+            self.get_grid_xy,
+            self.get_sprites_in_radius
         )
 
         self.item_placement = None # not initialized yet
@@ -152,7 +154,9 @@ class ItemDrag:
         num_cols: int,
         icon_size: pg.Vector2,
         icon_padding: pg.Vector2,
-        get_grid_xy: callable
+        mech_sprites: pg.sprite.Group,
+        get_grid_xy: callable,
+        get_sprites_in_radius: callable
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -168,7 +172,9 @@ class ItemDrag:
         self.num_cols = num_cols
         self.icon_size = icon_size
         self.icon_padding = icon_padding
+        self.mech_sprites = mech_sprites
         self.get_grid_xy = get_grid_xy
+        self.get_sprites_in_radius = get_sprites_in_radius
 
         self.active = False
         self.image = self.rect = self.amount = None
@@ -197,11 +203,8 @@ class ItemDrag:
                     if item := self.get_clicked_item():
                         self.start_drag(item, 'left' if l_click else 'right')    
                 else:
-                    if machines_can_extract_from := [
-                        m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) 
-                        if m.ui.render and hasattr(m, 'can_extract_from')
-                    ]:
-                        self.check_machine_extract(machines_can_extract_from, l_click, r_click)
+                    if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render and hasattr(m, 'has_inv')]:
+                        self.check_machine_extract(machines_with_inv, l_click, r_click)
         else:
             if self.active:
                 self.render_item_drag()
@@ -219,8 +222,7 @@ class ItemDrag:
         self.amount = item_amount if click_type == 'left' else item_amount // 2
  
     def end_drag(self) -> None: 
-        if self.player.item_holding in (self.material_names|self.tile_names) and\
-        not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
+        if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
             self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))
@@ -243,10 +245,10 @@ class ItemDrag:
     
     def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
-            input_box_data = machine.ui.get_box_data()
-            for box_type in input_box_data.keys():
-                if input_box_data[box_type]['rect'].collidepoint(self.mouse.screen_xy) and (l_click or r_click):
-                    machine.ui.extract_item(box_type, 'left' if l_click else 'right')
+            if input_box_data := machine.ui.get_box_data():
+                for box_type in input_box_data.keys():
+                    if input_box_data[box_type]['rect'].collidepoint(self.mouse.screen_xy) and (l_click or r_click):
+                        machine.ui.extract_item(box_type, 'left' if l_click else 'right')
 
     def update(self) -> None:
         self.check_drag()

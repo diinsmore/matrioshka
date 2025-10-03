@@ -25,6 +25,10 @@ class FurnaceUI(MachineUI):
         render_item_amount: callable
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
+        self.bg_w = self.bg_h = 150
+        self.box_w = self.box_h = 40
+        self.progress_bar_w, self.progress_bar_h = self.box_w, 4
+        self.padding = 10
         self.right_arrow_surf = self.icons['right arrow']
         if machine.variant == 'burner':
             self.fuel_icon = self.icons['fuel'].convert()
@@ -50,9 +54,9 @@ class FurnaceUI(MachineUI):
         if self.machine.variant == 'burner':
             data['fuel'] = {'contents': self.machine.fuel_input, 'valid inputs': self.machine.fuel_sources, 'rect': self.fuel_box}
         return data
-
+ 
     def render_interface(self) -> None:
-        self.bg_rect = pg.Rect(self.machine.rect.midtop - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
+        self.bg_rect = self.get_bg_rect()
         if self.rect_in_sprite_radius(self.player, self.bg_rect):
             self.bg_rect.topleft -= self.cam_offset # converting to screen-space now to not mess with the radius check above
             self.gen_bg(self.bg_rect, color='black', transparent=True) 

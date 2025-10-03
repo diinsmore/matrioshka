@@ -54,7 +54,8 @@ class Furnace(MachineSpriteBase):
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
-        self.can_extract_from = True
+        self.has_inv = True
+        self.timers = {'smelt': None}
 
     def get_active_state(self) -> bool:
         if not self.active:
@@ -161,6 +162,7 @@ class BurnerFurnace(Furnace):
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         self.speed_factor = 1
+        self.timers['fuel'] = None
         self.init_ui(FurnaceUI)
 
 
@@ -209,6 +211,7 @@ class SteelFurnace(Furnace):
             'electric': {'electric poles'}
         }
         self.speed_factor = 2
+        self.timers['fuel'] = None
         self.init_ui(FurnaceUI)
 
 
