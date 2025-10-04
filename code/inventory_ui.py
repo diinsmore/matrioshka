@@ -53,11 +53,11 @@ class InventoryUI:
         self.inventory = self.player.inventory
         self.num_slots = self.inventory.num_slots
         self.num_cols, self.num_rows = 5, 2
-        self.slot_w = self.slot_h = TILE_SIZE * 2
-        self.total_w, self.total_h = self.slot_w * self.num_cols, self.slot_h * self.num_rows
+        self.slot_width = self.slot_height = TILE_SIZE * 2
+        self.outline_width, self.outline_height = self.slot_width * self.num_cols, self.slot_height * self.num_rows
         self.icon_size = pg.Vector2(TILE_SIZE, TILE_SIZE)
-        self.icon_padding = ((self.slot_w, self.slot_h) - self.icon_size) // 2
-        self.outline = pg.Rect(self.padding, self.top, self.total_w, self.total_h)
+        self.icon_padding = ((self.slot_width, self.slot_height) - self.icon_size) // 2
+        self.outline = pg.Rect(self.padding, self.top, self.outline_width, self.outline_height)
 
         self.render = True
         self.expand = False
@@ -71,8 +71,8 @@ class InventoryUI:
             keyboard, 
             self.inventory,
             self.outline, 
-            self.slot_w, 
-            self.slot_h, 
+            self.slot_width, 
+            self.slot_height, 
             self.num_rows, 
             self.num_cols, 
             self.icon_size, 
@@ -85,19 +85,19 @@ class InventoryUI:
         self.item_placement = None # not initialized yet
 
     def update_dimensions(self) -> None:
-        self.num_rows = 2 if not self.expand else self.num_slots // self.num_cols
-        self.total_height = self.slot_h * self.num_rows
+        self.num_rows = 2 if not self.expand else (self.num_slots // self.num_cols)
+        self.outline_height = self.slot_height * self.num_rows
+        self.outline = pg.Rect(self.padding, self.top, self.outline_width, self.outline_height)
 
     def render_bg(self) -> None:
-        rect = pg.Rect(self.padding, self.top, self.total_w, self.total_h)
-        self.gen_outline(rect)
-        self.gen_bg(rect, transparent=True)
-        
+        self.gen_bg(self.outline, transparent=True)
+        self.gen_outline(self.outline)
+
     def render_slots(self) -> None:
         selected_idx = self.inventory.index
         for x in range(self.num_cols):
             for y in range(self.num_rows):
-                box = pg.Rect((self.padding, self.top) + pg.Vector2(x * self.slot_w, y * self.slot_h), (self.slot_w - 1, self.slot_h - 1))
+                box = pg.Rect((self.padding, self.top) + pg.Vector2(x * self.slot_width, y * self.slot_height), (self.slot_width - 1, self.slot_height - 1))
                 pg.draw.rect(self.screen, 'black', box, 1)
                 if (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
                     self.highlight_slot(box)
@@ -114,8 +114,8 @@ class InventoryUI:
             try:
                 surf = self.get_item_surf(item_name)
                 row, col = divmod(item_data['index'], self.num_cols) # determine the slot an item corresponds to
-                topleft = self.outline.topleft + pg.Vector2(col * self.slot_w, row * self.slot_h)
-                padding = (pg.Vector2(self.slot_w, self.slot_h) - surf.get_size()) // 2
+                topleft = self.outline.topleft + pg.Vector2(col * self.slot_width, row * self.slot_height)
+                padding = (pg.Vector2(self.slot_width, self.slot_height) - surf.get_size()) // 2
                 blit_xy = topleft + padding
                 rect = surf.get_rect(topleft=blit_xy)
                 self.screen.blit(surf, rect)
@@ -130,7 +130,6 @@ class InventoryUI:
 
     def update(self) -> None:
         if self.render:
-            self.update_dimensions()
             self.render_bg()
             self.render_slots()
             self.render_icons()
@@ -148,8 +147,8 @@ class ItemDrag:
         keyboard: Keyboard, 
         inventory: Inventory,
         outline: pg.Rect,
-        slot_w: int,
-        slot_h: int,
+        slot_width: int,
+        slot_height: int,
         num_rows: int,
         num_cols: int,
         icon_size: pg.Vector2,
@@ -166,8 +165,8 @@ class ItemDrag:
         self.keyboard = keyboard
         self.inventory = inventory
         self.outline = outline
-        self.slot_w = slot_w
-        self.slot_h = slot_h
+        self.slot_width = slot_width
+        self.slot_height = slot_height
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.icon_size = icon_size
@@ -187,7 +186,7 @@ class ItemDrag:
     def get_clicked_item(self) -> str|None:
         for item_name, item_data in self.inventory.contents.items():
             row, col = divmod(item_data['index'], self.num_cols)
-            if (icon_rect := self.rect_base.move(self.outline.topleft + pg.Vector2(col * self.slot_w, row * self.slot_h))).collidepoint(self.mouse.screen_xy):
+            if (icon_rect := self.rect_base.move(self.outline.topleft + pg.Vector2(col * self.slot_width, row * self.slot_height))).collidepoint(self.mouse.screen_xy):
                 return item_name
 
     def check_drag(self) -> None:
@@ -199,9 +198,8 @@ class ItemDrag:
                 else:
                     self.end_drag()
             else:
-                if self.outline.collidepoint(self.mouse.screen_xy):
-                    if item := self.get_clicked_item():
-                        self.start_drag(item, 'left' if l_click else 'right')    
+                if self.outline.collidepoint(self.mouse.screen_xy) and (item := self.get_clicked_item()):
+                    self.start_drag(item, 'left' if l_click else 'right')    
                 else:
                     if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render and hasattr(m, 'has_inv')]:
                         self.check_machine_extract(machines_with_inv, l_click, r_click)
@@ -245,12 +243,15 @@ class ItemDrag:
     
     def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
-            if input_box_data := machine.ui.get_box_data():
-                for box_type in input_box_data.keys():
-                    if input_box_data[box_type]['rect'].collidepoint(self.mouse.screen_xy) and (l_click or r_click):
-                        machine.ui.extract_item(box_type, 'left' if l_click else 'right')
+            if box_data := machine.ui.get_box_data():
+                for box_type in box_data.keys():
+                    box_contents = box_data[box_type]['contents']
+                    if box_data[box_type]['rect'].collidepoint(self.mouse.screen_xy) and (l_click or r_click) and box_contents['item']:
+                        machine.ui.extract_item(box_contents, 'left' if l_click else 'right')
+                        return
 
     def update(self) -> None:
         self.check_drag()
         if self.active:
             self.render_item_drag()
+            self.update_dimensions()

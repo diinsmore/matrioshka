@@ -14,7 +14,7 @@ class InputManager:
 
 class Keyboard:
     def __init__(self):
-        self.held_keys, self.pressed_keys = None, None
+        self.held_keys = self.pressed_keys = None
         self.num_keys = {pg.K_0 + num for num in range(10)}
         self.key_map = {key: (key - pg.K_0 - 1) % 10 for key in self.num_keys} # maps the ascii value to the number pressed
         self.key_bindings = {
@@ -29,7 +29,7 @@ class Keyboard:
             'toggle HUD ui': pg.K_h,
             'close ui window': pg.K_q,       
         }
-        
+
     def update(self) -> None:
         self.held_keys = pg.key.get_pressed()
         self.pressed_keys = pg.key.get_just_pressed()
@@ -37,12 +37,9 @@ class Keyboard:
 
 class Mouse:
     def __init__(self):
-        self.click_states = {'left': False, 'right': False}
-        self.buttons_held = {'left': False, 'right': False}
+        self.click_states = self.buttons_held = {'left': False, 'right': False}
         self.moving = False
-        self.screen_xy = None 
-        self.world_xy = None
-        self.tile_xy = None
+        self.screen_xy = self.world_xy = self.tile_xy = None
         
     def get_movement(self, cam_offset: pg.Vector2) -> None:
         self.moving = False

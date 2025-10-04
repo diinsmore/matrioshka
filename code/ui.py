@@ -112,8 +112,8 @@ class UI:
         self.active_item_names = []
     
     def get_craft_window_height(self) -> int:
-        inv_grid_max_h = self.inventory_ui.slot_h * (self.inventory.num_slots // self.inventory_ui.num_cols)
-        return inv_grid_max_h + self.mini_map.outline_h + self.mini_map.padding
+        inv_grid_max_height = self.inventory_ui.slot_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
+        return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
 
     def gen_outline(
         self,
@@ -196,10 +196,11 @@ class UI:
 
         if pressed_keys[self.expand_inventory_ui]:
             self.inventory_ui.expand = not self.inventory_ui.expand
-        
+            self.inventory_ui.update_dimensions()
+
         if pressed_keys[self.toggle_inventory_ui]:
             self.inventory_ui.render = not self.inventory_ui.render
-
+            
         if pressed_keys[self.toggle_craft_window_ui]:
             self.craft_window.opened = not self.craft_window.opened
             self.inventory_ui.expand = self.craft_window.opened
@@ -222,13 +223,13 @@ class UI:
         self.screen.blit(image, rect)
 
     def update(self) -> None:
+        self.update_render_states()
         self.mouse_grid.update()
         self.HUD.update()
         self.mini_map.update()
         self.craft_window.update() # keep above the inventory ui otherwise item names may be rendered behind the window
         self.inventory_ui.update()
         self.update_item_name_data()
-        self.update_render_states()
         
 
 class MouseGrid:

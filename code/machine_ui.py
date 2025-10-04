@@ -64,15 +64,13 @@ class MachineUI:
             box_data['contents']['amount'] += amount
             self.player.inventory.remove_item(self.player.item_holding, amount)
 
-    def extract_item(self, box_type: str, click_type: str) -> None:
-        box_inv = self.get_box_data()[box_type]['contents']
-        if box_inv['item'] is not None:
-            extract_total = box_inv['amount'] if click_type == 'left' else (box_inv['amount'] // 2)
-            box_inv['amount'] -= extract_total
-            self.player.inventory.add_item(box_inv['item'], extract_total)
-            self.player.item_holding = box_inv['item']
-            if box_inv['amount'] == 0:
-                box_inv['item'] = None
+    def extract_item(self, box_contents: dict[str, str|int], click_type: str) -> None:
+        extract_total = box_contents['amount'] if click_type == 'left' else (box_contents['amount'] // 2)
+        box_contents['amount'] -= extract_total
+        self.player.inventory.add_item(box_contents['item'], extract_total)
+        self.player.item_holding = box_contents['item']
+        if box_contents['amount'] == 0:
+            box_contents['item'] = None
             
     def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
         if rect_mouse_collide:

@@ -196,7 +196,6 @@ class Main:
                     self.make_save('save.json')
                     pg.quit()
                     sys.exit()
-
             self.update(self.clock.tick(FPS) / 1000)
             pg.display.flip()
              
