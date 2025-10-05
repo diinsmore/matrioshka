@@ -27,6 +27,7 @@ class DrillUI(MachineUI):
         self.bg_w, self.bg_h = 100, 150
         self.box_w = self.box_h = 25
         self.progress_bar_w, self.progress_bar_h = self.box_w, 4
+        self.bg_rect = self.get_bg_rect()
 
     def get_box_data(self) -> dict[str, dict]|None:
         self.fuel_box = pg.Rect(self.bg_rect.midbottom - pg.Vector2(self.box_w, (self.box_h * 2) + self.padding), (50, 50))

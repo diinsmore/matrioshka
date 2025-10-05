@@ -110,7 +110,7 @@ class MachineUI:
         self.highlight_surf_when_hovered(rect_mouse_collide)
         self.update_fuel_status(machine_name)
         if not self.render:
-            self.render = rect_mouse_collide and self.mouse.click_states['left']
+            self.render = rect_mouse_collide and self.mouse.buttons_pressed['left']
             return
         elif self.keyboard.held_keys[self.key_close_ui]:
             self.render = False

@@ -190,7 +190,7 @@ class ItemDrag:
                 return item_name
 
     def check_drag(self) -> None:
-        l_click, r_click = self.mouse.click_states.values()
+        l_click, r_click = self.mouse.buttons_pressed.values()
         if l_click or r_click:
             if self.active:
                 if r_click:
@@ -198,8 +198,9 @@ class ItemDrag:
                 else:
                     self.end_drag()
             else:
-                if self.outline.collidepoint(self.mouse.screen_xy) and (item := self.get_clicked_item()):
-                    self.start_drag(item, 'left' if l_click else 'right')    
+                if self.outline.collidepoint(self.mouse.screen_xy):
+                    if item := self.get_clicked_item():
+                        self.start_drag(item, 'left' if l_click else 'right')    
                 else:
                     if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render and hasattr(m, 'has_inv')]:
                         self.check_machine_extract(machines_with_inv, l_click, r_click)
@@ -217,7 +218,7 @@ class ItemDrag:
         self.image.set_alpha(150) # slightly transparent until it's placed
         self.rect = self.image.get_rect(center=self.mouse.world_xy)
         item_amount = self.player.inventory.contents[item]['amount']
-        self.amount = item_amount if click_type == 'left' else item_amount // 2
+        self.amount = item_amount if click_type == 'left' else (item_amount // 2)
  
     def end_drag(self) -> None: 
         if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
@@ -243,15 +244,12 @@ class ItemDrag:
     
     def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
-            if box_data := machine.ui.get_box_data():
-                for box_type in box_data.keys():
-                    box_contents = box_data[box_type]['contents']
-                    if box_data[box_type]['rect'].collidepoint(self.mouse.screen_xy) and (l_click or r_click) and box_contents['item']:
-                        machine.ui.extract_item(box_contents, 'left' if l_click else 'right')
-                        return
+            box_data = machine.ui.get_box_data()
+            for box_type in box_data.keys():
+                box_contents = box_data[box_type]['contents']
+                if box_data[box_type]['rect'].collidepoint(self.mouse.screen_xy) and box_contents['item']:
+                    machine.ui.extract_item(box_contents, 'left' if l_click else 'right')
+                    return
 
     def update(self) -> None:
         self.check_drag()
-        if self.active:
-            self.render_item_drag()
-            self.update_dimensions()

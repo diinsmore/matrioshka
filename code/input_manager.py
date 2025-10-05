@@ -37,7 +37,7 @@ class Keyboard:
 
 class Mouse:
     def __init__(self):
-        self.click_states = self.buttons_held = {'left': False, 'right': False}
+        self.buttons_pressed, self.buttons_held = {'left': False, 'right': False}, {'left': False, 'right': False}
         self.moving = False
         self.screen_xy = self.world_xy = self.tile_xy = None
         
@@ -54,9 +54,9 @@ class Mouse:
 
         clicked = pg.mouse.get_just_pressed()
         if clicked[0]:
-            self.click_states['left'] = True
+            self.buttons_pressed['left'] = True
         elif clicked[2]:
-            self.click_states['right'] = True
+            self.buttons_pressed['right'] = True
 
         held = pg.mouse.get_pressed()
         if held[0]:
@@ -65,7 +65,7 @@ class Mouse:
             self.buttons_held['right'] = True
 
     def reset_click_states(self) -> None:
-        self.buttons_held['left'] = self.buttons_held['right'] = self.click_states['left'] = self.click_states['right'] = False
+        self.buttons_held['left'] = self.buttons_held['right'] = self.buttons_pressed['left'] = self.buttons_pressed['right'] = False
 
     def update(self, cam_offset: pg.Vector2) -> None:
         self.get_movement(cam_offset)

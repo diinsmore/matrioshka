@@ -200,7 +200,7 @@ class CategoryGrid:
 
     def select_category(self) -> None:
         if self.opened:
-            if self.mouse_on_grid() and self.mouse.click_states['left']:
+            if self.mouse_on_grid() and self.mouse.buttons_pressed['left']:
                 col, row = self.get_category_overlap()
                 self.selected_category = self.category_keys[col + (row * self.num_cols)]
         else:
@@ -299,7 +299,7 @@ class ItemGrid:
             pass
     
     def get_selected_item(self, rect: pg.Rect, item_name: str) -> None:
-        if rect.collidepoint(self.mouse.screen_xy) and self.mouse.click_states['left']:
+        if rect.collidepoint(self.mouse.screen_xy) and self.mouse.buttons_pressed['left']:
             item_data = self.categories[self.selected_category][item_name]
             self.sprite_manager.crafting.craft_item(item_name, item_data['recipe'], self.player)
 

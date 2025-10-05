@@ -202,8 +202,8 @@ class UI:
             self.inventory_ui.render = not self.inventory_ui.render
             
         if pressed_keys[self.toggle_craft_window_ui]:
-            self.craft_window.opened = not self.craft_window.opened
-            self.inventory_ui.expand = self.craft_window.opened
+            self.craft_window.opened = self.inventory_ui.expand = not self.craft_window.opened
+            self.inventory_ui.update_dimensions()
             self.HUD.shift_right = not self.HUD.shift_right
 
         if pressed_keys[self.toggle_mini_map_ui]:
@@ -242,7 +242,7 @@ class MouseGrid:
         self.tile_w = self.tile_h = 3
 
     def render_grid(self) -> None:
-        if self.mouse.moving or self.mouse.click_states['left']:
+        if self.mouse.moving or self.mouse.buttons_pressed['left']:
             topleft = self.get_grid_xy()
             for x in range(self.tile_w):
                 for y in range(self.tile_h):
