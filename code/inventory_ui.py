@@ -198,9 +198,8 @@ class ItemDrag:
                 else:
                     self.end_drag()
             else:
-                if self.outline.collidepoint(self.mouse.screen_xy):
-                    if item := self.get_clicked_item():
-                        self.start_drag(item, 'left' if l_click else 'right')    
+                if self.outline.collidepoint(self.mouse.screen_xy) and (item := self.get_clicked_item()):
+                    self.start_drag(item, 'left' if l_click else 'right')   
                 else:
                     if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render and hasattr(m, 'has_inv')]:
                         self.check_machine_extract(machines_with_inv, l_click, r_click)

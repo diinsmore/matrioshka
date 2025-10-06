@@ -35,6 +35,7 @@ class MachineUI:
         self.render = False
         self.graphics = self.assets['graphics']
         self.icons = self.graphics['icons']
+        self.fonts = self.assets['fonts']
         self.empty_fuel_surf = pg.transform.scale(self.icons['empty fuel'].convert_alpha(), pg.Vector2(machine.image.get_size()) * 0.8)
         self.empty_fuel_surf.set_colorkey((255, 255, 255))
         self.empty_fuel_surf.set_alpha(150)

@@ -22,9 +22,10 @@ class AssetManager:
         
             'fonts': {
                 'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
-                'craft menu category': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size = 14),
-                'item label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size = 16),
-                'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size = 8)
+                'craft menu category': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=14),
+                'item label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=16),
+                'item label small': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=13),
+                'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size=8)
             },
         
             'colors': {

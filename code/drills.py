@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from player import Player
-    import numpy as np
 
 import pygame as pg
+import numpy as np
 from collections import Counter
 from random import choice
 from timer import Timer
@@ -56,12 +56,10 @@ class Drill(MachineSpriteBase):
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.tile_IDs_to_names = tile_IDs_to_names
-
-        self.target_ore = save_data['target ore'] if save_data else {} # key: ore, value: amount available
-        self.available_ore = save_data['available ore'] if save_data else 0
-        self.reach_radius = save_data['reach radius'] if save_data else (
-            self.rect.width // TILE_SIZE, min(MAP_SIZE[1] - (self.rect.bottom // TILE_SIZE), RES[1] // 5)
-        )
+        self.map_slice = save_data['map slice'] if save_data else self.get_map_slice()
+        self.available_ores = self.get_available_ores()
+        self.target_ore = save_data['target ore'] if save_data else None
+        self.ore_num = save_data['available ore'] if save_data else 0
         self.ore_xy = save_data['ore xy'] if save_data else None
         self.max_ore_idx = save_data['max ore idx'] if save_data else None
         self.ore_idx = save_data['ore idx'] if save_data else 0
@@ -78,16 +76,23 @@ class Drill(MachineSpriteBase):
         }
         self.has_inv = True
 
-    def calc_available_ore(self) -> None:
-        left, right = self.rect.left // TILE_SIZE, self.rect.right // TILE_SIZE
+    def get_map_slice(self) -> np.ndarray:
         top = self.rect.bottom // TILE_SIZE
-        bottom = top + self.reach_dist_y
-        map_slice = self.tile_map[top:bottom, left:right]
+        return self.tile_map[self.rect.left // TILE_SIZE:self.rect.right // TILE_SIZE, top:top + min(MAP_SIZE[1] - top, RES[1] // 4)]
+
+    def get_available_ores(self) -> dict[str, int]:
+        idxs, amounts = np.unique(self.map_slice, return_counts=True)
+        return dict(zip([self.tile_IDs_to_names[i] for i in idxs if i not in (self.tile_IDs['air'], self.tile_IDs['item extended'])], amounts))
+
+    def calc_ore_nums(self) -> None:
         target_ID = self.tile_IDs[self.target_ore]
         ore_xy_rel_slice = np.argwhere(map_slice == target_ID)
         self.ore_xy = ore_xy_rel_slice + np.array([top, left]) # relative to the full tile map now
         self.max_ore_idx = len(self.ore_xy)
-        self.available_ore = self.max_ore_idx * TILE_ORE_RATIO
+        self.ore_num = self.max_ore_idx * TILE_ORE_RATIO
+
+    def select_target_ore(self) -> None:
+        pass
 
     def extract(self) -> None:
         self.available_ore -= 1
@@ -144,10 +149,10 @@ class Drill(MachineSpriteBase):
 
     def get_save_data(self) -> dict[str, list|dict]:
         return {
+            'map slice': self.map_slice.tolist(),
             'xy': list(self.rect.topleft),
-            'reach radius': list(self.reach_radius),
             'target ore': self.target_ore,
-            'available ore': self.available_ore,
+            'ore num': self.ore_num,
             'ore xy': self.ore_xy.tolist(),
             'max ore idx': self.max_ore_idx,
             'ore idx': self.ore_idx,
