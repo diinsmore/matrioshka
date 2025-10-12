@@ -59,10 +59,11 @@ class Drill(MachineSpriteBase):
         self.map_slice = save_data['map slice'] if save_data else self.get_map_slice()
         self.available_ores = self.get_available_ores()
         self.target_ore = save_data['target ore'] if save_data else None
-        self.ore_num = save_data['available ore'] if save_data else 0
+        self.num_ore_available = 0
+        self.num_ore_output = save_data['available ore'] if save_data else 0
         self.ore_xy = save_data['ore xy'] if save_data else None
-        self.max_ore_idx = save_data['max ore idx'] if save_data else None
         self.ore_idx = save_data['ore idx'] if save_data else 0
+        self.max_ore_idx = save_data['max ore idx'] if save_data else None
         self.ore_row = save_data['ore row'] if save_data else 1
         self.extract_time_factor = 1.05 # extraction times increase as the drill moves deeper into the ground
 
@@ -89,7 +90,7 @@ class Drill(MachineSpriteBase):
         ore_xy_rel_slice = np.argwhere(map_slice == target_ID)
         self.ore_xy = ore_xy_rel_slice + np.array([top, left]) # relative to the full tile map now
         self.max_ore_idx = len(self.ore_xy)
-        self.ore_num = self.max_ore_idx * TILE_ORE_RATIO
+        self.num_ore_available = self.max_ore_idx * TILE_ORE_RATIO
 
     def select_target_ore(self) -> None:
         pass

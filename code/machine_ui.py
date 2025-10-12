@@ -47,7 +47,7 @@ class MachineUI:
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
 
     def get_bg_rect(self) -> pg.Rect:
-        return pg.Rect(self.machine.rect.midtop - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
+        return pg.Rect(self.machine.rect.midtop - pg.Vector2(self.bg_width // 2, self.bg_height + self.padding), (self.bg_width, self.bg_height))
 
     def check_input(self, box_data: dict[str, dict]) -> str|None:
         box_name = None
@@ -77,19 +77,19 @@ class MachineUI:
         if rect_mouse_collide:
             self.screen.blit(self.machine_mask_surf, self.machine.rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_ADD)
 
-    def render_boxes(self) -> None: 
-        data = self.get_box_data()
+    def render_boxes(self, get_box_data: callable) -> None: 
+        data = get_box_data()
         for key in data:
             contents, rect = data[key]['contents'], data[key]['rect']
             self.gen_bg(rect, color=self.highlight_color if rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
             self.gen_outline(rect)
             if contents['item']: 
-                self.render_box_contents(contents, rect)          
+                self.render_box_contents(contents['item'], contents['amount'], rect)          
         
-    def render_box_contents(self, content_data: dict[str, str|int], box_rect: pg.Rect) -> None:
-        surf = self.graphics[content_data['item']]
+    def render_box_contents(self, item: str, amount: int, box_rect: pg.Rect) -> None:
+        surf = self.graphics[item]
         self.screen.blit(surf, surf.get_frect(center=box_rect.center))
-        self.render_item_amount(content_data['amount'], box_rect.bottomright - pg.Vector2(5, 5))
+        self.render_item_amount(amount, box_rect.bottomright - pg.Vector2(5, 5))
 
     def render_progress_bar(self, box: pg.Rect, progress_percent: float) -> None:
         bar = pg.Rect(box.bottomleft, (self.box_w, self.progress_bar_h))

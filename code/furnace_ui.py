@@ -25,7 +25,7 @@ class FurnaceUI(MachineUI):
         render_item_amount: callable
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
-        self.bg_w = self.bg_h = 150
+        self.bg_width = self.bg_height = 150
         self.box_w = self.box_h = 40
         self.progress_bar_w, self.progress_bar_h = self.box_w, 4
         self.padding = 10
@@ -34,7 +34,7 @@ class FurnaceUI(MachineUI):
             self.fuel_icon = self.icons['fuel'].convert()
             self.fuel_icon.set_colorkey((255, 255, 255))
 
-    def get_box_rects(self) -> tuple[pg.Rect, pg.Rect|None, pg.Rect]:
+    def get_inv_box_rects(self) -> tuple[pg.Rect, pg.Rect|None, pg.Rect]:
         y_offset = self.padding if self.machine.variant == 'burner' else (self.box_h // 2)
         smelt_box = pg.Rect(self.bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.box_w, self.box_h))
         fuel_box = None
@@ -45,8 +45,8 @@ class FurnaceUI(MachineUI):
         output_box.midright = self.bg_rect.midright - pg.Vector2(self.padding, 0)
         return smelt_box, fuel_box, output_box 
     
-    def get_box_data(self) -> dict[str, dict]:
-        self.smelt_box, self.fuel_box, self.output_box = self.get_box_rects()
+    def get_inv_box_data(self) -> dict[str, dict]:
+        self.smelt_box, self.fuel_box, self.output_box = self.get_inv_box_rects()
         data = {
             'smelt': {'contents': self.machine.smelt_input, 'valid inputs': self.machine.can_smelt.keys(), 'rect': self.smelt_box}, 
             'output': {'contents': self.machine.output, 'valid inputs': self.machine.output['item'], 'rect': self.output_box}
