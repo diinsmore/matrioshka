@@ -25,66 +25,60 @@ class DrillUI(MachineUI):
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
         self.bg_width, self.bg_height = 200, 150
-        self.box_width = self.box_height = 50
-        self.progress_bar_width, self.progress_bar_height = self.box_width, 4
+        self.box_len = 50
+        self.ore_box_size = pg.Vector2(self.box_len, self.box_len) * 1.2
+        self.progress_bar_width, self.progress_bar_height = self.box_len, 4
         self.ore_selection_idx = 0
-        self.ore_box_outline_dims = pg.Vector2(self.box_width, self.box_height) * 1.2
-
+        
     def get_inv_box_data(self) -> dict[str, dict]:
         data = {
             'output': {
-                'contents': {
-                    'item': self.machine.target_ore, 'amount': self.machine.num_ore_output,
-                },
+                'contents': self.machine.output,
+                'valid inputs': self.machine.target_ore
             },
         }
         if self.machine.variant == 'burner':
             data['fuel'] = {
                 'contents': self.machine.fuel_input, 
                 'valid inputs': self.machine.fuel_sources,
-                'rect': pg.Rect(self.bg_rect.bottomleft + pg.Vector2(self.padding, -(self.padding + self.box_height)), (self.box_width, self.box_height))
+                'rect': pg.Rect(self.bg_rect.bottomleft + pg.Vector2(self.padding, -(self.padding + self.box_len)), (self.box_len, self.box_len))
             }
-            data['output']['rect'] = pg.Rect(
-                self.bg_rect.bottomright - pg.Vector2(self.box_width + self.padding, self.box_height + self.padding), 
-                (self.box_width, self.box_height)
-            )
+            self.smelt_box = data['fuel']['rect'] # TODO: delete this, just for testing
+            data['output']['rect'] = pg.Rect(self.bg_rect.bottomright - pg.Vector2(self.box_len + self.padding, self.box_len + self.padding), (self.box_len, self.box_len))
         else:
-            data['output']['rect'] = pg.Rect(self.bg_rect.midbottom - pg.Vector2(0, self.padding), (self.box_width, self.box_height))
+            data['output']['rect'] = pg.Rect(self.bg_rect.midbottom - pg.Vector2(0, self.padding), (self.box_len, self.box_len))
 
         return data
 
     def get_ore_preview_box_data(self) -> dict[str, dict]:
-        rect = pg.Rect(self.bg_rect.midtop - pg.Vector2(self.box_width // 2, -self.padding), (self.box_width, self.box_height))
+        rect = pg.Rect(self.bg_rect.midtop - pg.Vector2(self.box_len // 2, -self.padding), (self.box_len, self.box_len))
         if self.machine.target_ore:
             return {'contents': {'item': self.machine.target_ore, 'amount': self.machine.num_ore_available}, 'rect': rect}
         else:
-            ores = self.machine.available_ores
-            return {'contents': {'names': ores.keys(), 'amount': ores.values()}, 'rect': rect}
+            ore_data = self.machine.ore_data
+            ores = ore_data.keys()
+            return {'contents': dict(zip(ores, [ore_data[k]['amount'] for k in ores])), 'rect': rect}
 
     def render_ore_preview_box(self) -> None:  
         data = self.get_ore_preview_box_data()
-
-        outline = pg.Rect(self.bg_rect.midtop - pg.Vector2(self.ore_box_outline_dims.x / 2, -self.padding), self.ore_box_outline_dims)
-        self.gen_outline(outline)
-
-        if ore := self.machine.target_ore:
-            self.render_box_contents(ore, self.machine.num_ore_available, data['rect'])
+        self.gen_outline(pg.Rect(self.bg_rect.midtop - pg.Vector2(self.ore_box_size.x / 2, -self.padding), self.ore_box_size))
+        if self.machine.target_ore:
+            self.render_box_contents(self.machine.target_ore, self.machine.num_ore_available, data['rect'])
         else:
             self.render_ore_options(data['contents'], data['rect'])
         
     def render_ore_options(self, ore_data: dict[str, any], rect: pg.Rect) -> None:
-        names = list(ore_data['names'])
-        self.update_target_ore(names)
-
-        name = names[self.ore_selection_idx]
+        ores = list(ore_data.keys())
+        self.update_target_ore(ores)
+        name = ores[self.ore_selection_idx]
         ore_surf = self.graphics[name]
         self.screen.blit(ore_surf, ore_surf.get_rect(center=rect.center))
 
         name_surf = self.fonts['item label small'].render(name, True, self.assets['colors']['text'])
         name_rect = name_surf.get_rect(midtop=rect.midbottom)
         self.screen.blit(name_surf, name_rect) 
-
-        amount_surf = self.fonts['item label small'].render(f'available: {list(ore_data["amount"])[self.ore_selection_idx]}', True, self.assets['colors']['text'])
+        
+        amount_surf = self.fonts['item label small'].render(f'available: {ore_data[name]}', True, self.assets['colors']['text'])
         self.screen.blit(amount_surf, amount_surf.get_rect(midtop=name_rect.midbottom))
 
     def update_target_ore(self, names: list[str]) -> None:
@@ -94,7 +88,9 @@ class DrillUI(MachineUI):
         elif self.keyboard.pressed_keys[pg.K_LEFT]:
             self.ore_selection_idx = (self.ore_selection_idx - 1) % num_names
         elif self.keyboard.pressed_keys[pg.K_RETURN]:
-            self.machine.target_ore = names[self.ore_selection_idx]    
+            ore = names[self.ore_selection_idx]
+            self.machine.target_ore = ore
+            self.machine.num_ore_available = self.machine.ore_data[ore]['amount']
 
     def render_interface(self) -> None:
         self.bg_rect = self.get_bg_rect()
@@ -104,9 +100,9 @@ class DrillUI(MachineUI):
             self.gen_outline(self.bg_rect)
             self.render_boxes(self.get_inv_box_data)
             self.render_ore_preview_box() # render_boxes() can't be re-used for the ore preview box since it doesn't account for the ore selection process
-            if self.machine.active:
-                self.render_progress_bar(self.ore_surf_outline, self.machine.timers['extract'].progress_percent)
-                if self.machine.variant == 'burner':
+            if self.machine.active and hasattr(self.machine.timers['extract'], 'progress_percent'):
+                self.render_progress_bar(self.ore_box_outline, self.machine.timers['extract'].progress_percent)
+                if self.machine.variant == 'burner' and hasattr(self.machine.timers['fuel'], 'progress_percent'):
                     self.render_progress_bar(self.fuel_box, self.machine.timers['fuel'].progress_percent)
         else:
             self.render = False

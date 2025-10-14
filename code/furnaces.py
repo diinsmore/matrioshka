@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from sprite_base import MachineSpriteBase
+from sprite_bases import MachineSpriteBase
 from settings import MACHINES
 from furnace_ui import FurnaceUI
 from timer import Timer
@@ -55,7 +55,7 @@ class Furnace(MachineSpriteBase):
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
         self.has_inv = True
-        self.timers = {'smelt': None}
+        self.timers = {}
 
     def get_active_state(self) -> bool:
         if not self.active:
@@ -89,8 +89,8 @@ class Furnace(MachineSpriteBase):
                     store_progress=True,
                     fuel_item=fuel_item
                 )
-        for timer in self.timers.values():
-            timer.update()
+            for timer in self.timers.values():
+                timer.update()
 
     def update_box(self, smelt_item: str = None, fuel_item: str = None) -> None:
         input_data = self.smelt_input if smelt_item else self.fuel_input # 'None' will never be passed for both
@@ -105,7 +105,6 @@ class Furnace(MachineSpriteBase):
                 self.output['item'] = output_item
             
             if output_item == self.output['item']:
-
                 self.output['amount'] += 1
 
     def get_save_data(self) -> dict[str, list|str]:

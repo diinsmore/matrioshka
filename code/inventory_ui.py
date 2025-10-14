@@ -236,9 +236,9 @@ class ItemDrag:
 
     def place_item_in_machine(self) -> None:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
-            box_data = machine.ui.get_inv_box_data()
-            if input_box_name := machine.ui.check_input(box_data):
-                machine.ui.input_item(input_box_name, self.amount, box_data[input_box_name])
+            inv_box_data = machine.ui.get_inv_box_data()
+            if inv_type := machine.ui.check_input(inv_box_data):
+                machine.ui.input_item(inv_type, self.amount, inv_box_data[inv_type])
                 return
     
     def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:

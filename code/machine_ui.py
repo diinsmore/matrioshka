@@ -31,18 +31,21 @@ class MachineUI:
         self.gen_bg = gen_bg
         self.rect_in_sprite_radius = rect_in_sprite_radius
         self.render_item_amount = render_item_amount
-        
+       
         self.render = False
         self.graphics = self.assets['graphics']
         self.icons = self.graphics['icons']
         self.fonts = self.assets['fonts']
+        self.highlight_color = self.assets['colors']['ui bg highlight']
+
         self.empty_fuel_surf = pg.transform.scale(self.icons['empty fuel'].convert_alpha(), pg.Vector2(machine.image.get_size()) * 0.8)
         self.empty_fuel_surf.set_colorkey((255, 255, 255))
         self.empty_fuel_surf.set_alpha(150)
-        self.highlight_color = self.assets['colors']['ui bg highlight']
+
         self.machine_mask = pg.mask.from_surface(machine.image)
         self.machine_mask_surf = self.machine_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
-        self.padding = 10
+
+        self.padding = 15
 
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
 
@@ -79,8 +82,8 @@ class MachineUI:
 
     def render_boxes(self, get_box_data: callable) -> None: 
         data = get_box_data()
-        for key in data:
-            contents, rect = data[key]['contents'], data[key]['rect']
+        for k in data:
+            contents, rect = data[k]['contents'], data[k]['rect']
             self.gen_bg(rect, color=self.highlight_color if rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
             self.gen_outline(rect)
             if contents['item']: 
@@ -92,13 +95,9 @@ class MachineUI:
         self.render_item_amount(amount, box_rect.bottomright - pg.Vector2(5, 5))
 
     def render_progress_bar(self, box: pg.Rect, progress_percent: float) -> None:
-        bar = pg.Rect(box.bottomleft, (self.box_w, self.progress_bar_h))
-        bar_outline_w = 1
-        pg.draw.rect(self.screen, 'black', bar, bar_outline_w)
-        progress_rect = pg.Rect(
-            bar.topleft + pg.Vector2(bar_outline_w, bar_outline_w), 
-            ((bar.width - (bar_outline_w * 2)) * (progress_percent / 100), bar.height - (bar_outline_w * 2))
-        )
+        bar = pg.Rect(box.bottomleft, (self.box_len, self.progress_bar_height))
+        pg.draw.rect(self.screen, 'black', bar, 1)
+        progress_rect = pg.Rect(bar.topleft + pg.Vector2(1, 1), ((bar.width - 2) * (progress_percent / 100), bar.height - 2))
         pg.draw.rect(self.screen, 'green' if box == self.smelt_box else 'red', progress_rect)
 
     def update_fuel_status(self, machine_name: str) -> None:

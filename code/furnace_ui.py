@@ -25,18 +25,18 @@ class FurnaceUI(MachineUI):
         render_item_amount: callable
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
-        self.bg_width = self.bg_height = 150
-        self.box_w = self.box_h = 40
-        self.progress_bar_w, self.progress_bar_h = self.box_w, 4
         self.padding = 10
+        self.bg_width = self.bg_height = 150
+        self.box_len = 40
+        self.progress_bar_width, self.progress_bar_height = self.box_len, 4
         self.right_arrow_surf = self.icons['right arrow']
         if machine.variant == 'burner':
             self.fuel_icon = self.icons['fuel'].convert()
             self.fuel_icon.set_colorkey((255, 255, 255))
 
     def get_inv_box_rects(self) -> tuple[pg.Rect, pg.Rect|None, pg.Rect]:
-        y_offset = self.padding if self.machine.variant == 'burner' else (self.box_h // 2)
-        smelt_box = pg.Rect(self.bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.box_w, self.box_h))
+        y_offset = self.padding if self.machine.variant == 'burner' else (self.box_len // 2)
+        smelt_box = pg.Rect(self.bg_rect.topleft + pg.Vector2(self.padding, y_offset), (self.box_len, self.box_len))
         fuel_box = None
         if self.machine.variant == 'burner': 
             fuel_box = smelt_box.copy() 
@@ -53,6 +53,7 @@ class FurnaceUI(MachineUI):
         }
         if self.machine.variant == 'burner':
             data['fuel'] = {'contents': self.machine.fuel_input, 'valid inputs': self.machine.fuel_sources, 'rect': self.fuel_box}
+
         return data
  
     def render_interface(self) -> None:
@@ -61,7 +62,7 @@ class FurnaceUI(MachineUI):
             self.bg_rect.topleft -= self.cam_offset # converting to screen-space now to not mess with the radius check above
             self.gen_bg(self.bg_rect, color='black', transparent=True) 
             self.gen_outline(self.bg_rect)
-            self.render_boxes()
+            self.render_boxes(self.get_inv_box_data)
             self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=self.bg_rect.center))
 
             if self.machine.variant == 'burner':

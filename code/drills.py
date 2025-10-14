@@ -11,7 +11,7 @@ from random import choice
 from timer import Timer
 from drill_ui import DrillUI
 
-from sprite_base import MachineSpriteBase
+from sprite_bases import MachineSpriteBase
 from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES
 
 class Drill(MachineSpriteBase):
@@ -33,8 +33,8 @@ class Drill(MachineSpriteBase):
         render_item_amount: callable,
         save_data: dict[str, any],
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str]
+        tile_ids: dict[str, int],
+        tile_id_name_map: dict[int, str]
     ):
         super().__init__(
             xy, 
@@ -54,63 +54,62 @@ class Drill(MachineSpriteBase):
             save_data
         )
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
-        self.map_slice = save_data['map slice'] if save_data else self.get_map_slice()
-        self.available_ores = self.get_available_ores()
-        self.target_ore = save_data['target ore'] if save_data else None
-        self.num_ore_available = 0
-        self.num_ore_output = save_data['available ore'] if save_data else 0
-        self.ore_xy = save_data['ore xy'] if save_data else None
-        self.ore_idx = save_data['ore idx'] if save_data else 0
-        self.max_ore_idx = save_data['max ore idx'] if save_data else None
-        self.ore_row = save_data['ore row'] if save_data else 1
-        self.extract_time_factor = 1.05 # extraction times increase as the drill moves deeper into the ground
+        self.tile_ids = tile_ids
+        self.tile_id_name_map = tile_id_name_map
 
+        min_x, max_x = self.rect.left // TILE_SIZE, self.rect.right // TILE_SIZE
+        min_y = self.rect.bottom // TILE_SIZE
+        max_y = min_y + min(MAP_SIZE[1] - min_y, RES[1] // 4)
+        self.span_x, self.span_y = max_x - min_x, max_y - min_y
+        self.map_slice = save_data['map slice'] if save_data else self.tile_map[min_x:max_x, min_y:max_y]
+
+        self.ore_data = self.get_ore_data()
+        self.target_ore = save_data['target ore'] if save_data else None
+        self.num_ore_available = save_data['num ore available'] if save_data else None
+        self.ore_col = save_data['ore col'] if save_data else 0
+        self.ore_row = save_data['ore row'] if save_data else 0
+
+        self.extract_time_factor = 1.05 # extraction times increase as the drill moves deeper into the ground
         self.timers = {
             'extract': Timer(
-                length=500 * self.speed_factor * (self.extract_time_factor ** (self.ore_row - 1)), 
+                length=2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), 
                 function=self.extract, 
                 auto_start=False, 
                 loop=True
-            )
+            ),
+            'burn fuel': Timer(
+                length=2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), 
+                function=self.extract, 
+                auto_start=False, 
+                loop=True
+            ),
         }
+
         self.has_inv = True
 
-    def get_map_slice(self) -> np.ndarray:
-        top = self.rect.bottom // TILE_SIZE
-        return self.tile_map[self.rect.left // TILE_SIZE:self.rect.right // TILE_SIZE, top:top + min(MAP_SIZE[1] - top, RES[1] // 4)]
-
-    def get_available_ores(self) -> dict[str, int]:
-        idxs, amounts = np.unique(self.map_slice, return_counts=True)
-        return dict(zip([self.tile_IDs_to_names[i] for i in idxs if i not in (self.tile_IDs['air'], self.tile_IDs['item extended'])], amounts))
-
-    def calc_ore_nums(self) -> None:
-        target_ID = self.tile_IDs[self.target_ore]
-        ore_xy_rel_slice = np.argwhere(map_slice == target_ID)
-        self.ore_xy = ore_xy_rel_slice + np.array([top, left]) # relative to the full tile map now
-        self.max_ore_idx = len(self.ore_xy)
-        self.num_ore_available = self.max_ore_idx * TILE_ORE_RATIO
-
-    def select_target_ore(self) -> None:
-        pass
+    def get_ore_data(self) -> dict[str, int]:
+        ignore_ids = {self.tile_ids['air'], self.tile_ids['item extended'], self.tile_ids['dirt']}
+        ore_data = {self.tile_id_name_map[i]: {'amount': a * TILE_ORE_RATIO} for i, a in zip(*np.unique(self.map_slice, return_counts=True)) if i not in ignore_ids}
+        for k in ore_data:
+            ore_data[k]['locations'] = np.argwhere(self.map_slice == self.tile_ids[k])
+        return ore_data
 
     def extract(self) -> None:
-        self.available_ore -= 1
-        if self.available_ore % TILE_ORE_RATIO == 0: # all ore in this tile has been extracted
-            self.ore_idx += 1
-            self.convert_tile()
+        self.num_ore_available -= 1
+        if not self.num_ore_available: # all ore in this tile has been extracted
+            self.convert_tile(self.ore_xy)
 
+        self.fuel_input['amount'] -= 1
+        if not self.fuel_input['amount']:
+            self.fuel_input['item'] = None
+        
+        self.output['amount'] += 1
         if not self.output['item']:
             self.output['item'] = self.target_ore
-        self.output['amount'] += 1
 
-        if self.ore_idx % self.reach_radius[0] == 0:
+        if self.ore_col % self.span_x == 0:
             self.ore_row += 1
             self.timers['extract'].length *= self.extract_time_factor
-
-        if self.ore_idx == self.max_ore_idx:
-            del self.timers['extract']
 
     def convert_tile(self, tile_xy: tuple[int, int]) -> None: 
         directions = self.get_neighbor_directions(tile_xy)
@@ -153,7 +152,7 @@ class Drill(MachineSpriteBase):
             'map slice': self.map_slice.tolist(),
             'xy': list(self.rect.topleft),
             'target ore': self.target_ore,
-            'ore num': self.ore_num,
+            'num ore available': self.ore_num,
             'ore xy': self.ore_xy.tolist(),
             'max ore idx': self.max_ore_idx,
             'ore idx': self.ore_idx,
@@ -165,7 +164,6 @@ class Drill(MachineSpriteBase):
         if not self.active:
             if self.target_ore and self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']:
                 self.active = True
-    
         elif not (self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']):
             self.active = False
             self.timers.clear()
@@ -175,7 +173,10 @@ class Drill(MachineSpriteBase):
     def update(self, dt: float) -> None:
         self.ui.update('drill')
         if self.get_active_state():
-            self.extract()
+            if self.timers['extract'].running: 
+                self.timers['extract'].update()
+            else:
+                self.timers['extract'].start()
 
 
 class BurnerDrill(Drill):

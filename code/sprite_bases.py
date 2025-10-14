@@ -41,24 +41,15 @@ class MachineSpriteBase(SpriteBase):
         save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
-        self.ui_params = { # not initializing self.ui until the machine variant (burner/electric) is determined
-            'screen': screen,
-            'cam_offset': cam_offset,
-            'mouse': mouse,
-            'keyboard': keyboard,
-            'player': player,
-            'assets': assets,
-            'gen_outline': gen_outline,
-            'gen_bg': gen_bg,
-            'rect_in_sprite_radius': rect_in_sprite_radius,
-            'render_item_amount': render_item_amount
-        }
+        local_vars = locals()
+        self.ui_params = {k: local_vars[k] for k in ('screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 
+            'rect_in_sprite_radius', 'render_item_amount')}
 
         self.active = False
         self.timers = {}
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
         self.max_capacity = {'fuel': 50, 'output': 99}
-
+    
     def init_ui(self, ui_cls: any) -> None:
-        self.ui = ui_cls(machine=self, **self.ui_params)
+        self.ui = ui_cls(machine=self, **self.ui_params) # not initializing self.ui until the machine variant (burner/electric) is determined

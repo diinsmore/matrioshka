@@ -9,7 +9,7 @@ from random import randint, choice
 from math import sin, ceil
 
 from settings import RES, TOOLS, Z_LAYERS, GRAVITY
-from sprite_base import SpriteBase
+from sprite_bases import SpriteBase
 from timer import Timer
 from ui import UI
 
