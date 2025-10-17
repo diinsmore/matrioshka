@@ -63,7 +63,7 @@ class Drill(MachineSpriteBase):
         self.span_x, self.span_y = max_x - min_x, max_y - min_y
         self.map_slice = save_data['map slice'] if save_data else self.tile_map[min_x:max_x, min_y:max_y]
 
-        self.ore_data = self.get_ore_data()
+        self.ore_data = save_data['ore data'] if save_data else self.get_ore_data()
         self.target_ore = save_data['target ore'] if save_data else None
         self.num_ore_available = save_data['num ore available'] if save_data else None
         self.ore_col = save_data['ore col'] if save_data else 0
@@ -149,13 +149,12 @@ class Drill(MachineSpriteBase):
 
     def get_save_data(self) -> dict[str, list|dict]:
         return {
-            'map slice': self.map_slice.tolist(),
             'xy': list(self.rect.topleft),
+            'map slice': self.map_slice.tolist(),
+            'ore data': self.ore_data,
             'target ore': self.target_ore,
-            'num ore available': self.ore_num,
-            'ore xy': self.ore_xy.tolist(),
-            'max ore idx': self.max_ore_idx,
-            'ore idx': self.ore_idx,
+            'num ore available': self.num_ore_available,
+            'ore col': self.ore_col,
             'ore row': self.ore_row,
             'output': self.output
         }

@@ -188,9 +188,9 @@ class SpriteManager:
     def init_machines(self) -> None:
         for name, xy_list in self.item_placement.machine_map.items(): 
             for i, xy in enumerate(xy_list):
-                self.machine_cls_map[name](**self.get_machine_params(i, xy, name))
+                self.machine_cls_map[name](**self.get_machine_params(name, xy, i))
 
-    def get_machine_params(self, name: str, xy: tuple[int, int], i: int = None) -> dict[str, any]:
+    def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int = None) -> dict[str, any]:
         params = {
             'xy': pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
             'image': self.assets['graphics'][name],
@@ -206,7 +206,7 @@ class SpriteManager:
             'gen_bg': self.ui.gen_bg,
             'rect_in_sprite_radius': self.rect_in_sprite_radius,
             'render_item_amount': self.ui.render_item_amount,
-            'save_data': self.save_data['sprites'][name][i] if i and self.save_data else None
+            'save_data': self.save_data['sprites'][name][sprite_idx] if sprite_idx and self.save_data else None
         }
         if 'drill' in name:
             params.update([('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])

@@ -43,5 +43,5 @@ class Timer:
             progress = pg.time.get_ticks() - self.start_time
             if self.store_progress:
                 self.progress_percent = (progress / self.length) * 100
-            if progress >= self.length: # expired
+            if progress >= self.length:
                 self.end()

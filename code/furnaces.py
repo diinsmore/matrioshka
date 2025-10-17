@@ -73,26 +73,30 @@ class Furnace(MachineSpriteBase):
             smelt_item = self.smelt_input['item']
             self.timers['smelt'] = Timer(
                 length=self.can_smelt[smelt_item]['speed'] // self.speed_factor, 
-                function=self.update_box, 
+                function=self.update_inv_box, 
                 auto_start=True, 
                 loop=True, 
                 store_progress=True,
                 smelt_item=smelt_item
             )
+            self.timers['smelt'].start()
+
             if self.variant == 'burner':
                 fuel_item = self.fuel_input['item']
                 self.timers['fuel'] = Timer(
                     length=self.fuel_sources[fuel_item]['burn speed'] // self.speed_factor, 
-                    function=self.update_box, 
+                    function=self.update_inv_box, 
                     auto_start=True, 
                     loop=True, 
                     store_progress=True,
                     fuel_item=fuel_item
                 )
+                self.timers['fuel'].start()
+        else:
             for timer in self.timers.values():
                 timer.update()
 
-    def update_box(self, smelt_item: str = None, fuel_item: str = None) -> None:
+    def update_inv_box(self, smelt_item: str=None, fuel_item: str=None) -> None:
         input_data = self.smelt_input if smelt_item else self.fuel_input # 'None' will never be passed for both
         input_data['amount'] -= 1
         if input_data['amount'] == 0:
@@ -119,7 +123,6 @@ class Furnace(MachineSpriteBase):
         self.ui.update('furnace')
         if self.get_active_state():
             self.smelt()
-        
 
 class BurnerFurnace(Furnace):
     def __init__(
@@ -161,7 +164,6 @@ class BurnerFurnace(Furnace):
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         self.speed_factor = 1
-        self.timers['fuel'] = None
         self.init_ui(FurnaceUI)
 
 
@@ -210,7 +212,6 @@ class SteelFurnace(Furnace):
             'electric': {'electric poles'}
         }
         self.speed_factor = 2
-        self.timers['fuel'] = None
         self.init_ui(FurnaceUI)
 
 

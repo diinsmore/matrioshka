@@ -70,7 +70,7 @@ class FurnaceUI(MachineUI):
                     center=self.smelt_box.midbottom + pg.Vector2(0, (self.fuel_box.top - self.smelt_box.bottom) // 2))
                 )
             
-            if self.machine.active:
+            if self.machine.active and 'smelt' in self.machine.timers.keys():
                 self.render_progress_bar(self.smelt_box, self.machine.timers['smelt'].progress_percent)
                 if self.machine.variant == 'burner':
                     self.render_progress_bar(self.fuel_box, self.machine.timers['fuel'].progress_percent)
