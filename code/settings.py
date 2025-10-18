@@ -103,7 +103,12 @@ TILES = {
     'obsidian': {'hardness': 1000, 'rgb': (32, 23, 43)},
 }
 
-RAMP_TILES = ['dirt', 'sand', 'stone', 'ice']
+ramp_materials = ['dirt', 'sand', 'stone', 'ice']
+RAMP_TILES = []
+for m in ramp_materials:
+    RAMP_TILES.append(f'{m} ramp right')
+    RAMP_TILES.append(f'{m} ramp left')
+print(RAMP_TILES)
 
 TILE_REACH_RADIUS = 5
 TILE_ORE_RATIO = 50 # amount of ore 1 tile is worth
@@ -148,14 +153,20 @@ MACHINES = {
     'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'wood torch': 1}, 'rgb': (47, 29, 29),}, 
     'electric inserter': {'recipe': {'iron plate': 5, 'circuit': 3}, 'rgb': (118, 107, 107),}, 
     'assembler': {'recipe': {'iron plate': 10, 'iron gear': 5, 'circuit': 4}, 'rgb': (80, 74, 73),},
-    'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
     'boiler': {'recipe': {'iron plate': 8, 'pipe': 4, 'burner furnace': 1}, 'rgb': (38, 33, 31),}, 
     'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27),}, 
     'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
     'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),}, 
-    'solar panel': {'recipe': {'copper plate': 4, 'glass': 4, 'circuit': 13}, 'rgb': (20, 52, 77),},
-    'belt': {'recipe': {'iron plate': 1, 'iron gear': 2}, 'rgb': (70, 72, 74),},
+}
+
+LOGISTICS = {
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),},  # TODO: add trains or maybe minecarts with similar functionality?
+}
+PIPE_TRANSPORT_DIRECTIONS = [(0, 1), (1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
+
+ELECTRICITY = {
+    'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
+    'solar panel': {'recipe': {'copper plate': 4, 'glass': 4, 'circuit': 13}, 'rgb': (20, 52, 77),},
 }
 
 MATERIALS = {
@@ -202,9 +213,8 @@ DECOR = {
 
 PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), 'glass', 'lab']
 for category, data in DECOR.items():
-    category = category.rstrip('s')
     for material in data['materials']:
-        PLACEABLE_ITEMS.append(material + ' ' + category)
+        PLACEABLE_ITEMS.append(material + ' ' + category.rstrip('s'))
 
 # TODO: everything below is unfinished
 FOOD = {

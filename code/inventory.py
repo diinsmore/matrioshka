@@ -65,7 +65,8 @@ class PlayerInventory(Inventory):
             'stone pickaxe': {'amount': 10},
             'burner drill': {'amount': 1},
             'copper': {'amount': 100},
-            'burner furnace': {'amount': 1}
+            'burner furnace': {'amount': 1},
+            'pipe': {'amount': 100}
         })
          
     def update_selected_index(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:

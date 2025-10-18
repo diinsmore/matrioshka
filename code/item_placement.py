@@ -56,11 +56,13 @@ class ItemPlacement:
         self.machine_names = list(MACHINES.keys()) 
         self.tile_names = list(tile_IDs.keys())
 
-    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> None:
-        surf = self.assets['graphics'][sprite.item_holding]
-        if surf.get_size() == (TILE_SIZE, TILE_SIZE):
+    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], pipe_idx: int=None) -> None:
+        item_name = sprite.item_holding
+        surf = self.assets['graphics'][item_name if item_name != 'pipe' else item_name + ' ' + str(pipe_idx)]
+        if surf.size[0] <= TILE_SIZE and surf.size[1] <= TILE_SIZE:
+            print(self.valid_placement(tile_xy, sprite))
             if self.valid_placement(tile_xy, sprite):
-                self.place_single_tile_item(tile_xy, sprite)
+                self.place_single_tile_item(tile_xy, sprite, item_name if item_name == 'pipe' else None, pipe_idx)
         else:
             tile_xy_list = self.get_tile_xy_list(tile_xy, surf)
             if self.valid_placement(tile_xy_list, sprite):
@@ -72,7 +74,6 @@ class ItemPlacement:
                 self.can_reach_tile(tile_xy, sprite.rect.center),
                 self.tile_map[tile_xy] == self.tile_IDs['air'],
                 self.valid_item_border(tile_xy, single_tile=True),
-                sprite.item_holding in self.tile_names
             ))
         else:
             grounded = all((self.valid_item_border(xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
@@ -87,7 +88,7 @@ class ItemPlacement:
         sprite_tile_xy_world = pg.Vector2(sprite_xy_world) // TILE_SIZE
         return abs(tile_xy_world[0] - sprite_tile_xy_world.x) <= TILE_REACH_RADIUS and abs(tile_xy_world[1] - sprite_tile_xy_world.y) <= TILE_REACH_RADIUS 
 
-    def valid_item_border(self, tile_xy: tuple[int, int], single_tile: bool = False, multi_tile: bool = False) -> bool:
+    def valid_item_border(self, tile_xy: tuple[int, int], single_tile: bool=False, multi_tile: bool=False) -> bool:
         '''
         single tile items: check for any solid tile bordering the tile selected
         multi-tile items: check the bottom row of tiles to ensure the object is grounded
@@ -103,24 +104,29 @@ class ItemPlacement:
         else:
             return self.tile_map[tile_xy[0], tile_xy[1] + 1] in tile_IDs
 
-    def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite) -> None:
-        self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]
+    def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, item_name: str=None, pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
+        self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding if item_name != 'pipe' else item_name + ' ' + str(pipe_idx)] # item_name will always be passed when pipes are placed
         self.collision_map.update_map(tile_xy, add_tile=True)
         sprite.inventory.remove_item(sprite.item_holding)
         sprite.item_holding = None
+        if item_name:
+            if item_name in self.machine_names:
+                self.init_machine_cls(item_name, tile_xy, pipe_idx)
+            else:
+                pass     
 
     def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
         surf_topleft = tile_xy_list[0]
-        item = sprite.item_holding
-        self.tile_map[surf_topleft] = self.tile_IDs[item] # only store the topleft to prevent rendering multiple images
+        item_name = sprite.item_holding
+        self.tile_map[surf_topleft] = self.tile_IDs[item_name] # only store the topleft to prevent rendering multiple images
         self.collision_map.update_map(surf_topleft, add_tile=True)
         for xy in tile_xy_list[1:]: 
             self.tile_map[xy] = self.tile_IDs['item extended'] # update the remaining tiles covered with a separate ID to be ignored by the renderer
             self.collision_map.update_map(xy, add_tile=True)
         
-        if item in self.machine_names:
-            self.machine_map[item].append(surf_topleft)
-            self.init_machine_cls(item, surf_topleft)
+        if item_name in self.machine_names:
+            self.machine_map[item_name].append(surf_topleft)
+            self.init_machine_cls(item_name, surf_topleft)
 
         sprite.inventory.remove_item(item)
         sprite.item_holding = None
@@ -155,5 +161,5 @@ class ItemPlacement:
         max_y = max([xy[1] for xy in tile_xy])
         return [xy for xy in tile_xy if xy[1] == max_y]
 
-    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int]) -> None:
-        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft))
+    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int], pipe_idx: int=None) -> None:
+        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft, pipe_idx))

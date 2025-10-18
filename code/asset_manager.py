@@ -49,13 +49,10 @@ class AssetManager:
 
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
-            self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png') )
+            self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
         
         for tile in RAMP_TILES:
-            for direction in ('right', 'left'):
-                self.graphics[f'{tile} ramp {direction}'] = load_image(
-                    join('..', 'graphics', 'terrain', 'tiles', 'ramps', f'{tile} ramp {direction}.png')
-                )
+            self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', 'ramps', f'{tile}.png'))
 
     def load_tool_graphics(self) -> None:
         for tool in TOOLS.keys():
@@ -65,9 +62,8 @@ class AssetManager:
 
     def load_machine_graphics(self) -> None:
         self.graphics['machines'] = {}
-        no_category = {'assembler', 'boiler', 'steam engine', 'electric pole', 'solar panel', 'belt'} # not stored in a folder of related graphics
         for machine in MACHINES:
-            if machine in no_category:
+            if machine in {'assembler', 'boiler', 'steam engine'}: # not stored in a folder of related graphics:
                 self.graphics[machine] = load_image(join('..', 'graphics', 'machines', f'{machine}.png'))
             else:
                 category = machine.split()[-1] + 's'
@@ -76,11 +72,16 @@ class AssetManager:
                 self.graphics[machine] = self.graphics['machines'][category][machine]
 
     def load_material_graphics(self) -> None:
-            for material in MATERIALS.keys():
-                try:
-                    self.graphics[material] = load_image(join('..', 'graphics', 'materials', f'{material}.png'))
-                except FileNotFoundError:
-                    pass
+        for material in MATERIALS.keys():
+            try:
+                self.graphics[material] = load_image(join('..', 'graphics', 'materials', f'{material}.png'))
+            except FileNotFoundError:
+                pass
+
+    def load_pipe_graphics(self) -> None:
+        self.graphics['pipes'] = load_folder(join('..', 'graphics', 'pipes'))
+        for i in range(len(self.graphics['pipes'])):
+            self.graphics[f'pipe {i}'] = load_image(join('..', 'graphics', 'pipes', f'pipe {i}.png'))
 
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
@@ -88,3 +89,4 @@ class AssetManager:
         self.load_tool_graphics()
         self.load_machine_graphics()
         self.load_material_graphics()
+        self.load_pipe_graphics()

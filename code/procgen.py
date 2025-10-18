@@ -3,7 +3,7 @@ import numpy as np
 import noise
 from random import randint, choice
 
-from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE
+from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE, PIPE_TRANSPORT_DIRECTIONS
 from timer import Timer
 from helper_functions import load_image
 
@@ -49,16 +49,17 @@ class ProcGen:
     def get_tile_IDs() -> dict[str, int]:
         '''give each tile a unique number to store at its locations within the tile map'''
         id_map = {'air': 0}
-        
-        world_objects = [*TILES.keys(), *MACHINES.keys(), *STORAGE.keys()]
-        id_map.update((obj, index + 1) for index, obj in enumerate(world_objects))
-        
-        id_map['item extended'] = len(id_map)
-        id_map['tree base'] = id_map['item extended'] + 1
-        
-        for i, tile in enumerate(RAMP_TILES):
-            id_map[f'{tile} ramp left'] = id_map['tree base'] + 1 + (2 * i)
-            id_map[f'{tile} ramp right'] = id_map[f'{tile} ramp left'] + 1
+        ids = [
+            *TILES.keys(),
+            *RAMP_TILES,  
+            *MACHINES.keys(), 
+            *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))], 
+            *STORAGE.keys(), 
+            'tree base',
+            'item extended', 
+        ]
+        id_map.update((name, idx + 1) for idx, name in enumerate(ids))
+        print(id_map)
         return id_map
 
     def get_tile_material(self, tile_ID: int) -> str:
@@ -118,7 +119,7 @@ class TerrainGen:
         self.current_biome = current_biome
         
         self.seed = 2285 # TODO: add the option to enter a custom seed
-        self.tile_map = np.full(MAP_SIZE, self.tile_IDs['air'], dtype = np.uint8)
+        self.tile_map = np.zeros(MAP_SIZE, dtype=int)
         self.height_map = self.gen_height_map()
         
         self.surface_lvls = np.array(self.height_map).astype(int)

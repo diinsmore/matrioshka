@@ -13,7 +13,7 @@ from os.path import join
 from random import choice, randint
 
 from helper_functions import load_image, cls_name_to_str
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES, PIPE_TRANSPORT_DIRECTIONS
 from player import Player
 from timer import Timer
 from nature_sprites import Tree, Cloud
@@ -190,7 +190,7 @@ class SpriteManager:
             for i, xy in enumerate(xy_list):
                 self.machine_cls_map[name](**self.get_machine_params(name, xy, i))
 
-    def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int = None) -> dict[str, any]:
+    def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int=None, pipe_idx: int=None) -> dict[str, any]:
         params = {
             'xy': pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
             'image': self.assets['graphics'][name],
@@ -210,6 +210,15 @@ class SpriteManager:
         }
         if 'drill' in name:
             params.update([('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
+        elif name == 'pipe':
+            params = params[:10]
+            params.update([
+                ('direction', PIPE_TRANSPORT_DIRECTIONS[pipe_idx]), 
+                ('mouse', self.mouse), 
+                ('keyboard', self.keyboard), 
+                ('tile_map', self.tile_map), 
+                ('tile_IDs', self.tile_IDs)
+            ])
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
