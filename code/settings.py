@@ -75,11 +75,11 @@ BIOMES = { # TODO: the highlands & snow noise parameters are especially in need 
 }
 
 BIOME_WIDTH = MAP_SIZE[0] // (len(BIOMES) - 1) # -1 since the underworld spans the entire map
-
 TREE_BIOMES = ['forest', 'taiga']
 
 WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
 WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
+
 GRAVITY = 1200
 
 Z_LAYERS = {'clouds': 0, 'bg': 1, 'main': 2, 'player': 3}
@@ -108,7 +108,6 @@ RAMP_TILES = []
 for m in ramp_materials:
     RAMP_TILES.append(f'{m} ramp right')
     RAMP_TILES.append(f'{m} ramp left')
-print(RAMP_TILES)
 
 TILE_REACH_RADIUS = 5
 TILE_ORE_RATIO = 50 # amount of ore 1 tile is worth
@@ -211,7 +210,7 @@ DECOR = {
     'chairs': {'materials': ['wood', 'glass', 'ice']},
 }
 
-PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), 'glass', 'lab']
+PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), *LOGISTICS.keys(), 'glass', 'lab']
 for category, data in DECOR.items():
     for material in data['materials']:
         PLACEABLE_ITEMS.append(material + ' ' + category.rstrip('s'))

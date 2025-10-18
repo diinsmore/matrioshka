@@ -11,7 +11,7 @@ import pygame as pg
 from math import ceil
 from collections import defaultdict
 
-from settings import MAP_SIZE, TILE_SIZE, TILES, TILE_REACH_RADIUS, Z_LAYERS, MACHINES
+from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, MACHINES
 
 class ItemPlacement:
     def __init__(
@@ -60,20 +60,20 @@ class ItemPlacement:
         item_name = sprite.item_holding
         surf = self.assets['graphics'][item_name if item_name != 'pipe' else item_name + ' ' + str(pipe_idx)]
         if surf.size[0] <= TILE_SIZE and surf.size[1] <= TILE_SIZE:
-            print(self.valid_placement(tile_xy, sprite))
-            if self.valid_placement(tile_xy, sprite):
+            if self.valid_placement(tile_xy, sprite, pipe_idx):
                 self.place_single_tile_item(tile_xy, sprite, item_name if item_name == 'pipe' else None, pipe_idx)
         else:
             tile_xy_list = self.get_tile_xy_list(tile_xy, surf)
             if self.valid_placement(tile_xy_list, sprite):
                 self.place_multi_tile_item(tile_xy_list, surf, sprite)
     
-    def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
+    def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite, pipe_idx: int=None) -> bool:
         if isinstance(tile_xy, tuple):
+            x, y = tile_xy
             valid = all((
-                self.can_reach_tile(tile_xy, sprite.rect.center),
-                self.tile_map[tile_xy] == self.tile_IDs['air'],
-                self.valid_item_border(tile_xy, single_tile=True),
+                self.can_reach_tile(x, y, sprite.rect.center),
+                self.tile_map[x, y] == self.tile_IDs['air'],
+                self.valid_item_border(x, y, single_tile=True) if pipe_idx is None else self.valid_pipe_border(x, y, pipe_idx)
             ))
         else:
             grounded = all((self.valid_item_border(xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
@@ -84,25 +84,52 @@ class ItemPlacement:
             ))
         return valid
         
-    def can_reach_tile(self, tile_xy_world: tuple[int, int], sprite_xy_world: tuple[int, int]) -> bool:
-        sprite_tile_xy_world = pg.Vector2(sprite_xy_world) // TILE_SIZE
-        return abs(tile_xy_world[0] - sprite_tile_xy_world.x) <= TILE_REACH_RADIUS and abs(tile_xy_world[1] - sprite_tile_xy_world.y) <= TILE_REACH_RADIUS 
+    def can_reach_tile(self, x: int, y: int, sprite_xy_world: tuple[int, int]) -> bool:
+        sprite_tile_xy = pg.Vector2(sprite_xy_world) // TILE_SIZE
+        return abs(x - sprite_tile_xy.x) <= TILE_REACH_RADIUS and abs(y - sprite_tile_xy.y) <= TILE_REACH_RADIUS 
 
-    def valid_item_border(self, tile_xy: tuple[int, int], single_tile: bool=False, multi_tile: bool=False) -> bool:
-        '''
-        single tile items: check for any solid tile bordering the tile selected
-        multi-tile items: check the bottom row of tiles to ensure the object is grounded
-        '''
+    def valid_item_border(self, x: int, y: int, single_tile: bool=False, multi_tile: bool=False) -> bool:
         tile_IDs = {self.tile_IDs[name] for name in list(TILES.keys())}
         if single_tile:
-            return any(self.tile_map[xy] in tile_IDs for xy in [
-                (tile_xy[0], tile_xy[1] - 1), # north
-                (tile_xy[0] + 1, tile_xy[1]), # east
-                (tile_xy[0], tile_xy[1] + 1), # south
-                (tile_xy[0] - 1, tile_xy[1]), # west
-            ])
+            for name in RAMP_TILES:
+                tile_IDs.add(name)
+            return any(self.tile_map[xy] in tile_IDs for xy in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)])
         else:
-            return self.tile_map[tile_xy[0], tile_xy[1] + 1] in tile_IDs
+            return self.tile_map[x, y + 1] in tile_IDs
+
+    def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
+        match pipe_idx:
+            case 0:
+                valid = any((
+                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5']},
+                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4']},
+                ))
+            case 1:
+                valid = any((
+                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5']},
+                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3']},
+                ))
+            case 2:
+                valid = any((
+                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5']},
+                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5']},
+                ))
+            case 3:
+                valid = any((
+                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4']},
+                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5']},
+                ))
+            case 4:
+                valid = any((
+                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5']},
+                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3']},
+                ))
+            case 5:
+                valid = any((
+                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4']},
+                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3']},
+                ))
+        return valid
 
     def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, item_name: str=None, pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
         self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding if item_name != 'pipe' else item_name + ' ' + str(pipe_idx)] # item_name will always be passed when pipes are placed

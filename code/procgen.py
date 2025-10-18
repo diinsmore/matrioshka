@@ -59,7 +59,6 @@ class ProcGen:
             'item extended', 
         ]
         id_map.update((name, idx + 1) for idx, name in enumerate(ids))
-        print(id_map)
         return id_map
 
     def get_tile_material(self, tile_ID: int) -> str:

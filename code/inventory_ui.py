@@ -242,11 +242,11 @@ class ItemDrag:
         item_name = self.player.item_holding
         if item_name in PLACEABLE_ITEMS:
             item_xy_world = (pg.Vector2(self.rect.topleft) + self.cam_offset) // TILE_SIZE
-            if item_name == 'pipe' and 'r' in self.keyboard.pressed_keys:
-                self.check_pipe_rotation()
+            if item_name == 'pipe' and self.keyboard.pressed_keys[pg.K_r]:
+                self.rotate_pipe()
             self.item_placement.render_ui(self.image, self.rect, (int(item_xy_world.x), int(item_xy_world.y)), self.player)
     
-    def check_pipe_rotation(self) -> None:
+    def rotate_pipe(self) -> None:
         if not self.pipe_idx:
             self.pipe_idx = 0
         self.pipe_idx = (self.pipe_idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)

@@ -9,7 +9,6 @@ import numpy as np
 from sprite_bases import SpriteBase
 from settings import MAP_SIZE
 
-
 class Pipe:
     def __init__(
         self, 
