@@ -66,12 +66,15 @@ class AssetManager:
             if name in {'assembler', 'boiler', 'steam engine'}: # not stored in a folder of related graphics:
                 self.graphics[name] = load_image(join('..', 'graphics', 'machines', f'{name}.png'))
             else:
-                category = (name.split()[-1 if 'pipe' not in name else 0]) + 's'
+                category = (name.split()[-1] if name != 'pipe' else name) + 's'
                 if category not in self.graphics['machines'].keys():
                     self.graphics['machines'][category] = load_folder(join('..', 'graphics', 'machines', category))
-                self.graphics[name] = self.graphics['machines'][category][name]
-                if 'pipe' in name:
-                    self.graphics[name].set_colorkey(self.graphics[name].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
+                if name != 'pipe':
+                    self.graphics[name] = self.graphics['machines'][category][name]
+                else:
+                    for i in range(len(self.graphics['machines']['pipes'])):
+                        self.graphics[f'pipe {i}'] = self.graphics['machines']['pipes'][f'pipe {i}']
+                        self.graphics[f'pipe {i}'].set_colorkey(self.graphics[f'pipe {i}'].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
 
     def load_material_graphics(self) -> None:
         for material in MATERIALS.keys():

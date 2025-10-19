@@ -52,7 +52,7 @@ class ProcGen:
         ids = [
             *TILES.keys(),
             *RAMP_TILES,  
-            *MACHINES.keys(), 
+            *[m for m in MACHINES if m != 'pipe'], 
             *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))], 
             *STORAGE.keys(), 
             'tree base',

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 import pygame as pg
 from math import ceil
 
-from settings import TILE_SIZE, TOOLS, MATERIALS, MACHINES, STORAGE, DECOR, RESEARCH
+from settings import TILE_SIZE, TOOLS, MATERIALS, MACHINES, STORAGE, DECOR, RESEARCH, PIPE_TRANSPORT_DIRECTIONS
 
 class CraftWindow:
     def __init__(
@@ -282,6 +282,8 @@ class ItemGrid:
 
     def render_item_images(self, index: int, x: int, y: int) -> None:
         item_name = list(self.categories[self.selected_category].keys())[index]
+        if item_name == 'pipe':
+            item_name += ' 0' # add the default pipe index
         try:
             if not isinstance(self.graphics[item_name], dict):
                 image = self.graphics[item_name]

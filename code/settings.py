@@ -157,7 +157,7 @@ MACHINES = {
     'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27),}, 
     'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
     'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
-    **{f'pipe {i}': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),} for i in range(len(PIPE_TRANSPORT_DIRECTIONS))}, 
+    'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
 }
 
 ELECTRICITY = {
@@ -207,7 +207,7 @@ DECOR = {
     'chairs': {'materials': ['wood', 'glass', 'ice']},
 }
 
-PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), 'glass', 'lab']
+PLACEABLE_ITEMS = [*TILES.keys(), *[m for m in MACHINES if m != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))], 'glass', 'lab']
 for category, data in DECOR.items():
     for material in data['materials']:
         PLACEABLE_ITEMS.append(material + ' ' + category.rstrip('s'))

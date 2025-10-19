@@ -53,7 +53,8 @@ class ItemPlacement:
         self.save_data = save_data
        
         self.machine_map = defaultdict(list, save_data['machine map']) if save_data else defaultdict(list)
-        self.machine_names = list(MACHINES.keys()) + ['pipe']
+        self.machine_names = list(m for m in MACHINES if m != 'pipe') + [f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))]
+        print(self.machine_names)
         self.tile_names = list(tile_IDs.keys())
 
     def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], old_pipe_idx: int=None) -> None:
@@ -93,7 +94,7 @@ class ItemPlacement:
             return self.tile_map[x, y + 1] in tile_IDs
 
     def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
-        machine_ids = {self.tile_IDs[m] for m in MACHINES} | {self.tile_IDs['item extended']}
+        machine_ids = {self.tile_IDs[m] for m in MACHINES if 'pipe' not in m} | {self.tile_IDs['item extended']}
         match pipe_idx:
             case 0:
                 valid = any((
