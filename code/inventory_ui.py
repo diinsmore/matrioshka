@@ -182,7 +182,6 @@ class ItemDrag:
         self.rect_base = pg.Rect(self.icon_padding, self.icon_size)
         self.material_names = set(MATERIALS.keys())
         self.tile_names = set(TILES.keys())
-        self.pipe_idx = None # tracks which direction to rotate in
 
         self.item_placement = None # not initialized yet
 
@@ -193,19 +192,19 @@ class ItemDrag:
                 return item_name
 
     def check_drag(self) -> None:
-        l_click, r_click = self.mouse.buttons_pressed.values()
-        if l_click or r_click:
+        left_click, right_click = self.mouse.buttons_pressed.values()
+        if left_click or right_click:
             if self.active:
-                if r_click:
+                if right_click:
                     self.item_drag_amount //= 2
                 else:
                     self.end_drag()
             else:
                 if self.outline.collidepoint(self.mouse.screen_xy) and (item := self.get_clicked_item()):
-                    self.start_drag(item, 'left' if l_click else 'right')   
+                    self.start_drag(item, 'left' if left_click else 'right')   
                 else:
                     if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render and hasattr(m, 'has_inv')]:
-                        self.check_machine_extract(machines_with_inv, l_click, r_click)
+                        self.check_machine_extract(machines_with_inv, left_click, right_click)
         else:
             if self.active:
                 self.render_item_drag()
@@ -216,9 +215,6 @@ class ItemDrag:
         self.active = True
         self.player.item_holding = item_name
         self.player.inventory.index = self.player.inventory.contents[item_name]['index']
-        if item_name == 'pipe':
-            self.pipe_idx = 0
-            item_name += f' {self.pipe_idx}'
         self.image = self.graphics[item_name].copy() # a copy to not alter the alpha value of the original
         self.image.set_alpha(150) # slightly transparent until it's placed
         self.rect = self.image.get_rect(center=self.mouse.world_xy)
@@ -229,11 +225,7 @@ class ItemDrag:
         if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
-            self.item_placement.place_item(
-                self.player, 
-                (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE), 
-                self.pipe_idx if self.player.item_holding == 'pipe' else None
-            )
+            self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))
         self.active = False
         self.image = None
         self.rect = None
@@ -242,19 +234,20 @@ class ItemDrag:
 
     def render_item_drag(self) -> None:
         self.rect.topleft = self.get_grid_xy()
-        self.screen.blit(self.image, self.rect) 
-        item_name = self.player.item_holding
+        self.screen.blit(self.image, self.rect)
+        if 'pipe' in self.player.item_holding:
+            item_name, idx = self.player.item_holding.split(' ')
+        else:
+            item_name = self.player.item_holding
         if item_name in PLACEABLE_ITEMS:
             item_xy_world = (pg.Vector2(self.rect.topleft) + self.cam_offset) // TILE_SIZE
             if item_name == 'pipe' and self.keyboard.pressed_keys[pg.K_r]:
-                self.rotate_pipe()
+                self.rotate_pipe(idx)
             self.item_placement.render_ui(self.image, self.rect, (int(item_xy_world.x), int(item_xy_world.y)), self.player)
     
-    def rotate_pipe(self) -> None:
-        if not self.pipe_idx:
-            self.pipe_idx = 0
-        self.pipe_idx = (self.pipe_idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
-        self.image = self.graphics[f'pipe {self.pipe_idx}']
+    def rotate_pipe(self, idx: int) -> None:
+        idx = (idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
+        self.image = self.graphics[f'pipe {idx}']
 
     def place_item_in_machine(self) -> None:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:

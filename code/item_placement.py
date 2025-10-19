@@ -56,24 +56,23 @@ class ItemPlacement:
         self.machine_names = list(MACHINES.keys()) + ['pipe']
         self.tile_names = list(tile_IDs.keys())
 
-    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], pipe_idx: int=None) -> None:
-        item_name = sprite.item_holding
-        surf = self.assets['graphics'][item_name if item_name != 'pipe' else item_name + ' ' + str(pipe_idx)]
+    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> None:
+        surf = self.assets['graphics'][sprite.item_holding]
         if surf.size[0] <= TILE_SIZE and surf.size[1] <= TILE_SIZE:
-            if self.valid_placement(tile_xy, sprite, pipe_idx):
-                self.place_single_tile_item(tile_xy, sprite, item_name if item_name == 'pipe' else None, pipe_idx)
+            if self.valid_placement(tile_xy, sprite):
+                self.place_single_tile_item(tile_xy, sprite, item_name)
         else:
             tile_xy_list = self.get_tile_xy_list(tile_xy, surf)
             if self.valid_placement(tile_xy_list, sprite):
                 self.place_multi_tile_item(tile_xy_list, surf, sprite)
     
-    def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite, pipe_idx: int=None) -> bool:
+    def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
         if isinstance(tile_xy, tuple):
             x, y = tile_xy
             valid = all((
                 self.can_reach_tile(x, y, sprite.rect.center),
                 self.tile_map[x, y] == self.tile_IDs['air'],
-                self.valid_item_border(x, y, single_tile=True) if pipe_idx is None else self.valid_pipe_border(x, y, pipe_idx)
+                self.valid_item_border(x, y, single_tile=True) if 'pipe' not in sprite.item_holding else self.valid_pipe_border(x, y, int(sprite.item_holding[-1]))
             ))
         else:
             grounded = all((self.valid_item_border(*xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
@@ -128,14 +127,14 @@ class ItemPlacement:
                 ))
         return valid
 
-    def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, item_name: str=None, pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
-        self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding if item_name != 'pipe' else item_name + ' ' + str(pipe_idx)] # item_name will always be passed when pipes are placed
+    def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, item_name: str=None) -> None: # passing the item name if a class needs to be initialized
+        self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]
         self.collision_map.update_map(tile_xy, add_tile=True)
         sprite.inventory.remove_item(sprite.item_holding)
         sprite.item_holding = None
         if item_name:
             if item_name in self.machine_names:
-                self.init_machine_cls(item_name, tile_xy, pipe_idx=pipe_idx)
+                self.init_machine_cls(item_name, tile_xy)
             else:
                 pass     
 
@@ -185,5 +184,5 @@ class ItemPlacement:
         max_y = max([xy[1] for xy in tile_xy])
         return [xy for xy in tile_xy if xy[1] == max_y]
 
-    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int], sprite_idx: int=None, pipe_idx: int=None) -> None:
-        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft, sprite_idx, pipe_idx))
+    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int], sprite_idx: int=None) -> None:
+        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft, sprite_idx))

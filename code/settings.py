@@ -143,6 +143,7 @@ TOOLS = {
     'dynamite': {}
 }
 
+PIPE_TRANSPORT_DIRECTIONS = [(0, 1), (1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 MACHINES = {
     'burner furnace': {'recipe': {'stone': 7, 'wood torch': 1}, 'rgb': (47, 15, 15)}, 
     'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4}, 'rgb': (49, 63, 71)},
@@ -155,13 +156,9 @@ MACHINES = {
     'boiler': {'recipe': {'iron plate': 8, 'pipe': 4, 'burner furnace': 1}, 'rgb': (38, 33, 31),}, 
     'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27),}, 
     'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
-    'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),}, 
+    'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
+    **{f'pipe {i}': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),} for i in range(len(PIPE_TRANSPORT_DIRECTIONS))}, 
 }
-
-LOGISTICS = {
-    'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),},  # TODO: add trains or maybe minecarts with similar functionality?
-}
-PIPE_TRANSPORT_DIRECTIONS = [(0, 1), (1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 
 ELECTRICITY = {
     'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
@@ -210,7 +207,7 @@ DECOR = {
     'chairs': {'materials': ['wood', 'glass', 'ice']},
 }
 
-PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), *LOGISTICS.keys(), 'glass', 'lab']
+PLACEABLE_ITEMS = [*TILES.keys(), *MACHINES.keys(), 'glass', 'lab']
 for category, data in DECOR.items():
     for material in data['materials']:
         PLACEABLE_ITEMS.append(material + ' ' + category.rstrip('s'))

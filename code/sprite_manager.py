@@ -192,7 +192,7 @@ class SpriteManager:
             for i, xy in enumerate(xy_list):
                 self.machine_cls_map[name](**self.get_machine_params(name, xy, i))
 
-    def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int=None, pipe_idx: int=None) -> dict[str, any]:
+    def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int=None) -> dict[str, any]:
         params = {
             'xy': pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
             'image': self.assets['graphics'][name if pipe_idx is None else name + f' {pipe_idx}'],
@@ -214,8 +214,7 @@ class SpriteManager:
             params.update([('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
         elif name == 'pipe':
             params = dict(islice(params.items(), 10))
-            del params['player']
-            params.update([('direction_idx', pipe_idx), ('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs)])
+            params.update([('idx', int(name[-1])), ('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs)])
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:

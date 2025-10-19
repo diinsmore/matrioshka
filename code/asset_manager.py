@@ -62,14 +62,17 @@ class AssetManager:
 
     def load_machine_graphics(self) -> None:
         self.graphics['machines'] = {}
-        for machine in MACHINES:
-            if machine in {'assembler', 'boiler', 'steam engine'}: # not stored in a folder of related graphics:
-                self.graphics[machine] = load_image(join('..', 'graphics', 'machines', f'{machine}.png'))
+        for name in MACHINES:
+            if name in {'assembler', 'boiler', 'steam engine'}: # not stored in a folder of related graphics:
+                self.graphics[name] = load_image(join('..', 'graphics', 'machines', f'{name}.png'))
             else:
-                category = machine.split()[-1] + 's'
+                category = (name.split()[-1 if 'pipe' not in name else 0]) + 's'
+                print(category)
                 if category not in self.graphics['machines'].keys():
                     self.graphics['machines'][category] = load_folder(join('..', 'graphics', 'machines', category))
-                self.graphics[machine] = self.graphics['machines'][category][machine]
+                self.graphics[name] = self.graphics['machines'][category][name]
+                if 'pipe' in name:
+                    self.graphics[name].set_colorkey(self.graphics[name].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
 
     def load_material_graphics(self) -> None:
         for material in MATERIALS.keys():
@@ -78,17 +81,9 @@ class AssetManager:
             except FileNotFoundError:
                 pass
 
-    def load_pipe_graphics(self) -> None:
-        self.graphics['pipes'] = load_folder(join('..', 'graphics', 'pipes'))
-        for i in range(len(self.graphics['pipes'])):
-            img = load_image(join('..', 'graphics', 'pipes', f'pipe {i}.png'), alpha=False)
-            img.set_colorkey(img.get_at((0, 0)))
-            self.graphics[f'pipe {i}'] = img
-
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
         self.load_tile_graphics()
         self.load_tool_graphics()
         self.load_machine_graphics()
         self.load_material_graphics()
-        self.load_pipe_graphics()

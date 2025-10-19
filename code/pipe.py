@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
+    from player import Player
 
 import pygame as pg
 import numpy as np
@@ -20,6 +21,7 @@ class Pipe(SpriteBase):
         cam_offset: pg.Vector2,
         mouse: Mouse,
         keyboard: Keyboard,
+        player: Player,
         assets: dict[str, dict[str, any]],
         direction_idx: int,
         tile_map: np.ndarray,
@@ -30,6 +32,7 @@ class Pipe(SpriteBase):
         self.cam_offset = cam_offset
         self.mouse = mouse
         self.keyboard = keyboard
+        self.player = player
         self.assets = assets
         self.direction_idx = direction_idx
         self.tile_map = tile_map
@@ -39,11 +42,11 @@ class Pipe(SpriteBase):
         self.item_map = np.zeros(MAP_SIZE, dtype=int)
         self.graphics = self.assets['graphics']
         
-    def rotate(self) -> None:
-        if self.rect.collidepoint(self.mouse.world_xy) and self.keyboard.pressed_keys[pg.K_r]:
+    def check_rotate(self) -> None:
+        if self.rect.collidepoint(self.mouse.world_xy) and self.keyboard.pressed_keys[pg.K_r] and not self.player.item_holding:
             self.direction_idx = (self.direction_idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
             self.image = self.graphics[f'pipe {self.direction_idx}']
             self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.direction_idx}']
 
     def update(self, dt: float) -> None:
-        self.rotate()
+        self.check_rotate()
