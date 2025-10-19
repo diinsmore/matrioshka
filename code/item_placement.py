@@ -53,7 +53,7 @@ class ItemPlacement:
         self.save_data = save_data
        
         self.machine_map = defaultdict(list, save_data['machine map']) if save_data else defaultdict(list)
-        self.machine_names = list(MACHINES.keys()) 
+        self.machine_names = list(MACHINES.keys()) + ['pipe']
         self.tile_names = list(tile_IDs.keys())
 
     def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], pipe_idx: int=None) -> None:
@@ -135,7 +135,7 @@ class ItemPlacement:
         sprite.item_holding = None
         if item_name:
             if item_name in self.machine_names:
-                self.init_machine_cls(item_name, tile_xy, pipe_idx)
+                self.init_machine_cls(item_name, tile_xy, pipe_idx=pipe_idx)
             else:
                 pass     
 
@@ -185,5 +185,5 @@ class ItemPlacement:
         max_y = max([xy[1] for xy in tile_xy])
         return [xy for xy in tile_xy if xy[1] == max_y]
 
-    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int], pipe_idx: int=None) -> None:
-        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft, pipe_idx))
+    def init_machine_cls(self, name: str, surf_topleft: tuple[int, int], sprite_idx: int=None, pipe_idx: int=None) -> None:
+        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft, sprite_idx, pipe_idx))

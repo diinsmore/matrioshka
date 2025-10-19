@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 import pygame as pg
 from os.path import join
 from random import choice, randint
+from itertools import islice
 
 from helper_functions import load_image, cls_name_to_str
 from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES, PIPE_TRANSPORT_DIRECTIONS
@@ -19,6 +20,7 @@ from timer import Timer
 from nature_sprites import Tree, Cloud
 from furnaces import BurnerFurnace, ElectricFurnace
 from drills import BurnerDrill, ElectricDrill
+from pipe import Pipe
 
 class SpriteManager:
     def __init__(
@@ -181,7 +183,7 @@ class SpriteManager:
     @staticmethod
     def get_machine_cls_map() -> dict[str, type[SpriteBase]]:
         machine_cls_map = {}
-        for cls in [BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill]:
+        for cls in [BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe]:
             machine_cls_map[cls_name_to_str(cls)] = cls
         return machine_cls_map
 
@@ -193,7 +195,7 @@ class SpriteManager:
     def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int=None, pipe_idx: int=None) -> dict[str, any]:
         params = {
             'xy': pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
-            'image': self.assets['graphics'][name],
+            'image': self.assets['graphics'][name if pipe_idx is None else name + f' {pipe_idx}'],
             'z': Z_LAYERS['main'],
             'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites],
             'screen': self.screen,
@@ -211,14 +213,9 @@ class SpriteManager:
         if 'drill' in name:
             params.update([('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
         elif name == 'pipe':
-            params = params[:10]
-            params.update([
-                ('direction', PIPE_TRANSPORT_DIRECTIONS[pipe_idx]), 
-                ('mouse', self.mouse), 
-                ('keyboard', self.keyboard), 
-                ('tile_map', self.tile_map), 
-                ('tile_IDs', self.tile_IDs)
-            ])
+            params = dict(islice(params.items(), 10))
+            del params['player']
+            params.update([('direction_idx', pipe_idx), ('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs)])
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
