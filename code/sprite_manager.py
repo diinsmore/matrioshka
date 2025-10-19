@@ -195,7 +195,7 @@ class SpriteManager:
     def get_machine_params(self, name: str, xy: tuple[int, int], sprite_idx: int=None) -> dict[str, any]:
         params = {
             'xy': pg.Vector2(xy[0] * TILE_SIZE, xy[1] * TILE_SIZE),
-            'image': self.assets['graphics'][name if pipe_idx is None else name + f' {pipe_idx}'],
+            'image': self.assets['graphics'][name],
             'z': Z_LAYERS['main'],
             'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites],
             'screen': self.screen,
@@ -212,9 +212,9 @@ class SpriteManager:
         }
         if 'drill' in name:
             params.update([('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
-        elif name == 'pipe':
+        elif 'pipe' in name:
             params = dict(islice(params.items(), 10))
-            params.update([('idx', int(name[-1])), ('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs)])
+            params.update([('direction_idx', int(name[-1])), ('tile_map', self.tile_map), ('tile_IDs', self.tile_IDs)])
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:

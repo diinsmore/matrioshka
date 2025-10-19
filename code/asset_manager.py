@@ -67,7 +67,6 @@ class AssetManager:
                 self.graphics[name] = load_image(join('..', 'graphics', 'machines', f'{name}.png'))
             else:
                 category = (name.split()[-1 if 'pipe' not in name else 0]) + 's'
-                print(category)
                 if category not in self.graphics['machines'].keys():
                     self.graphics['machines'][category] = load_folder(join('..', 'graphics', 'machines', category))
                 self.graphics[name] = self.graphics['machines'][category][name]

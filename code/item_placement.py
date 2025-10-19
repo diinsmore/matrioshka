@@ -11,7 +11,7 @@ import pygame as pg
 from math import ceil
 from collections import defaultdict
 
-from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, MACHINES
+from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, MACHINES, PIPE_TRANSPORT_DIRECTIONS
 
 class ItemPlacement:
     def __init__(
@@ -56,11 +56,11 @@ class ItemPlacement:
         self.machine_names = list(MACHINES.keys()) + ['pipe']
         self.tile_names = list(tile_IDs.keys())
 
-    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int]) -> None:
+    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], old_pipe_idx: int=None) -> None:
         surf = self.assets['graphics'][sprite.item_holding]
         if surf.size[0] <= TILE_SIZE and surf.size[1] <= TILE_SIZE:
             if self.valid_placement(tile_xy, sprite):
-                self.place_single_tile_item(tile_xy, sprite, item_name)
+                self.place_single_tile_item(tile_xy, sprite, old_pipe_idx)
         else:
             tile_xy_list = self.get_tile_xy_list(tile_xy, surf)
             if self.valid_placement(tile_xy_list, sprite):
@@ -127,16 +127,15 @@ class ItemPlacement:
                 ))
         return valid
 
-    def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, item_name: str=None) -> None: # passing the item name if a class needs to be initialized
+    def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, old_pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
         self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]
         self.collision_map.update_map(tile_xy, add_tile=True)
-        sprite.inventory.remove_item(sprite.item_holding)
-        sprite.item_holding = None
-        if item_name:
-            if item_name in self.machine_names:
-                self.init_machine_cls(item_name, tile_xy)
-            else:
-                pass     
+        sprite.inventory.remove_item(sprite.item_holding if old_pipe_idx is None else f'pipe {old_pipe_idx}')
+        if sprite.item_holding in self.machine_names:
+            self.init_machine_cls(sprite.item_holding, tile_xy)
+        else:
+            pass   
+        sprite.item_holding = None  
 
     def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
         surf_topleft = tile_xy_list[0]
@@ -185,4 +184,4 @@ class ItemPlacement:
         return [xy for xy in tile_xy if xy[1] == max_y]
 
     def init_machine_cls(self, name: str, surf_topleft: tuple[int, int], sprite_idx: int=None) -> None:
-        self.machine_cls_map[name](**self.sprite_mgr.get_machine_params(name, surf_topleft, sprite_idx))
+        self.machine_cls_map[name if 'pipe' not in name else name.split(' ')[0]](**self.sprite_mgr.get_machine_params(name, surf_topleft, sprite_idx))

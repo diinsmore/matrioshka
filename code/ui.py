@@ -182,7 +182,6 @@ class UI:
         self.active_item_names = [cls for cls in self.active_item_names if cls.timer.running]
 
     def get_scaled_image(self, image: pg.Surface, item_name: str, width: int, height: int, padding: int=0) -> pg.Surface:
-        print(item_name)
         bounding_box = (width - (padding * 2), height - (padding * 2))
         aspect_ratio = min(image.width / bounding_box[0], image.height / bounding_box[1]) # avoid stretching an image too wide/tall
         scale = (min(bounding_box[0], image.width * aspect_ratio), min(bounding_box[1], image.height * aspect_ratio))

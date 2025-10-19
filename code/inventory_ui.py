@@ -176,12 +176,11 @@ class ItemDrag:
         self.get_sprites_in_radius = get_sprites_in_radius
 
         self.active = False
-        self.image = None
-        self.rect = None
-        self.amount = None
+        self.image, self.rect = None, None 
         self.rect_base = pg.Rect(self.icon_padding, self.icon_size)
-        self.material_names = set(MATERIALS.keys())
-        self.tile_names = set(TILES.keys())
+        self.amount = None
+        self.material_names, self.tile_names = set(MATERIALS.keys()), set(TILES.keys())
+        self.old_pipe_idx = None # storing the original pipe index if it gets rotated while being dragged
 
         self.item_placement = None # not initialized yet
 
@@ -225,29 +224,24 @@ class ItemDrag:
         if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
-            self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE))
-        self.active = False
-        self.image = None
-        self.rect = None
-        self.amount = None
-        self.player.item_holding = None 
+            self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE), self.old_pipe_idx)
+        self.active, self.image, self.rect, self.amount, self.old_pipe_idx = None, None, None, None, None
 
     def render_item_drag(self) -> None:
         self.rect.topleft = self.get_grid_xy()
         self.screen.blit(self.image, self.rect)
-        if 'pipe' in self.player.item_holding:
-            item_name, idx = self.player.item_holding.split(' ')
-        else:
-            item_name = self.player.item_holding
-        if item_name in PLACEABLE_ITEMS:
+        if self.player.item_holding in PLACEABLE_ITEMS:
             item_xy_world = (pg.Vector2(self.rect.topleft) + self.cam_offset) // TILE_SIZE
-            if item_name == 'pipe' and self.keyboard.pressed_keys[pg.K_r]:
-                self.rotate_pipe(idx)
+            if 'pipe' in self.player.item_holding and self.keyboard.pressed_keys[pg.K_r]:
+                self.rotate_pipe()
             self.item_placement.render_ui(self.image, self.rect, (int(item_xy_world.x), int(item_xy_world.y)), self.player)
     
-    def rotate_pipe(self, idx: int) -> None:
-        idx = (idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
+    def rotate_pipe(self) -> None:
+        if self.old_pipe_idx is None:
+            self.old_pipe_idx = int(self.player.item_holding[-1])
+        idx = (int(self.player.item_holding[-1]) + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
         self.image = self.graphics[f'pipe {idx}']
+        self.player.item_holding = f'pipe {idx}'
 
     def place_item_in_machine(self) -> None:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
