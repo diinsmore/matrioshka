@@ -153,19 +153,12 @@ class Main:
     def make_save(self, file: str) -> None:
         visited_tiles = self.ui.mini_map.visited_tiles
         data = defaultdict(list, {
-            'tile map': self.proc_gen.tile_map.tolist(),
-            'height map': self.proc_gen.height_map.tolist(),
-            'tree map': [list(xy) for xy in self.proc_gen.tree_map],
-            'cave maps': {
-                biome: cave_map if isinstance(cave_map, list) else cave_map.tolist() 
-                for biome, cave_map in self.proc_gen.cave_maps.items()
-            },
-            'machine map': self.item_placement.machine_map,
-            'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(),
-            'biome order': self.proc_gen.biome_order,
+            **self.proc_gen.make_save(),
             'current biome': self.player.current_biome,
+            'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(),
             'weather': self.graphics_engine.weather.sky.make_save(),
-            'sprites': defaultdict(list)
+            'sprites': defaultdict(list),
+            'machine map': self.item_placement.machine_map
         })
         self.load_sprite_data(data)
         with open(file, 'w') as f:

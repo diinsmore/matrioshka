@@ -81,7 +81,9 @@ class AssetManager:
     def load_pipe_graphics(self) -> None:
         self.graphics['pipes'] = load_folder(join('..', 'graphics', 'pipes'))
         for i in range(len(self.graphics['pipes'])):
-            self.graphics[f'pipe {i}'] = load_image(join('..', 'graphics', 'pipes', f'pipe {i}.png'))
+            img = load_image(join('..', 'graphics', 'pipes', f'pipe {i}.png'), alpha=False)
+            img.set_colorkey(img.get_at((0, 0)))
+            self.graphics[f'pipe {i}'] = img
 
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()

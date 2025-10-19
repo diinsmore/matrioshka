@@ -110,6 +110,15 @@ class ProcGen:
         self.terrain_gen.run()
         self.tree_gen.get_tree_locations()
 
+    def make_save(self) -> dict[str, list | dict]:
+        return {
+            'tile map': self.tile_map.tolist(),
+            'height map': self.height_map.tolist(),
+            'tree map': [list(xy) for xy in self.tree_map],
+            'cave maps': {biome: arr if isinstance(arr, list) else arr.tolist() for biome, arr in self.cave_maps.items()},
+            'biome order': self.biome_order
+        }
+
 
 class TerrainGen:
     def __init__(self, tile_IDs: dict[str, int], biome_order: dict[str, int], current_biome: str):

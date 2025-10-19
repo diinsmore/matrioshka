@@ -229,7 +229,11 @@ class ItemDrag:
         if self.player.item_holding in (self.material_names|self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
-            self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE), self.pipe_idx)
+            self.item_placement.place_item(
+                self.player, 
+                (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE), 
+                self.pipe_idx if self.player.item_holding == 'pipe' else None
+            )
         self.active = False
         self.image = None
         self.rect = None

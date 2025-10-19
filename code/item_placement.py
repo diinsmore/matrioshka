@@ -52,7 +52,7 @@ class ItemPlacement:
         self.machine_cls_map = machine_cls_map
         self.save_data = save_data
        
-        self.machine_map = defaultdict(list, self.save_data['machine map']) if self.save_data else defaultdict(list)
+        self.machine_map = defaultdict(list, save_data['machine map']) if save_data else defaultdict(list)
         self.machine_names = list(MACHINES.keys()) 
         self.tile_names = list(tile_IDs.keys())
 
@@ -76,12 +76,8 @@ class ItemPlacement:
                 self.valid_item_border(x, y, single_tile=True) if pipe_idx is None else self.valid_pipe_border(x, y, pipe_idx)
             ))
         else:
-            grounded = all((self.valid_item_border(xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
-            valid = grounded and all((
-                self.can_reach_tile(xy, sprite.rect.center) and 
-                self.tile_map[xy] == self.tile_IDs['air'] 
-                for xy in tile_xy
-            ))
+            grounded = all((self.valid_item_border(*xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
+            valid = grounded and all((self.can_reach_tile(*xy, sprite.rect.center) and self.tile_map[xy] == self.tile_IDs['air'] for xy in tile_xy))
         return valid
         
     def can_reach_tile(self, x: int, y: int, sprite_xy_world: tuple[int, int]) -> bool:
@@ -98,36 +94,37 @@ class ItemPlacement:
             return self.tile_map[x, y + 1] in tile_IDs
 
     def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
+        machine_ids = {self.tile_IDs[m] for m in MACHINES} | {self.tile_IDs['item extended']}
         match pipe_idx:
             case 0:
                 valid = any((
-                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5']},
-                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4']},
+                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5'], *machine_ids},
+                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4'], *machine_ids}
                 ))
             case 1:
                 valid = any((
-                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5']},
-                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3']},
+                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5'], *machine_ids},
+                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3'], *machine_ids}
                 ))
             case 2:
                 valid = any((
-                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5']},
-                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5']},
+                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5'], *machine_ids},
+                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5'], *machine_ids}
                 ))
             case 3:
                 valid = any((
-                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4']},
-                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5']},
+                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4'], *machine_ids},
+                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5'], *machine_ids}
                 ))
             case 4:
                 valid = any((
-                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5']},
-                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3']},
+                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5'], *machine_ids},
+                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3'], *machine_ids}
                 ))
             case 5:
                 valid = any((
-                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4']},
-                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3']},
+                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4'], *machine_ids},
+                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3'], *machine_ids}
                 ))
         return valid
 
@@ -155,7 +152,7 @@ class ItemPlacement:
             self.machine_map[item_name].append(surf_topleft)
             self.init_machine_cls(item_name, surf_topleft)
 
-        sprite.inventory.remove_item(item)
+        sprite.inventory.remove_item(item_name)
         sprite.item_holding = None
 
     def get_tile_xy_list(self, tile_xy: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:

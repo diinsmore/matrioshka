@@ -3,8 +3,8 @@ from os import walk
 from os.path import join
 import re
 
-def load_image(dir_path: str) -> pg.Surface:
-    return pg.image.load(dir_path).convert_alpha()
+def load_image(dir_path: str, alpha: bool=True) -> pg.Surface:
+    return pg.image.load(dir_path).convert_alpha() if alpha else pg.image.load(dir_path).convert()
 
 def load_folder(dir_path: str) -> dict[str, pg.Surface]:
     images = {}
