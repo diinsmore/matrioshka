@@ -161,21 +161,15 @@ class GraphicsEngine:
 
 
 class Camera:
-    def __init__(self, coords: pg.Vector2): 
-        self.coords = coords
+    def __init__(self, center: pg.Vector2): 
+        self.center = center
         self.offset = pg.Vector2()
-        self.half_screen_x = RES[0] // 2
-        self.half_screen_y = RES[1] // 2
-        self.max_x = MAP_SIZE[0] * TILE_SIZE - self.half_screen_x
-        self.max_y = MAP_SIZE[1] * TILE_SIZE - self.half_screen_y
+        self.max_x, self.max_y = (MAP_SIZE[0] * TILE_SIZE) - (RES[0] // 2), (MAP_SIZE[1] * TILE_SIZE) - (RES[1] // 2)
 
-    def update(self, target_coords: pg.Vector2) -> None:
-        self.coords += (target_coords - self.coords) * 0.05
-        self.coords = pg.Vector2(
-            max(self.half_screen_x, min(self.coords.x, self.max_x)), 
-            min(self.coords.y, self.max_y) # not adding a minimum limit until the space biome (if one is to exist) is configured 
-        )
-        self.offset.x, self.offset.y = int(self.coords.x) - self.half_screen_x, int(self.coords.y) - self.half_screen_y
+    def update(self, target: pg.Vector2) -> None:
+        self.center += (target - self.center) * 0.05
+        self.center = pg.Vector2(max(RES[0] // 2, min(self.center.x, self.max_x)), min(self.center.y, self.max_y)) # not adding a minimum limit until the space biome (if one is to exist) is configured 
+        self.offset.x, self.offset.y = int(self.center.x) - (RES[0] // 2), int(self.center.y) - (RES[1] // 2)
 
 
 class Terrain:

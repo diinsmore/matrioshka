@@ -143,7 +143,6 @@ TOOLS = {
     'dynamite': {}
 }
 
-PIPE_TRANSPORT_DIRECTIONS = [(0, 1), (1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 MACHINES = {
     'burner furnace': {'recipe': {'stone': 7, 'wood torch': 1}, 'rgb': (47, 15, 15)}, 
     'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4}, 'rgb': (49, 63, 71)},
@@ -154,11 +153,16 @@ MACHINES = {
     'electric inserter': {'recipe': {'iron plate': 5, 'circuit': 3}, 'rgb': (118, 107, 107),}, 
     'assembler': {'recipe': {'iron plate': 10, 'iron gear': 5, 'circuit': 4}, 'rgb': (80, 74, 73),},
     'boiler': {'recipe': {'iron plate': 8, 'pipe': 4, 'burner furnace': 1}, 'rgb': (38, 33, 31),}, 
-    'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27),}, 
+    'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27),},
+}
+
+LOGISTICS = {
     'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
     'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
+    
 }
+PIPE_TRANSPORT_DIRECTIONS = [(0, 1), (1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 
 ELECTRICITY = {
     'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
@@ -207,12 +211,13 @@ DECOR = {
     'chairs': {'materials': ['wood', 'glass', 'ice']},
 }
 
-PLACEABLE_ITEMS = [*TILES.keys(), *[m for m in MACHINES if m != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))], 'glass', 'lab']
-for category, data in DECOR.items():
-    for material in data['materials']:
-        PLACEABLE_ITEMS.append(material + ' ' + category.rstrip('s'))
+PLACEABLE_ITEMS = [
+    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))], 
+    *[f'{m} chest' for m in STORAGE['chest']['materials']], 'glass', 'lab'
+]
 
-# TODO: everything below is unfinished
+OBJ_ITEMS = [item for item in PLACEABLE_ITEMS if item not in {*TILES, 'glass'}] # has a class to instantiate after placement
+
 FOOD = {
     'fruits': [
         'apple', 'orange', 'banana', 'cherry', 'grapes', 'coconut', 'grapefruit', 'lemon', 

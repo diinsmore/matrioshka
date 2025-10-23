@@ -32,16 +32,16 @@ class Main:
         self.running = True
         self.clock = pg.time.Clock()
         screen = pg.display.set_mode(RES)
+      
         save_data = self.get_save_data()
         if save_data:
             player_data = save_data['sprites']['player'][0] # index 0 to get the dictionary within the list
             player_xy = player_data['xy']
 
-        self.cam = Camera(player_xy if save_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
+        self.cam = Camera(center=player_xy if save_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
         
         self.input_mgr = InputManager()
-        self.mouse = self.input_mgr.mouse
-        self.keyboard = self.input_mgr.keyboard
+        self.mouse, self.keyboard = self.input_mgr.mouse, self.input_mgr.keyboard
 
         self.proc_gen = ProcGen(screen, self.cam.offset, save_data, player_xy if save_data else None)
         
@@ -64,6 +64,7 @@ class Main:
             self.proc_gen.tile_IDs_to_names,
             self.proc_gen.tree_map,
             self.proc_gen.height_map,
+            self.proc_gen.item_transport_map,
             self.proc_gen.current_biome,
             self.proc_gen.get_tile_material,
             self.physics_engine.sprite_movement,
@@ -122,11 +123,12 @@ class Main:
             self.ui.gen_bg, 
             self.sprite_mgr.rect_in_sprite_radius, 
             self.ui.render_item_amount,
-            self.sprite_mgr.machine_cls_map,
+            self.sprite_mgr.items_init_when_placed,
             save_data
         )
         self.sprite_mgr.item_placement = self.item_placement
-        self.sprite_mgr.init_machines()
+       # if save_data:
+           # self.sprite_mgr.init_placed_items()
         inv_ui = self.ui.inventory_ui
         inv_ui.item_placement = self.item_placement
         inv_ui.item_drag.item_placement = self.item_placement
@@ -157,8 +159,7 @@ class Main:
             'current biome': self.player.current_biome,
             'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(),
             'weather': self.graphics_engine.weather.sky.make_save(),
-            'sprites': defaultdict(list),
-            'machine map': self.item_placement.machine_map
+            'sprites': defaultdict(list)
         })
         self.load_sprite_data(data)
         with open(file, 'w') as f:
@@ -186,7 +187,7 @@ class Main:
         while self.running:
             for event in pg.event.get():
                 if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
-                    self.make_save('save.json')
+                 #   self.make_save('save.json')
                     pg.quit()
                     sys.exit()
             self.update(self.clock.tick(FPS) / 1000)

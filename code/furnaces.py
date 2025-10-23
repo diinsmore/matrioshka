@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from player import Player
+    import numpy as np
 
 import pygame as pg
 
@@ -23,7 +24,10 @@ class Furnace(MachineSpriteBase):
         mouse: Mouse,
         keyboard: Keyboard,
         player: Player,
-        assets: dict[str, dict[str, any]],
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray,
+        obj_map: np.ndarray,
+        item_transport_map: np.ndarray,
         gen_outline: callable,
         gen_bg: callable,
         rect_in_sprite_radius: callable,
@@ -41,19 +45,22 @@ class Furnace(MachineSpriteBase):
             keyboard, 
             player, 
             assets, 
+            tile_map, 
+            obj_map,
+            item_transport_map, 
             gen_outline, 
             gen_bg, 
             rect_in_sprite_radius, 
             render_item_amount, 
             save_data
         )
-        self.max_capacity['smelt'] = 99
         self.can_smelt = {
             'copper': {'speed': 3000, 'output': 'copper plate'}, 
             'iron': {'speed': 5000, 'output': 'iron plate'},
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
         self.smelt_input = save_data['smelt input'] if save_data else {'item': None, 'amount': 0}
+        self.max_capacity = {'smelt': 50, 'output': 99}
         self.has_inv = True
         self.timers = {}
 
@@ -126,7 +133,7 @@ class Furnace(MachineSpriteBase):
 
 class BurnerFurnace(Furnace):
     def __init__(
-        self,
+        self, 
         xy: pg.Vector2, 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
@@ -136,11 +143,14 @@ class BurnerFurnace(Furnace):
         mouse: Mouse,
         keyboard: Keyboard,
         player: Player,
-        assets: dict[str, dict[str, any]],
-        gen_outline: callable, 
-        gen_bg: callable, 
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray,
+        obj_map: np.ndarray,
+        item_transport_map: np.ndarray,
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -154,6 +164,9 @@ class BurnerFurnace(Furnace):
             keyboard, 
             player, 
             assets, 
+            tile_map, 
+            obj_map,
+            item_transport_map, 
             gen_outline, 
             gen_bg, 
             rect_in_sprite_radius, 
@@ -163,6 +176,7 @@ class BurnerFurnace(Furnace):
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
+        self.max_capacity['smelt'] = 50
         self.speed_factor = 1
         self.init_ui(FurnaceUI)
 
@@ -178,11 +192,15 @@ class SteelFurnace(Furnace):
         cam_offset: pg.Vector2,
         mouse: Mouse,
         keyboard: Keyboard,
-        assets: dict[str, dict[str, any]],
-        gen_outline: callable, 
-        gen_bg: callable, 
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
+        player: Player,
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray,
+        obj_map: np.ndarray,
+        item_transport_map: np.ndarray,
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -196,6 +214,9 @@ class SteelFurnace(Furnace):
             keyboard, 
             player, 
             assets, 
+            tile_map, 
+            obj_map,
+            item_transport_map, 
             gen_outline, 
             gen_bg, 
             rect_in_sprite_radius, 
@@ -211,6 +232,7 @@ class SteelFurnace(Furnace):
             },
             'electric': {'electric poles'}
         }
+        self.max_capacity['smelt'] = 50
         self.speed_factor = 2
         self.init_ui(FurnaceUI)
 
@@ -227,11 +249,14 @@ class ElectricFurnace(Furnace):
         mouse: Mouse,
         keyboard: Keyboard,
         player: Player,
-        assets: dict[str, dict[str, any]],
-        gen_outline: callable, 
-        gen_bg: callable, 
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray,
+        obj_map: np.ndarray,
+        item_transport_map: np.ndarray,
+        gen_outline: callable,
+        gen_bg: callable,
+        rect_in_sprite_radius: callable,
+        render_item_amount: callable,
         save_data: dict[str, any]
     ):
         super().__init__(
@@ -245,6 +270,9 @@ class ElectricFurnace(Furnace):
             keyboard, 
             player, 
             assets, 
+            tile_map, 
+            obj_map,
+            item_transport_map, 
             gen_outline, 
             gen_bg, 
             rect_in_sprite_radius, 

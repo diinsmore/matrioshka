@@ -74,7 +74,7 @@ class ItemDrag:
                 if self.outline.collidepoint(self.mouse.screen_xy) and (item := self.get_clicked_item()):
                     self.start_drag(item, 'left' if left_click else 'right')   
                 else:
-                    if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render and hasattr(m, 'has_inv')]:
+                    if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'has_inv') and m.ui.render]:
                         self.check_machine_extract(machines_with_inv, left_click, right_click)
         else:
             if self.active:
@@ -116,7 +116,7 @@ class ItemDrag:
         self.player.item_holding = f'pipe {idx}'
 
     def place_item_in_machine(self) -> None:
-        for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if m.ui.render]:
+        for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'has_inv') and m.ui.render]:
             inv_box_data = machine.ui.get_inv_box_data()
             if inv_type := machine.ui.check_input(inv_box_data):
                 machine.ui.input_item(inv_type, self.amount, inv_box_data[inv_type])

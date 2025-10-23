@@ -24,15 +24,14 @@ class ProcGen:
         else:
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
-
             self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
             self.height_map = self.terrain_gen.height_map
             self.cave_maps = self.terrain_gen.cave_maps
-
             self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point, self.biome_order)
             self.tree_map = self.tree_gen.tree_map
-
+            self.item_transport_map = np.zeros(MAP_SIZE, dtype=int)
+            
             self.gen_world()
             self.player_spawn_point = self.get_player_spawn_point()
         
@@ -41,6 +40,7 @@ class ProcGen:
         self.height_map = np.array(self.saved_data['height map'], dtype=np.float32)
         self.tree_map = self.saved_data['tree map']
         self.cave_maps = self.saved_data['cave maps']
+        self.item_transport_map = self.saved_data['item transport map']
         self.biome_order = self.saved_data['biome order']
         self.player_spawn_point = self.player_xy
         self.current_biome = self.saved_data['current biome']
@@ -116,7 +116,8 @@ class ProcGen:
             'height map': self.height_map.tolist(),
             'tree map': [list(xy) for xy in self.tree_map],
             'cave maps': {biome: arr if isinstance(arr, list) else arr.tolist() for biome, arr in self.cave_maps.items()},
-            'biome order': self.biome_order
+            'item transport map': self.item_transport_map.tolist(),
+            'biome order': self.biome_order,
         }
 
 
