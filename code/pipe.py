@@ -56,13 +56,12 @@ class Pipe(SpriteBase):
             4: [(1, 0), (0, 1)], 
             5: [(-1, 0), (0, 1)]
         }
-        self.connected_machine = self.get_connected_machine()
-        print('machine', self.connected_machine)
-    def get_connected_machine(self) -> type | None:
+        self.connected_obj = self.get_connected_obj()
+
+    def get_connected_obj(self) -> type | None:
         x, y = self.tile_xy
         for dx, dy in self.border_directions[self.variant_idx]:
-            obj = self.obj_map[x + dx, y + dy]
-            if obj is not None:
+            if (0 < x + dx < MAP_SIZE[0] and 0 < y + dy < MAP_SIZE[1]) and (obj := self.obj_map[x + dx, y + dy]):
                 return obj
             elif (dx, dy) == self.border_directions[self.variant_idx][-1]: # no matches
                 return None
@@ -72,6 +71,7 @@ class Pipe(SpriteBase):
             self.direction_idx = (self.direction_idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
             self.image = self.graphics[f'pipe {self.direction_idx}']
             self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.direction_idx}']
+            self.connected_obj = self.get_connected_obj()
 
     def transport(self) -> None:
         pass

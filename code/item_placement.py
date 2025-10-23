@@ -136,7 +136,7 @@ class ItemPlacement:
         self.collision_map.update_map(tile_xy, add_tile=True)
         sprite.inventory.remove_item(sprite.item_holding if old_pipe_idx is None else f'pipe {old_pipe_idx}')
         if sprite.item_holding in OBJ_ITEMS:
-            self.init_obj(sprite.item_holding, tile_xy)  
+            self.init_obj(sprite.item_holding, [tile_xy])  
         sprite.item_holding = None  
 
     def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
@@ -145,7 +145,7 @@ class ItemPlacement:
             if i == 0:
                 self.tile_map[xy] = self.tile_IDs[sprite.item_holding] # only store the topleft as the item ID to avoid rendering multiple surfaces
                 if obj:
-                    self.init_obj(sprite.item_holding, xy)
+                    self.init_obj(sprite.item_holding, tile_xy_list)
             else:
                 self.tile_map[xy] = self.tile_IDs['item extended'] 
             self.collision_map.update_map(xy, add_tile=True)
