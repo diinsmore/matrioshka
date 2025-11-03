@@ -162,7 +162,19 @@ LOGISTICS = {
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
     
 }
-PIPE_TRANSPORT_DIRECTIONS = [(0, 1), (1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
+PIPE_BORDERS = {
+    0: [(1, 0), (-1, 0)],
+    1: [(0, -1), (0, 1)],
+    2: [(1, 0), (0, -1)],
+    3: [(0, -1), (-1, 0)],
+    4: [(1, 0), (0, 1)],
+    5: [(-1, 0), (0, 1)],
+    6: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, -1), (0, 1)]},
+    7: {'horizontal': [(1, 0)], 'vertical': [(0, -1), (0, 1)]},
+    8: {'horizontal': [(-1, 0)], 'vertical': [(0, -1), (0, 1)]},
+    9: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, -1)]},
+    10: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, 1)]}
+}
 
 ELECTRICITY = {
     'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
@@ -212,7 +224,7 @@ DECOR = {
 }
 
 PLACEABLE_ITEMS = [
-    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRECTIONS))], 
+    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_BORDERS))], 
     *[f'{m} chest' for m in STORAGE['chest']['materials']], 'glass', 'lab'
 ]
 

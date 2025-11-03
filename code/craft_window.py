@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 import pygame as pg
 from math import ceil
 
-from settings import TILE_SIZE, TOOLS, MATERIALS, MACHINES, STORAGE, DECOR, RESEARCH, PIPE_TRANSPORT_DIRECTIONS
+from settings import TILE_SIZE, TOOLS, MATERIALS, MACHINES, STORAGE, DECOR, RESEARCH, PIPE_BORDERS
 
 class CraftWindow:
     def __init__(

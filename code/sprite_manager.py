@@ -14,7 +14,7 @@ from random import choice, randint
 from itertools import islice
 
 from helper_functions import load_image, cls_name_to_str
-from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES, PIPE_TRANSPORT_DIRECTIONS
+from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
 from player import Player
 from timer import Timer
 from nature_sprites import Tree, Cloud

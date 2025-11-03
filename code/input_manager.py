@@ -26,7 +26,7 @@ class Keyboard:
             'toggle inventory ui': pg.K_j,
             'toggle craft window ui': pg.K_c,
             'toggle mini map ui': pg.K_m,
-            'toggle HUD ui': pg.K_h,
+            'toggle HUD ui': pg.K_x, # don't use h, reserved for rotating a pipe's transport direction horizontally
             'close ui window': pg.K_q,       
         }
 

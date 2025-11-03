@@ -12,7 +12,7 @@ import numpy as np
 from math import ceil
 from collections import defaultdict
 
-from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, MACHINES, PIPE_TRANSPORT_DIRECTIONS
+from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, MACHINES, PIPE_BORDERS
 
 class ItemPlacement:
     def __init__(
@@ -54,6 +54,8 @@ class ItemPlacement:
         self.save_data = save_data
        
         self.obj_map = np.full(MAP_SIZE, None, dtype=object) # stores every tile an object overlaps with (tile_map only stores the topleft since it controls rendering)
+        self.machine_ids = {self.tile_IDs[m] for m in MACHINES if 'pipe' not in m} | {self.tile_IDs['item extended']}
+        self.pipe_ids = {self.tile_IDs[f'pipe {i}'] for i in range(len(PIPE_BORDERS))}
 
     def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], old_pipe_idx: int=None) -> None:
         surf = self.graphics[sprite.item_holding]
@@ -97,39 +99,11 @@ class ItemPlacement:
             return self.tile_map[x, y + 1] in tile_IDs
 
     def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
-        machine_ids = {self.tile_IDs[m] for m in MACHINES if 'pipe' not in m} | {self.tile_IDs['item extended']} # ignoring 'pipe' to specify the valid pipe indexes below
-        match pipe_idx:
-            case 0:
-                valid = any((
-                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5'], *machine_ids},
-                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4'], *machine_ids}
-                ))
-            case 1:
-                valid = any((
-                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5'], *machine_ids},
-                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3'], *machine_ids}
-                ))
-            case 2:
-                valid = any((
-                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5'], *machine_ids},
-                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5'], *machine_ids}
-                ))
-            case 3:
-                valid = any((
-                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4'], *machine_ids},
-                    self.tile_map[x, y - 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 4'], self.tile_IDs['pipe 5'], *machine_ids}
-                ))
-            case 4:
-                valid = any((
-                    self.tile_map[x + 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 3'], self.tile_IDs['pipe 5'], *machine_ids},
-                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3'], *machine_ids}
-                ))
-            case 5:
-                valid = any((
-                    self.tile_map[x - 1, y] in {self.tile_IDs['pipe 0'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 4'], *machine_ids},
-                    self.tile_map[x, y + 1] in {self.tile_IDs['pipe 1'], self.tile_IDs['pipe 2'], self.tile_IDs['pipe 3'], *machine_ids}
-                ))
-        return valid
+        pipe_data = PIPE_BORDERS[pipe_idx]
+        for dx, dy in pipe_data if pipe_idx <= 5 else (pipe_data['horizontal'] + pipe_data['vertical']):
+            if 0 <= x + dx < MAP_SIZE[0] and 0 <= y + dy < MAP_SIZE[1] and self.tile_map[x + dx, y + dy] in (self.machine_ids | self.pipe_ids):
+                return True
+        return False
 
     def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, old_pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
         self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]

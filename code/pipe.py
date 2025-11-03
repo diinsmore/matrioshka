@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import numpy as np
 
-from settings import MAP_SIZE, TILE_SIZE, PIPE_TRANSPORT_DIRECTIONS
+from settings import MAP_SIZE, TILE_SIZE, PIPE_BORDERS
 from sprite_bases import SpriteBase
 from timer import Timer
 
@@ -48,33 +48,66 @@ class Pipe(SpriteBase):
         self.current_item = None
         self.speed_factor = 1
         self.timers = {'move item': Timer(length=2000 * self.speed_factor, function=self.transport, auto_start=False, loop=False, store_progress=False)}
-        self.border_directions = {
-            0: [(1, 0), (-1, 0)], 
-            1: [(0, 1), (0, -1)], 
-            2: [(0, -1), (1, 0)], 
-            3: [(-1, 0), (0, -1)], 
-            4: [(1, 0), (0, 1)], 
-            5: [(-1, 0), (0, 1)]
+        self.connections = {}
+        self.transport_direction = None
+        self.xy_to_cardinal = {
+            0: {(1, 0): 'E', (-1, 0): 'W'},
+            1: {(0, -1): 'N', (0, 1): 'S'},
+            2: {(1, 0): 'SE', (0, -1): 'WN'},
+            3: {(0, -1): 'EN', (-1, 0): 'SW'},
+            4: {(1, 0): 'NE', (0, 1): 'WS'},
+            5: {(-1, 0): 'ES', (0, 1): 'NW'}
         }
-        self.connected_obj = self.get_connected_obj()
+        self.get_connected_objs()
 
-    def get_connected_obj(self) -> type | None:
+    def get_connected_objs(self) -> None:
+        pipe_data = PIPE_BORDERS[self.variant_idx]
+        self.connections = {xy: None for xy in (pipe_data if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs])}
+        self.borders = list(self.connections.keys()) if self.variant_idx <= 5 else dict(pipe_data.items()) # converting to a dict to avoid the error from calling .values() on a dict_items object
         x, y = self.tile_xy
-        for dx, dy in self.border_directions[self.variant_idx]:
+        for dx, dy in self.borders if self.variant_idx <= 5 else [xy for dxy in pipe_data.values() for xy in dxy]:
             if (0 < x + dx < MAP_SIZE[0] and 0 < y + dy < MAP_SIZE[1]) and (obj := self.obj_map[x + dx, y + dy]):
-                return obj
-            elif (dx, dy) == self.border_directions[self.variant_idx][-1]: # no matches
-                return None
-
-    def check_rotate(self) -> None:
-        if self.rect.collidepoint(self.mouse.world_xy) and self.keyboard.pressed_keys[pg.K_r] and not self.player.item_holding:
-            self.direction_idx = (self.direction_idx + 1) % len(PIPE_TRANSPORT_DIRECTIONS)
-            self.image = self.graphics[f'pipe {self.direction_idx}']
-            self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.direction_idx}']
-            self.connected_obj = self.get_connected_obj()
+                if isinstance(obj, Pipe):
+                    if (dx * -1, dy * -1) in obj.borders if obj.variant_idx <= 5 else obj.borders.values(): # ensure the pipes are connected and not just adjacent
+                        self.connections[dx, dy] = obj
+                else:
+                    self.connections[dx, dy] = obj # machines don't have a 'facing direction' so no need to check if they're only just adjacent
+        self.transport_direction = self.borders[0] if self.variant_idx <= 5 else {'horizontal': pipe_data['horizontal'][0], 'vertical': pipe_data['vertical'][0]} # default to the 1st index
 
     def transport(self) -> None:
-        pass
+        if not self.current_item:
+            for xy in self.connections:
+                if obj := self.connections[xy]: 
+                    if isinstance(obj, Pipe):
+                        pass
+                    else:
+                        pass
+
+    def render_transport_ui(self) -> None:
+        if self.variant_idx <= 5: # TODO: add the junction pipes
+            surf = self.graphics['pipe directions'][self.xy_to_cardinal[self.variant_idx][self.transport_direction]]
+            self.screen.blit(surf, surf.get_frect(center=self.rect.center - self.cam_offset))
+        
+    def update_rotation(self) -> None:
+        if self.keyboard.pressed_keys[pg.K_r] and self.rect.collidepoint(self.mouse.world_xy) and not self.player.item_holding:
+            self.variant_idx = (self.variant_idx + 1) % len(PIPE_BORDERS)
+            self.image = self.graphics[f'pipe {self.variant_idx}']
+            self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.variant_idx}']
+            self.get_connected_objs()
+
+    def update_transport_direction(self) -> None:
+        if self.keyboard.pressed_keys[pg.K_LSHIFT] and self.rect.collidepoint(self.mouse.world_xy):
+            if self.variant_idx <= 5:
+                self.transport_direction = self.borders[0] if self.transport_direction == self.borders[1] else self.borders[1]
+            else:
+                if self.keyboard.pressed_keys[pg.K_h] or self.keyboard.pressed_keys[pg.K_v]:
+                    axis = 'horizontal' if self.keyboard.pressed_keys[pg.K_h] else 'vertical'
+                    if len(self.borders[axis]) > 1:
+                        d0, d1 = self.borders[axis][0], self.borders[axis][1]
+                        self.transport_direction[axis] = d1 if self.transport_direction[axis] == d0 else d0
 
     def update(self, dt: float) -> None:
-        self.check_rotate()
+        self.update_rotation()
+        self.update_transport_direction()
+        self.transport()
+        self.render_transport_ui()
