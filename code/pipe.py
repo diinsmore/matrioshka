@@ -45,7 +45,7 @@ class Pipe(SpriteBase):
         
         self.graphics = self.assets['graphics']
         self.tile_xy = (int(xy.x) // TILE_SIZE, int(xy.y) // TILE_SIZE)
-        self.current_item = None
+        self.transport_item = None
         self.speed_factor = 1
         self.timers = {'move item': Timer(length=2000 * self.speed_factor, function=self.transport, auto_start=False, loop=False, store_progress=False)}
         self.connections = {}
@@ -75,18 +75,37 @@ class Pipe(SpriteBase):
         self.transport_direction = self.borders[0] if self.variant_idx <= 5 else {'horizontal': pipe_data['horizontal'][0], 'vertical': pipe_data['vertical'][0]} # default to the 1st index
 
     def transport(self) -> None:
-        if not self.current_item:
-            for xy in self.connections:
-                if obj := self.connections[xy]: 
-                    if isinstance(obj, Pipe):
-                        pass
+        if self.transport_item:
+            if obj := self.obj_map[self.tile_xy[0] + self.transport_direction[0], self.tile_xy[1] + self.transport_direction[1]]: 
+                if isinstance(obj, Pipe):
+                    if not obj.transport_item:
+                        obj.transport_item = self.transport_item
+                        self.transport_item = None
+                else:
+                    pass
+        else:
+            for dxy in [xy for xy in self.connections if self.connections[xy] is not None]:
+                obj = self.connections[dxy]                          
+                if isinstance(obj, Pipe): # don't add the bottom 2 conditions to this line, it needs to be alone for the else condition to run without error
+                    if obj.transport_item and (obj.xy // TILE_SIZE) + obj.transport_direction == self.tile_xy:
+                        self.transport_item = obj.transport_item
+                        obj.transport_item = None
+                else:
+                    if dxy == self.transport_direction:
+                        pass # add to the machine's inventory
                     else:
-                        pass
+                        if obj.output['amount'] > 0:
+                            self.transport_item = obj.output['item']
+                            obj.output['amount'] -= 1
 
     def render_transport_ui(self) -> None:
         if self.variant_idx <= 5: # TODO: add the junction pipes
-            surf = self.graphics['pipe directions'][self.xy_to_cardinal[self.variant_idx][self.transport_direction]]
-            self.screen.blit(surf, surf.get_frect(center=self.rect.center - self.cam_offset))
+            direction_surf = self.graphics['pipe directions'][self.xy_to_cardinal[self.variant_idx][self.transport_direction]]
+            self.screen.blit(direction_surf, direction_surf.get_frect(center=self.rect.center - self.cam_offset))
+
+        if self.transport_item:
+            item_surf = self.graphics[self.transport_item]
+            self.screen.blit(item_surf, item_surf.get_frect(center=self.rect.center - self.cam_offset))
         
     def update_rotation(self) -> None:
         if self.keyboard.pressed_keys[pg.K_r] and self.rect.collidepoint(self.mouse.world_xy) and not self.player.item_holding:
