@@ -153,12 +153,11 @@ class GraphicsEngine:
                 return pg.Vector2(2 if facing_left else -2, -4)
 
     def update(self, current_biome: str, dt: float) -> None:
-        self.weather.update() # update the weather first to keep the sky behind the rest of the world
+        self.cam.update(pg.Vector2(self.player.rect.center))
+        self.weather.update() # update the weather before the terrain to keep the sky behind the rest of the world
         self.terrain.update(current_biome)
         self.render_sprites(dt)
         self.ui.update()
-        self.cam.update(pg.Vector2(self.player.rect.center))
-
 
 class Camera:
     def __init__(self, center: pg.Vector2): 
@@ -169,7 +168,7 @@ class Camera:
     def update(self, target: pg.Vector2) -> None:
         self.center += (target - self.center) * 0.05
         self.center = pg.Vector2(max(RES[0] // 2, min(self.center.x, self.max_x)), min(self.center.y, self.max_y)) # not adding a minimum limit until the space biome (if one is to exist) is configured 
-        self.offset.x, self.offset.y = int(self.center.x) - (RES[0] // 2), int(self.center.y) - (RES[1] // 2)
+        self.offset.x, self.offset.y = round(self.center.x) - (RES[0] // 2), round(self.center.y) - (RES[1] // 2)
 
 
 class Terrain:

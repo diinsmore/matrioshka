@@ -48,8 +48,9 @@ class MachineSpriteBase(SpriteBase):
         self.obj_map = obj_map
         self.item_transport_map = item_transport_map
         local_vars = locals()
-        self.ui_params = {k: local_vars[k] for k in ('screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 
-            'rect_in_sprite_radius', 'render_item_amount')}
+        self.ui_params = {
+            k: local_vars[k] for k in ('screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 'rect_in_sprite_radius', 'render_item_amount')
+        }
         
         self.active = False
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}

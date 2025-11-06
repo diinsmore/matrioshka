@@ -160,8 +160,8 @@ LOGISTICS = {
     'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
     'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
-    
 }
+
 PIPE_BORDERS = {
     0: [(1, 0), (-1, 0)],
     1: [(0, -1), (0, 1)],

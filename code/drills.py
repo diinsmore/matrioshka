@@ -76,18 +76,8 @@ class Drill(MachineSpriteBase):
 
         self.extract_time_factor = 1.05 # extraction times increase as the drill moves deeper into the ground
         self.timers = {
-            'extract': Timer(
-                length=2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), 
-                function=self.extract, 
-                auto_start=False, 
-                loop=True
-            ),
-            'burn fuel': Timer(
-                length=2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), 
-                function=self.extract, 
-                auto_start=False, 
-                loop=True
-            ),
+            'extract': Timer(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, auto_start=False, loop=True),
+            'burn fuel': Timer(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, auto_start=False, loop=True),
         }
 
         self.has_inv = True
