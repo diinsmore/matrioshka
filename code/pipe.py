@@ -82,17 +82,18 @@ class Pipe(SpriteBase):
         } 
 
     def update_rotation(self) -> None:
-            if self.keyboard.pressed_keys[pg.K_r] and self.rect.collidepoint(self.mouse.world_xy) and not self.player.item_holding:
-                self.variant_idx = (self.variant_idx + 1) % len(PIPE_BORDERS)
-                self.image = self.graphics[f'pipe {self.variant_idx}']
-                self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.variant_idx}']
-                self.get_connected_objs()
+        if self.keyboard.pressed_keys[pg.K_r] and self.rect.collidepoint(self.mouse.world_xy) and not self.player.item_holding:
+            self.variant_idx = (self.variant_idx + 1) % len(PIPE_BORDERS)
+            self.image = self.graphics[f'pipe {self.variant_idx}']
+            self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.variant_idx}']
+            self.get_connected_objs()
 
     def transport(self) -> None:
         for dxy in [xy for xy in self.connections if self.connections[xy] is not None]:
+            transport_dir = self.transport_dir if self.variant_idx <= 5 else self.transport_dir['horizontal' if dxy[0] != 0 else 'vertical']
             if obj := self.connections[dxy]:                         
                 if self.transport_item:
-                    if dxy == self.transport_dir: 
+                    if dxy == transport_dir: 
                         if isinstance(obj, Pipe):
                             if not obj.transport_item:
                                 obj.transport_item = self.transport_item
@@ -101,15 +102,13 @@ class Pipe(SpriteBase):
                             self.send_item_to_machine(obj)
                 else:
                     if isinstance(obj, Pipe): # don't add the bottom conditions to this line, it needs to be alone for the else condition to run without error
-                        if self.variant_idx == 5:
-                            print(self.transport_dir)
                         obj_dir = obj.transport_dir if obj.variant_idx <= 5 else obj.transport_dir['horizontal' if dxy[0] != 0 else 'vertical']
                         if obj.transport_item and dxy == (obj_dir[0] * -1, obj_dir[1] * -1) and \
-                        (self.tile_xy[0] + self.transport_dir[0], self.tile_xy[1] + self.transport_dir[1]) != obj.tile_xy:
+                        (self.tile_xy[0] + transport_dir[0], self.tile_xy[1] + transport_dir[1]) != obj.tile_xy:
                             self.transport_item = obj.transport_item
                             obj.transport_item = None
                     else:
-                        if dxy != self.transport_dir and obj.output['amount'] > 0:
+                        if dxy != transport_dir and obj.output['amount'] > 0:
                             self.transport_item = obj.output['item']
                             obj.output['amount'] -= 1
 
@@ -119,15 +118,15 @@ class Pipe(SpriteBase):
             self.transport_item = None
         
     def update_transport_direction(self) -> None:
-        if self.keyboard.pressed_keys[pg.K_LSHIFT] and self.rect.collidepoint(self.mouse.world_xy):
-            if self.variant_idx <= 5:
+        if self.variant_idx <= 5:
+            if self.keyboard.pressed_keys[pg.K_LSHIFT] and self.rect.collidepoint(self.mouse.world_xy):
                 dirs = list(self.connections.keys())
                 self.transport_dir = dirs[1] if self.transport_dir == dirs[0] else dirs[0]
-            else:
-                if self.keyboard.pressed_keys[pg.K_h] or self.keyboard.pressed_keys[pg.K_v]:
-                    axis = 'horizontal' if self.keyboard.pressed_keys[pg.K_h] else 'vertical'
-                    dx, dy = self.transport_dir[axis]
-                    self.transport_dir[axis] = (dx * -1, dy * -1)
+        else:
+            if (self.keyboard.pressed_keys[pg.K_LSHIFT] or self.keyboard.pressed_keys[pg.K_RSHIFT]) and self.rect.collidepoint(self.mouse.world_xy):
+                axis = 'horizontal' if self.keyboard.pressed_keys[pg.K_LSHIFT] else 'vertical'
+                dx, dy = self.transport_dir[axis]
+                self.transport_dir[axis] = (dx * -1, dy * -1)
 
     def render_transport_ui(self) -> None:
         if self.variant_idx <= 5:

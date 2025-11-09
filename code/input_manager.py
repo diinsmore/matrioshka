@@ -16,7 +16,7 @@ class Keyboard:
     def __init__(self):
         self.held_keys = self.pressed_keys = None
         self.num_keys = {pg.K_0 + num for num in range(10)}
-        self.key_map = {key: (key - pg.K_0 - 1) % 10 for key in self.num_keys} # maps the ascii value to the number pressed
+        self.key_map = {key: (key - pg.K_0) % 10 for key in self.num_keys} # maps the ascii value to the number pressed
         self.key_bindings = {
             'move left': pg.K_a,
             'move right': pg.K_d,

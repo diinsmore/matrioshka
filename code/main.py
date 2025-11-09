@@ -152,7 +152,7 @@ class Main:
             save_data
         )
 
-    def make_save(self, file: str) -> None:
+    def make_save(self, file: str) -> None: 
         visited_tiles = self.ui.mini_map.visited_tiles
         data = defaultdict(list, {
             **self.proc_gen.make_save(),
@@ -181,7 +181,7 @@ class Main:
         self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
         self.graphics_engine.update(self.player.current_biome, dt) 
         self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
-        self.player_inv.update_selected_index(self.keyboard, self.player)
+        self.player_inv.get_idx_selection(self.keyboard, self.player)
 
     def run(self) -> None:
         while self.running:

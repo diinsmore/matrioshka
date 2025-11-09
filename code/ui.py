@@ -112,7 +112,7 @@ class UI:
         self.active_item_names = []
     
     def get_craft_window_height(self) -> int:
-        inv_grid_max_height = self.inventory_ui.slot_height * (self.inventory.num_slots // self.inventory_ui.num_cols)
+        inv_grid_max_height = self.inventory_ui.slot_len * (self.inventory.num_slots // self.inventory_ui.num_cols)
         return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
 
     def gen_outline(

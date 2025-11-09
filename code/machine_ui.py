@@ -63,10 +63,12 @@ class MachineUI:
         if self.player.item_holding in box_data['valid inputs'] and box_name != 'output': # the output box only allows input if you're adding to the item it's holding
             if box_data['contents']['item'] is None:
                 box_data['contents']['item'] = self.player.item_holding
-
+                
         if self.player.item_holding == box_data['contents']['item']:
             box_data['contents']['amount'] += amount
             self.player.inventory.remove_item(self.player.item_holding, amount)
+            if self.player.item_holding not in self.player.inventory.contents:
+                self.player.item_holding = None
 
     def extract_item(self, box_contents: dict[str, str|int], click_type: str) -> None:
         extract_total = box_contents['amount'] if click_type == 'left' else (box_contents['amount'] // 2)

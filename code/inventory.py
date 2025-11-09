@@ -15,11 +15,9 @@ class Inventory:
             self.contents = save_data['contents']
         else:
             self.contents = default_contents if default_contents else {}
-
         if self.contents:
             for i, item in enumerate(self.contents):
                 self.contents[item]['index'] = i
-            self.item_names = list(self.contents.keys())
 
         self.index = save_data['index'] if save_data else 0
         self.num_slots = 50
@@ -34,11 +32,11 @@ class Inventory:
             self.slot_capacity[tool] = 99   
 
     def add_item(self, item: str, amount: int=1) -> None:
-        if item not in self.item_names:
-            num_slots_taken = len(self.item_names)
+        items = self.contents.keys()
+        if item not in items:
+            num_slots_taken = len(items)
             if num_slots_taken < self.num_slots:
                 self.contents[item] = {'amount': amount, 'index': num_slots_taken}
-                self.item_names.append(item)
         else:
             max_amount = amount
             if item in self.slot_capacity.keys():
@@ -50,7 +48,6 @@ class Inventory:
             self.contents[item]['amount'] -= amount
         else:
             del self.contents[item]
-            self.item_names.remove(item)
             for i, (name, data) in enumerate(self.contents.items()):
                 data['index'] = i
 
@@ -67,9 +64,11 @@ class PlayerInventory(Inventory):
             'copper': {'amount': 100}
         })
          
-    def update_selected_index(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:
+    def get_idx_selection(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:
         for key in keyboard.num_keys:
             if keyboard.pressed_keys[key]:
                 player.inventory.index = keyboard.key_map[key]
-                player.item_holding = self.item_names[player.inventory.index] if player.inventory.index < len(self.item_names) else None
+                items = list(self.contents.keys())
+                player.item_holding = items[player.inventory.index] if player.inventory.index < len(items) else None
+                print(player.item_holding)
                 return

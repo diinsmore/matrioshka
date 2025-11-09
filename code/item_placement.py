@@ -111,7 +111,8 @@ class ItemPlacement:
         sprite.inventory.remove_item(sprite.item_holding if old_pipe_idx is None else f'pipe {old_pipe_idx}')
         if sprite.item_holding in OBJ_ITEMS:
             self.init_obj(sprite.item_holding, [tile_xy])  
-        sprite.item_holding = None  
+        if sprite.item_holding not in sprite.inventory.contents: # placed the last of its kind
+            sprite.item_holding = None  
 
     def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
         obj = sprite.item_holding in OBJ_ITEMS

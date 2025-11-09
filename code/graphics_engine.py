@@ -158,6 +158,7 @@ class GraphicsEngine:
         self.terrain.update(current_biome)
         self.render_sprites(dt)
         self.ui.update()
+        
 
 class Camera:
     def __init__(self, center: pg.Vector2): 
