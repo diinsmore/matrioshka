@@ -61,7 +61,8 @@ class PlayerInventory(Inventory):
             'stone axe': {'amount': 10}, 
             'stone pickaxe': {'amount': 10},
             'pipe 0': {'amount': 100},
-            'copper': {'amount': 100}
+            'copper': {'amount': 100},
+            'burner inserter': {'amount': 50}
         })
          
     def get_idx_selection(self, keyboard: Keyboard, player: pg.sprite.Sprite) -> None:
@@ -70,5 +71,4 @@ class PlayerInventory(Inventory):
                 player.inventory.index = keyboard.key_map[key]
                 items = list(self.contents.keys())
                 player.item_holding = items[player.inventory.index] if player.inventory.index < len(items) else None
-                print(player.item_holding)
                 return

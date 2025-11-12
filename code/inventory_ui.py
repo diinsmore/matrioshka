@@ -75,7 +75,7 @@ class InventoryUI:
 
     def update_dimensions(self) -> None:
         self.num_rows = 2 if not self.expand else (self.player.inventory.num_slots // self.num_cols)
-        self.outline_height = self.slot_height * self.num_rows
+        self.outline_height = self.slot_len * self.num_rows
         self.outline = pg.Rect(self.padding, self.top, self.outline_width, self.outline_height)
 
     def render_bg(self) -> None:

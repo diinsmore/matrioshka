@@ -1,7 +1,7 @@
 import pygame as pg
 from os.path import join
 
-from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES, LOGISTICS, MATERIALS, PIPE_BORDERS, TILE_SIZE
+from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES, LOGISTICS, MATERIALS, TRANSPORT_DIRS, TILE_SIZE
 from helper_functions import load_image, load_folder, load_subfolders, load_frames
 
 class AssetManager:
@@ -18,7 +18,7 @@ class AssetManager:
                 'storage': load_folder(join('..', 'graphics', 'storage')),
                 'tools': load_folder(join('..', 'graphics', 'tools')),
                 'ui': load_folder(join('..', 'graphics', 'ui')),
-                'pipe directions': load_folder(join('..', 'graphics', 'ui', 'pipe directions'))
+                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport dirs'))
             },
         
             'fonts': {
@@ -81,7 +81,7 @@ class AssetManager:
             if category != 'pipes':
                 self.graphics[name] = self.graphics['logistics'][category][name]
             else:
-                for i in range(len(PIPE_BORDERS)):
+                for i in range(len(TRANSPORT_DIRS)):
                     self.graphics[f'pipe {i}'] = self.graphics['logistics']['pipes'][f'pipe {i}']
                     self.graphics[f'pipe {i}'].set_colorkey(self.graphics[f'pipe {i}'].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
 
@@ -93,8 +93,8 @@ class AssetManager:
                 pass
 
     def load_ui_graphics(self) -> None:
-        self.graphics['pipe directions'] = load_folder(join('..', 'graphics', 'ui', 'pipe directions'))
-        for surf in self.graphics['pipe directions'].values():
+        self.graphics['transport dirs'] = load_folder(join('..', 'graphics', 'ui', 'transport directions'))
+        for surf in self.graphics['transport dirs'].values():
             surf.set_alpha(100)
                 
     def load_remaining_graphics(self) -> None:

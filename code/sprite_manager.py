@@ -21,6 +21,7 @@ from nature_sprites import Tree, Cloud
 from furnaces import BurnerFurnace, ElectricFurnace
 from drills import BurnerDrill, ElectricDrill
 from pipe import Pipe
+from inserter import BurnerInserter, ElectricInserter, LongHandedInserter
 
 class SpriteManager:
     def __init__(
@@ -87,7 +88,8 @@ class SpriteManager:
 
         self.crafting = Crafting()
 
-        self.items_init_when_placed = {cls_name_to_str(cls): cls for cls in [BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe]}
+        self.items_init_when_placed = {cls_name_to_str(cls): cls for cls in (BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, 
+            ElectricInserter)}
         self.ui, self.item_placement, self.player = None, None, None # not initialized until after the sprite manager
     
     def init_trees(self) -> None:
@@ -184,8 +186,9 @@ class SpriteManager:
         return set(group for group in self.all_groups.values() if sprite in group)
 
     def get_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int]) -> dict[str, any]:
+        tile_x, tile_y = tiles_covered if isinstance(tiles_covered, tuple) else tiles_covered[0] # only extract the topleft coordinate for multi-tile items
         params = {
-            'xy': pg.Vector2(tiles_covered[0] if isinstance(tiles_covered, list) else tiles_covered) * TILE_SIZE,
+            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
             'image': self.assets['graphics'][name],
             'z': Z_LAYERS['main'],
             'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites],
@@ -315,11 +318,11 @@ class WoodGathering:
 
         self.reach_radius = TILE_SIZE * 3
 
-    def make_cut(self, sprite: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
+    def make_cut(self, sprite: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: tuple[int, int]) -> None:
         if mouse_button_held['left']:
             if sprite.item_holding and sprite.item_holding.split()[-1] == 'axe':
                 if tree := next((t for t in self.tree_sprites if self.rect_in_sprite_radius(sprite, t.rect) and t.rect.collidepoint(mouse_world_xy)), None):
                     tree.cut_down(sprite, self.get_tool_strength, self.pick_up_item)
 
-    def update(self, player: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: pg.Vector2) -> None:
+    def update(self, player: pg.sprite.Sprite, mouse_button_held: dict[str, bool], mouse_world_xy: tuple[int, int]) -> None:
         self.make_cut(player, mouse_button_held, mouse_world_xy)

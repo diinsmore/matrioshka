@@ -162,7 +162,7 @@ LOGISTICS = {
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
 }
 
-PIPE_BORDERS = {
+TRANSPORT_DIRS = {
     0: [(1, 0), (-1, 0)],
     1: [(0, -1), (0, 1)],
     2: [(1, 0), (0, -1)],
@@ -224,7 +224,7 @@ DECOR = {
 }
 
 PLACEABLE_ITEMS = [
-    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_BORDERS))], 
+    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(TRANSPORT_DIRS))], 
     *[f'{m} chest' for m in STORAGE['chest']['materials']], 'glass', 'lab'
 ]
 

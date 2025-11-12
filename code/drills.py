@@ -8,16 +8,16 @@ import pygame as pg
 import numpy as np
 from collections import Counter
 from random import choice
+
 from timer import Timer
 from drill_ui import DrillUI
-
 from sprite_bases import MachineSpriteBase
 from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES
 
 class Drill(MachineSpriteBase):
     def __init__(
         self, 
-        xy: pg.Vector2, 
+        xy: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -176,7 +176,7 @@ class Drill(MachineSpriteBase):
 class BurnerDrill(Drill):
     def __init__(
         self, 
-        xy: pg.Vector2, 
+        xy: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
@@ -229,7 +229,7 @@ class BurnerDrill(Drill):
 class ElectricDrill(Drill):
     def __init__(
         self, 
-        xy: pg.Vector2, 
+        xy: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],

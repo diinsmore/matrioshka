@@ -48,7 +48,6 @@ class Player(pg.sprite.Sprite):
         self.jump_height = 350 
         self.health = save_data['health'] if save_data else 100
         self.item_holding = save_data['item holding'] if save_data else list(self.inventory.contents)[0]
-        print(list(self.inventory.contents), self.item_holding)
         self.arm_strength = 4
         self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0} # TODO: the jumping system technically works fine but there has to be a better solution than keeping values of 0 for states with 1 frame
 

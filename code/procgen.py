@@ -3,7 +3,7 @@ import numpy as np
 import noise
 from random import randint, choice
 
-from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE, PIPE_BORDERS
+from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE, TRANSPORT_DIRS
 from timer import Timer
 from helper_functions import load_image
 
@@ -53,7 +53,7 @@ class ProcGen:
             *TILES.keys(),
             *RAMP_TILES,  
             *[m for m in MACHINES if m != 'pipe'], 
-            *[f'pipe {i}' for i in range(len(PIPE_BORDERS))], 
+            *[f'pipe {i}' for i in range(len(TRANSPORT_DIRS))], 
             *STORAGE.keys(), 
             'tree base',
             'item extended', 
