@@ -88,7 +88,7 @@ class InventoryUI:
             for y in range(self.num_rows):
                 box = pg.Rect((self.padding, self.top) + pg.Vector2(x * self.slot_len, y * self.slot_len), (self.slot_len - 1, self.slot_len - 1))
                 pg.draw.rect(self.screen, 'black', box, 1)
-                if (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
+                if self.player.item_holding and (y * (self.num_rows - 1) * self.num_cols) + x == selected_idx:
                     self.highlight_slot(box)
 
     def highlight_slot(self, slot: pg.Rect) -> None:

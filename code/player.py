@@ -61,6 +61,7 @@ class Player(pg.sprite.Sprite):
         
     def update(self, dt: float) -> None:
         self.get_current_biome()
+        print(self.item_holding)
 
     def get_save_data(self) -> dict[str, any]:
         return {

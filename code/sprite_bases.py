@@ -8,18 +8,14 @@ import pygame as pg
 from settings import TILE_SIZE
 
 class SpriteBase(pg.sprite.Sprite):
-    def __init__(
-        self, 
-        xy: tuple[int, int],
-        image: pg.Surface,
-        z: dict[str, int],  
-        sprite_groups: list[pg.sprite.Group]
-    ):
+    def __init__(self, xy: tuple[int, int], image: pg.Surface, z: dict[str, int], sprite_groups: list[pg.sprite.Group]):
         super().__init__(*sprite_groups)
         self.xy = xy
         self.image = image
         self.rect = self.image.get_rect(topleft=self.xy)
         self.z = z # layer to render on
+
+        self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
 
 
 class MachineSpriteBase(SpriteBase):
@@ -63,7 +59,6 @@ class MachineSpriteBase(SpriteBase):
             'rect_in_sprite_radius', 'render_item_amount')}
         
         self.active = False
-        self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
         self.pipe_connections = {}
@@ -72,7 +67,7 @@ class MachineSpriteBase(SpriteBase):
         self.ui = ui_cls(machine=self, **self.ui_params) # not initializing self.ui until the machine variant (burner/electric) is determined
 
 
-class TransportSpriteBase(MachineSpriteBase):
+class TransportSpriteBase(SpriteBase):
     def __init__(
         self,
         xy: tuple[int, int], 
@@ -88,34 +83,20 @@ class TransportSpriteBase(MachineSpriteBase):
         tile_map: np.ndarray,
         obj_map: np.ndarray,
         item_transport_map: np.ndarray,
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
-        save_data: dict[str, any]
+        save_data: dict[str, any]=None
     ):
-        super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            mouse, 
-            keyboard, 
-            player, 
-            assets, 
-            tile_map,
-            obj_map,
-            item_transport_map,
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
-        )
-        self.graphics = self.assets['graphics']
-        self.dir_surfs = self.graphics['transport dirs']
+        super().__init__(xy, image, z, sprite_groups)
+        self.screen = screen
+        self.cam_offset = cam_offset
+        self.mouse = mouse
+        self.keyboard = keyboard
+        self.player = player
+        self.graphics = assets['graphics']
+        self.tile_map = tile_map
+        self.obj_map = obj_map
+        self.item_transport_map = item_transport_map
+
+        self.dir_ui = self.graphics['transport dirs']
         self.item_holding = None
         self.xy_to_cardinal = {
             0: {(1, 0): 'E', (-1, 0): 'W'},

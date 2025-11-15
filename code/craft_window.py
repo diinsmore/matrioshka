@@ -39,9 +39,7 @@ class CraftWindow:
         self.render_inv_item_name = render_inv_item_name
         self.get_scaled_img = get_scaled_img
 
-        self.graphics = self.assets['graphics']
-        self.fonts = self.assets['fonts']
-        self.colors = self.assets['colors']
+        self.graphics, self.fonts, self.colors = self.assets['graphics'], self.assets['fonts'], self.assets['colors']
         
         self.height = get_height()
         self.width = int(self.inventory_ui.outline.width * 1.3)
@@ -53,18 +51,7 @@ class CraftWindow:
 
         self.cell_height = self.cell_width = TILE_SIZE * 2 # for the grid of items comprising a given category
 
-        self.category_grid = CategoryGrid(
-            self.mouse,
-            self.screen,
-            self.cam_offset,
-            self.outline, 
-            self.graphics,
-            self.fonts, 
-            self.colors,
-            self.padding,
-            self.gen_outline, 
-            self.gen_bg, 
-        )
+        self.category_grid = CategoryGrid(self.mouse, self.screen, self.cam_offset, self.outline, self.assets, self.padding, self.gen_outline, self.gen_bg)
 
         self.item_grid = ItemGrid(
             self.mouse,
@@ -103,9 +90,7 @@ class CategoryGrid:
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
         window_outline: pg.Rect, 
-        graphics: dict[str, dict[str, any]],
-        fonts: dict[str, pg.font.Font],
-        colors: dict[str, str],
+        assets: dict[str, dict[str, any]], 
         padding: int,
         gen_outline: callable, 
         gen_bg: callable
@@ -114,9 +99,7 @@ class CategoryGrid:
         self.screen = screen
         self.cam_offset = cam_offset
         self.window_outline = window_outline
-        self.graphics = graphics
-        self.fonts = fonts
-        self.colors = colors
+        self.graphics, self.fonts, self.colors = assets['graphics'], assets['fonts'], assets['colors']
         self.padding = padding
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg

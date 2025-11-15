@@ -26,21 +26,26 @@ class Pipe(TransportSpriteBase):
         player: Player,
         assets: dict[str, dict[str, any]],
         tile_map: np.ndarray,
-        item_transport_map: np.ndarray,
         obj_map: np.ndarray,
+        item_transport_map: np.ndarray,
         tile_IDs: dict[str, int],
         variant_idx: int
     ):
-        super().__init__(xy, image, z, sprite_groups)
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.mouse = mouse
-        self.keyboard = keyboard
-        self.player = player
-        self.assets = assets
-        self.tile_map = tile_map
-        self.item_transport_map = item_transport_map
-        self.obj_map = obj_map
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            tile_map,
+            obj_map,
+            item_transport_map
+        )
         self.tile_IDs = tile_IDs
         self.variant_idx = variant_idx
         
@@ -115,11 +120,11 @@ class Pipe(TransportSpriteBase):
 
     def render_transport_ui(self) -> None:
         if self.variant_idx <= 5:
-            dir_surf = self.dir_surfs[self.xy_to_cardinal[self.variant_idx][self.transport_dir]]
+            dir_surf = self.dir_ui[self.xy_to_cardinal[self.variant_idx][self.transport_dir]]
             self.screen.blit(dir_surf, dir_surf.get_frect(center=self.rect.center - self.cam_offset))
         else:
             for axis in ('horizontal', 'vertical'):
-                dir_surf = self.dir_surfs[self.xy_to_cardinal[self.variant_idx][self.transport_dir[axis]]]
+                dir_surf = self.dir_ui[self.xy_to_cardinal[self.variant_idx][self.transport_dir[axis]]]
                 self.screen.blit(dir_surf, dir_surf.get_rect(center=self.rect.center - self.cam_offset))
 
         if self.item_holding:

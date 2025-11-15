@@ -208,10 +208,11 @@ class SpriteManager:
             'save_data': self.save_data['sprites'][name][save_idx] if self.save_data else None
         }
         if 'drill' in name:
-            params.update([('tile_IDs', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
-        elif 'pipe' in name:
+            params.update([('save_data', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
+        elif 'pipe' in name or 'inserter' in name:
             params = dict(islice(params.items(), 13))
-            params.update([('tile_IDs', self.tile_IDs), ('variant_idx', int(name[-1]))])
+            if 'pipe' in name:
+                params.update([('tile_IDs', self.tile_IDs), ('variant_idx', int(name[-1]))])
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
