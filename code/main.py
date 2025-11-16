@@ -64,7 +64,6 @@ class Main:
             self.proc_gen.tile_IDs_to_names,
             self.proc_gen.tree_map,
             self.proc_gen.height_map,
-            self.proc_gen.item_transport_map,
             self.proc_gen.current_biome,
             self.proc_gen.get_tile_material,
             self.physics_engine.sprite_movement,

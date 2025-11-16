@@ -34,7 +34,6 @@ class SpriteManager:
         tile_IDs_to_names: dict[str, int],
         tree_map: set[tuple[int, int]],
         height_map: np.ndarray,
-        item_transport_map: np.ndarray,
         current_biome: str,
         get_tile_material: callable,
         sprite_movement: callable,
@@ -51,7 +50,6 @@ class SpriteManager:
         self.tile_IDs_to_names = tile_IDs_to_names
         self.tree_map = tree_map
         self.height_map = height_map
-        self.item_transport_map = item_transport_map
         self.current_biome = current_biome
         self.get_tile_material = get_tile_material
         self.sprite_movement = sprite_movement
@@ -200,7 +198,6 @@ class SpriteManager:
             'assets': self.assets,
             'tile_map': self.tile_map, 
             'obj_map': self.item_placement.obj_map,
-            'item_transport_map': self.item_transport_map,
             'gen_outline': self.ui.gen_outline,
             'gen_bg': self.ui.gen_bg,
             'rect_in_sprite_radius': self.rect_in_sprite_radius,
@@ -210,7 +207,7 @@ class SpriteManager:
         if 'drill' in name:
             params.update([('save_data', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
         elif 'pipe' in name or 'inserter' in name:
-            params = dict(islice(params.items(), 13))
+            params = dict(islice(params.items(), 12))
             if 'pipe' in name:
                 params.update([('tile_IDs', self.tile_IDs), ('variant_idx', int(name[-1]))])
         return params

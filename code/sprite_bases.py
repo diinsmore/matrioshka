@@ -33,7 +33,6 @@ class MachineSpriteBase(SpriteBase):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
         obj_map: np.ndarray,
-        item_transport_map: np.ndarray,
         gen_outline: callable,
         gen_bg: callable,
         rect_in_sprite_radius: callable,
@@ -49,7 +48,6 @@ class MachineSpriteBase(SpriteBase):
         self.assets = assets
         self.tile_map = tile_map
         self.obj_map = obj_map
-        self.item_transport_map = item_transport_map
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
         self.rect_in_sprite_radius = rect_in_sprite_radius
@@ -82,7 +80,6 @@ class TransportSpriteBase(SpriteBase):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
         obj_map: np.ndarray,
-        item_transport_map: np.ndarray,
         save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, z, sprite_groups)
@@ -94,7 +91,7 @@ class TransportSpriteBase(SpriteBase):
         self.graphics = assets['graphics']
         self.tile_map = tile_map
         self.obj_map = obj_map
-        self.item_transport_map = item_transport_map
+        print(type(self.obj_map))
 
         self.dir_ui = self.graphics['transport dirs']
         self.item_holding = None

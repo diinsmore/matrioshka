@@ -30,7 +30,6 @@ class ProcGen:
             self.cave_maps = self.terrain_gen.cave_maps
             self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point, self.biome_order)
             self.tree_map = self.tree_gen.tree_map
-            self.item_transport_map = np.zeros(MAP_SIZE, dtype=int)
             
             self.gen_world()
             self.player_spawn_point = self.get_player_spawn_point()

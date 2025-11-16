@@ -24,10 +24,9 @@ class Inserter(TransportSpriteBase):
         player: Player,
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        item_transport_map: np.ndarray
+        obj_map: np.ndarray
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, item_transport_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
         self.tile_borders = {
             'x axis': [(self.tile_xy[0] + dx, self.tile_xy[1]) for dx in (-1, 1) if 0 <= self.tile_xy[0] + dx < MAP_SIZE[0]],
             'y axis': [(self.tile_xy[0], self.tile_xy[1] + dy) for dy in (-1, 1) if 0 <= self.tile_xy[1] + dy < MAP_SIZE[1]],
@@ -43,10 +42,11 @@ class Inserter(TransportSpriteBase):
             self.transport_idx = (self.transport_idx + 1) % self.num_valid_configs
             self.receive_dir, self.send_dir = TRANSPORT_DIRS[self.transport_idx]
 
-    def insert(self, item_name: str) -> None:
-        if all(self.obj_map[dxy] is not None for dxy in (self.receive_dir, self.send_dir)):
+    def insert(self) -> None:
+        x, y = self.tile_xy
+        if self.receive_dir and self.send_dir and all(self.obj_map[x + dx, y + dy] is not None for dx, dy in (self.receive_dir, self.send_dir)):
             if self.item_holding:
-                receiving_obj = self.obj_map + self.send_dir
+                receiving_obj = self.obj_map[x + self.receive_dir[0], y + self.receive_dir[1]]
                 # TODO: will have to make this more modular depending on whether the receiving object is a furnace/inserter/lab/etc.
                 if not isinstance(receiving_obj, Pipe): # the pipe class handles the sending/receiving of items to/from a pipe
                     if receiving_obj.fuel_input['item'] in {None, self.item_holding}:
@@ -54,14 +54,23 @@ class Inserter(TransportSpriteBase):
                             receiving_obj.fuel_input['item'] = self.item_holding
                         receiving_obj.fuel_input['amount'] += 1
                         self.item_holding = None  
+                else:
+                    if not receiving_obj.item_holding:
+                        receiving_obj.item_holding = self.item_holding
+                        self.item_holding = None
             else:
-                sending_obj = self.obj_map + self.receive_dir
-                if not isinstance(receiving_obj, Pipe) and (item := sending_obj.output['item']):
-                    self.item_holding = item
-                    sending_obj.output['amount'] -= 1
-                    if not sending_obj.output['amount']:
-                        sending_obj.output['item'] = None
-
+                sending_obj = self.obj_map[x + self.send_dir[0], y + self.send_dir[1]] 
+                if not isinstance(sending_obj, Pipe):
+                    if sending_obj.output['item']:
+                        self.item_holding = sending_obj.output['item']
+                        sending_obj.output['amount'] -= 1
+                        if not sending_obj.output['amount']:
+                            sending_obj.output['item'] = None
+                else:
+                    if sending_obj.item_holding:
+                        self.item_holding = sending_obj.item_holding
+                        sending_obj.item_holding = None
+                
     def rotate(self) -> None:
         pass
     
@@ -78,8 +87,9 @@ class Inserter(TransportSpriteBase):
             self.screen.blit(item_surf, item_surf.get_rect(center=self.rect.midtop - self.cam_offset))
 
     def update(self, dt: float) -> None:
-        self.config_transport_dir()
+        self.insert()
         self.render_transport_ui()
+        self.config_transport_dir()
 
 
 class BurnerInserter(Inserter):
@@ -96,10 +106,9 @@ class BurnerInserter(Inserter):
         player: Player,
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        item_transport_map: np.ndarray
+        obj_map: np.ndarray
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, item_transport_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
         self.tile_reach_radius = 1
         self.speed_factor = 1
         self.fuel_sources = {'coal': {'capacity': 50, 'burn speed': 6000}}
@@ -119,10 +128,9 @@ class ElectricInserter(Inserter):
         player: Player,
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        item_transport_map: np.ndarray
+        obj_map: np.ndarray
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, item_transport_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
         self.tile_reach_radius = 1
         self.speed_factor = 1.5
         self.fuel_sources = {'electricity': {}}
@@ -142,10 +150,9 @@ class LongHandedInserter(Inserter):
         player: Player,
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        item_transport_map: np.ndarray
+        obj_map: np.ndarray
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, item_transport_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
         self.tile_reach_radius = 2
         self.speed_factor = 1.25
         self.fuel_sources = {'electricity': {}}
