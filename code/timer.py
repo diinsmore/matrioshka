@@ -1,16 +1,7 @@
 import pygame as pg
 
 class Timer:
-    def __init__(
-        self, 
-        length: int, 
-        function: callable = None, 
-        auto_start: bool = False, 
-        loop: bool = False, 
-        store_progress: bool = False, 
-        *args, 
-        **kwargs
-    ):
+    def __init__(self, length: int, function: callable=None, auto_start: bool=False, loop: bool=False, store_progress: bool=False, *args, **kwargs):
         self.length = length
         self.function = function
         self.loop = loop
@@ -31,10 +22,8 @@ class Timer:
     def end(self) -> None:
         self.running = False
         self.start_time = 0
-        
         if self.function:
             self.function(*self.args, **self.kwargs)
-
         if self.loop:
             self.start()
 

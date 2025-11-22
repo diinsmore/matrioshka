@@ -35,7 +35,7 @@ class Pipe(TransportSpriteBase):
         self.variant_idx = variant_idx
         
         self.speed_factor = 1
-        self.timers = {'move item': Timer(length=2000 * self.speed_factor, function=self.transport, auto_start=False, loop=False, store_progress=False)}
+        self.timers = {'move item': Timer(length=2000 / self.speed_factor, function=self.transport, auto_start=True, loop=True)}
         self.connections = {}
         self.transport_dir = None
         self.get_connected_objs()
@@ -82,13 +82,9 @@ class Pipe(TransportSpriteBase):
                         (self.tile_xy[0] + transport_dir[0], self.tile_xy[1] + transport_dir[1]) != obj.tile_xy:
                             self.item_holding = obj.item_holding
                             obj.item_holding = None
-                    else:
-                        if dxy != transport_dir and obj.item_holding: # inserter sending item to pipe
-                            self.item_holding = obj.item_holding
-                            obj.item_holding = None
 
     def send_item_to_inserter(self, obj: Inserter) -> None:
-        if not obj.item_holding:
+        if not obj.item_holding and obj.rotated_over:
             obj.item_holding = self.item_holding
             self.item_holding = None
         

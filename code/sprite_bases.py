@@ -91,7 +91,6 @@ class TransportSpriteBase(SpriteBase):
         self.graphics = assets['graphics']
         self.tile_map = tile_map
         self.obj_map = obj_map
-        print(type(self.obj_map))
 
         self.dir_ui = self.graphics['transport dirs']
         self.item_holding = None
@@ -111,6 +110,4 @@ class TransportSpriteBase(SpriteBase):
 
     def update_timers(self) -> None:
         for t in self.timers.values():
-            if not t.running:
-                t.start()
             t.update()
