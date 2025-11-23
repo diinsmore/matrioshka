@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 import pygame as pg
-from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, TRANSPORT_DIRS
+from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPORT_DIRS
 
 class ItemDrag:
     def __init__(
@@ -119,7 +119,7 @@ class ItemDrag:
     def rotate_pipe(self) -> None:
         if self.old_pipe_idx is None:
             self.old_pipe_idx = int(self.player.item_holding[-1])
-        idx = (int(self.player.item_holding[-1]) + 1) % len(TRANSPORT_DIRS)
+        idx = (int(self.player.item_holding[-1]) + 1) % len(PIPE_TRANSPORT_DIRS)
         self.image = self.graphics[f'pipe {idx}']
         self.player.item_holding = f'pipe {idx}'
 

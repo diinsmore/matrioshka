@@ -12,7 +12,7 @@ import numpy as np
 from math import ceil
 from collections import defaultdict
 
-from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, MACHINES, TRANSPORT_DIRS
+from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, MACHINES, PIPE_TRANSPORT_DIRS
 
 class ItemPlacement:
     def __init__(
@@ -55,7 +55,7 @@ class ItemPlacement:
        
         self.obj_map = np.full(MAP_SIZE, None, dtype=object) # stores every tile an object overlaps with (tile_map only stores the topleft since it controls rendering)
         self.machine_ids = {self.tile_IDs[m] for m in MACHINES if 'pipe' not in m} | {self.tile_IDs['item extended']}
-        self.pipe_ids = {self.tile_IDs[f'pipe {i}'] for i in range(len(TRANSPORT_DIRS))}
+        self.pipe_ids = {self.tile_IDs[f'pipe {i}'] for i in range(len(PIPE_TRANSPORT_DIRS))}
 
     def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], old_pipe_idx: int=None) -> None:
         surf = self.graphics[sprite.item_holding]
@@ -99,7 +99,7 @@ class ItemPlacement:
             return self.tile_map[x, y + 1] in tile_IDs
 
     def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
-        pipe_data = TRANSPORT_DIRS[pipe_idx]
+        pipe_data = PIPE_TRANSPORT_DIRS[pipe_idx]
         for dx, dy in pipe_data if pipe_idx <= 5 else (pipe_data['horizontal'] + pipe_data['vertical']):
             if 0 <= x + dx < MAP_SIZE[0] and 0 <= y + dy < MAP_SIZE[1] and self.tile_map[x + dx, y + dy] in (self.machine_ids | self.pipe_ids):
                 return True

@@ -1,7 +1,7 @@
 import pygame as pg
 from os.path import join
 
-from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES, LOGISTICS, MATERIALS, TRANSPORT_DIRS, TILE_SIZE
+from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES, LOGISTICS, MATERIALS, PIPE_TRANSPORT_DIRS, TILE_SIZE
 from helper_functions import load_image, load_folder, load_subfolders, load_frames
 
 class AssetManager:
@@ -81,7 +81,7 @@ class AssetManager:
             if category != 'pipes':
                 self.graphics[name] = self.graphics['logistics'][category][name]
             else:
-                for i in range(len(TRANSPORT_DIRS)):
+                for i in range(len(PIPE_TRANSPORT_DIRS)):
                     self.graphics[f'pipe {i}'] = self.graphics['logistics']['pipes'][f'pipe {i}']
                     self.graphics[f'pipe {i}'].set_colorkey(self.graphics[f'pipe {i}'].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
 

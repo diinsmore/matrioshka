@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import math
 
-from settings import TILE_SIZE, MAP_SIZE, TRANSPORT_DIRS
+from settings import TILE_SIZE, MAP_SIZE, INSERTER_TRANSPORT_DIRS
 from sprite_bases import TransportSpriteBase
 from pipe import Pipe
 from furnaces import Furnace
@@ -38,11 +38,10 @@ class Inserter(TransportSpriteBase):
             'y axis': [(self.tile_xy[0], self.tile_xy[1] + dy) for dy in (-1, 1) if 0 <= self.tile_xy[1] + dy < MAP_SIZE[1]],
         }
         self.receive_dir, self.send_dir = None, None
-        self.receiving_obj, self.sending_obj = None, None
+        self.obj_receive_from, self.obj_send_to = None, None
         self.rotated_over = False
         self.adj_sprites = {dxy: None for dxy in self.tile_borders}
-        self.transport_idx = 0 # which index to take from the TRANSPORT_DIRS dictionary
-        self.num_valid_configs = len([k for k in TRANSPORT_DIRS if isinstance(TRANSPORT_DIRS[k], list)]) # ignore the indexes only meant for handling junction pipes
+        self.transport_idx = 0
         self.item_holding = None
         self.rotate_speed = 1250
         self.rotate_dir = None
@@ -55,50 +54,50 @@ class Inserter(TransportSpriteBase):
         
     def config_transport_dir(self) -> None:
         if self.keyboard.pressed_keys[pg.K_LSHIFT] and self.rect.collidepoint(self.mouse.world_xy):
-            self.transport_idx = (self.transport_idx + 1) % self.num_valid_configs
-            self.receive_dir, self.send_dir = TRANSPORT_DIRS[self.transport_idx]
+            self.transport_idx = (self.transport_idx + 1) % len(INSERTER_TRANSPORT_DIRS)
+            self.receive_dir, self.send_dir = INSERTER_TRANSPORT_DIRS[self.transport_idx]
    
     def transfer(self) -> None: # TODO: will have to make this more modular depending on whether the receiving object is a furnace/inserter/lab/etc.
         x, y = self.tile_xy
         if self.receive_dir and self.send_dir and all(self.obj_map[x + dx, y + dy] is not None for dx, dy in (self.receive_dir, self.send_dir)):
             if not self.item_holding:
-                self.sending_obj = self.obj_map[x + self.send_dir[0], y + self.send_dir[1]] 
+                self.obj_receive_from = self.obj_map[x + self.receive_dir[0], y + self.receive_dir[1]] 
                 if not self.rotated_over:
-                    self.rotate(self.sending_obj)
-                    self.timers['receive item'].start()
+                    self.rotate(self.obj_receive_from)
+                self.timers['receive item'].start()
             else:
-                self.receiving_obj = self.obj_map[x + self.receive_dir[0], y + self.receive_dir[1]]
+                self.obj_send_to = self.obj_map[x + self.send_dir[0], y + self.send_dir[1]]
                 if not self.rotated_over:
-                    self.rotate(self.receiving_obj)
-                    self.timers['send item'].start()
+                    self.rotate(self.obj_send_to)
+                self.timers['send item'].start()
 
     def receive_item(self) -> None:
-        if not isinstance(self.sending_obj, Pipe):
-            if hasattr(self.sending_obj, 'output') and self.sending_obj.output['item']:
-                self.item_holding = self.sending_obj.output['item']
-                self.sending_obj.output['amount'] -= 1
-                if not self.sending_obj.output['amount']:
-                    self.sending_obj.output['item'] = None
-                self.rotate(self.sending_obj, reset=True)
+        if not isinstance(self.obj_receive_from, Pipe):
+            if hasattr(self.obj_receive_from, 'output') and self.obj_receive_from.output['item']:
+                self.item_holding = self.obj_receive_from.output['item']
+                self.obj_receive_from.output['amount'] -= 1
+                if not self.obj_receive_from.output['amount']:
+                    self.obj_receive_from.output['item'] = None
+                self.rotate(self.obj_receive_from, reset=True)
         else:
-            if self.sending_obj.item_holding:
-                self.item_holding = self.sending_obj.item_holding
-                self.sending_obj.item_holding = None
-                self.rotate(self.sending_obj, reset=True)
+            if self.obj_receive_from.item_holding:
+                self.item_holding = self.obj_receive_from.item_holding
+                self.obj_receive_from.item_holding = None
+                self.rotate(self.obj_receive_from, reset=True)
 
     def send_item(self) -> None:
-        if not isinstance(self.receiving_obj, Pipe):
-            if self.receiving_obj.fuel_input['item'] in {None, self.item_holding}:
-                if self.receiving_obj.fuel_input['item'] is None:
-                    self.receiving_obj.fuel_input['item'] = self.item_holding
-                self.receiving_obj.fuel_input['amount'] += 1
+        if not isinstance(self.obj_send_to, Pipe):
+            if self.obj_send_to.fuel_input['item'] in {None, self.item_holding}:
+                if self.obj_send_to.fuel_input['item'] is None:
+                    self.obj_send_to.fuel_input['item'] = self.item_holding
+                self.obj_send_to.fuel_input['amount'] += 1
                 self.item_holding = None  
-                self.rotate(self.receiving_obj, reset=True)
+                self.rotate(self.obj_send_to, reset=True)
         else:
-            if not self.receiving_obj.item_holding:
-                self.receiving_obj.item_holding = self.item_holding
+            if not self.obj_send_to.item_holding:
+                self.obj_send_to.item_holding = self.item_holding
                 self.item_holding = None
-                self.rotate(self.receiving_obj, reset=True)
+                self.rotate(self.obj_send_to, reset=True)
                     
     def rotate(self, target_obj: pg.sprite.Sprite, reset: bool=False) -> None:
         if not reset:
@@ -120,7 +119,6 @@ class Inserter(TransportSpriteBase):
             self.screen.blit(receive_dir_surf, receive_dir_surf.get_frect(midbottom=self.rect.midtop - self.cam_offset))
             send_dir_surf = self.dir_ui[dirs[self.send_dir]]
             self.screen.blit(send_dir_surf, send_dir_surf.get_frect(midtop=self.rect.midbottom - self.cam_offset))
-
         if self.item_holding:
             item_surf = self.graphics[self.item_holding]
             self.screen.blit(item_surf, item_surf.get_rect(center=self.rect.midtop - self.cam_offset))

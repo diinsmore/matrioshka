@@ -162,7 +162,7 @@ LOGISTICS = {
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
 }
 
-TRANSPORT_DIRS = {
+PIPE_TRANSPORT_DIRS = {
     0: [(1, 0), (-1, 0)],
     1: [(0, -1), (0, 1)],
     2: [(1, 0), (0, -1)],
@@ -175,6 +175,7 @@ TRANSPORT_DIRS = {
     9: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, -1)]},
     10: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, 1)]}
 }
+INSERTER_TRANSPORT_DIRS = list(PIPE_TRANSPORT_DIRS.values())[:6] + [[(-1, 0), (1, 0)]]
 
 ELECTRICITY = {
     'electric pole': {'recipe': {'wood': 10, 'circuit': 2}, 'rgb': (90, 71, 64),}, 
@@ -224,7 +225,7 @@ DECOR = {
 }
 
 PLACEABLE_ITEMS = [
-    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(TRANSPORT_DIRS))], 
+    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
     *[f'{m} chest' for m in STORAGE['chest']['materials']], 'glass', 'lab'
 ]
 

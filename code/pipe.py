@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import numpy as np
 
-from settings import MAP_SIZE, TILE_SIZE, TRANSPORT_DIRS
+from settings import MAP_SIZE, TILE_SIZE, PIPE_TRANSPORT_DIRS
 from sprite_bases import SpriteBase, TransportSpriteBase
 from timer import Timer
 
@@ -41,7 +41,7 @@ class Pipe(TransportSpriteBase):
         self.get_connected_objs()
 
     def get_connected_objs(self) -> None:
-        pipe_data = TRANSPORT_DIRS[self.variant_idx]
+        pipe_data = PIPE_TRANSPORT_DIRS[self.variant_idx]
         self.connections = {xy: None for xy in (pipe_data if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs])}
         x, y = self.tile_xy
         for dx, dy in self.connections if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs]:
@@ -58,7 +58,7 @@ class Pipe(TransportSpriteBase):
 
     def update_rotation(self) -> None:
         if self.keyboard.pressed_keys[pg.K_r] and self.rect.collidepoint(self.mouse.world_xy) and not self.player.item_holding:
-            self.variant_idx = (self.variant_idx + 1) % len(TRANSPORT_DIRS)
+            self.variant_idx = (self.variant_idx + 1) % len(PIPE_TRANSPORT_DIRS)
             self.image = self.graphics[f'pipe {self.variant_idx}']
             self.tile_map[self.tile_xy] = self.tile_IDs[f'pipe {self.variant_idx}']
             self.get_connected_objs()
