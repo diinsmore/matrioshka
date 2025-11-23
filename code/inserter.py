@@ -17,7 +17,7 @@ class Inserter(TransportSpriteBase):
     def __init__(
         self,
         xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
+        image: pg.Surface,
         z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
@@ -27,27 +27,30 @@ class Inserter(TransportSpriteBase):
         player: Player,
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
-        obj_map: np.ndarray
+        obj_map: np.ndarray,
+        speed_factor: int=1
     ):
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
+        self.speed_factor = speed_factor
+
         self.tile_borders = {
             'x axis': [(self.tile_xy[0] + dx, self.tile_xy[1]) for dx in (-1, 1) if 0 <= self.tile_xy[0] + dx < MAP_SIZE[0]],
             'y axis': [(self.tile_xy[0], self.tile_xy[1] + dy) for dy in (-1, 1) if 0 <= self.tile_xy[1] + dy < MAP_SIZE[1]],
         }
         self.receive_dir, self.send_dir = None, None
+        self.receiving_obj, self.sending_obj = None, None
         self.rotated_over = False
         self.adj_sprites = {dxy: None for dxy in self.tile_borders}
         self.transport_idx = 0 # which index to take from the TRANSPORT_DIRS dictionary
         self.num_valid_configs = len([k for k in TRANSPORT_DIRS if isinstance(TRANSPORT_DIRS[k], list)]) # ignore the indexes only meant for handling junction pipes
         self.item_holding = None
-        self.rotate_speed = 1500 
-        self.speed_factor = 1
+        self.rotate_speed = 1250
         self.rotate_dir = None
-        self.original_img = self.image.copy()
+        self.original_img = self.image
         self.timers = {
-            'check insert': Timer(length=self.rotate_speed/self.speed_factor, function=self.check_insert, auto_start=True, loop=True),
-            'receive item': Timer(length=(self.rotate_speed/4)/self.speed_factor, function=None, auto_start=False, loop=False),
-            'send item': Timer(length=(self.rotate_speed/4)/self.speed_factor, function=None, auto_start=False, loop=False),
+            'transfer': Timer(length=self.rotate_speed/self.speed_factor, function=self.transfer, auto_start=True, loop=True),
+            'receive item': Timer(length=200, function=self.receive_item, auto_start=False, loop=False),
+            'send item': Timer(length=100, function=self.send_item, auto_start=False, loop=False),
         }
         
     def config_transport_dir(self) -> None:
@@ -55,51 +58,47 @@ class Inserter(TransportSpriteBase):
             self.transport_idx = (self.transport_idx + 1) % self.num_valid_configs
             self.receive_dir, self.send_dir = TRANSPORT_DIRS[self.transport_idx]
    
-    def check_insert(self) -> None: # TODO: will have to make this more modular depending on whether the receiving object is a furnace/inserter/lab/etc.
+    def transfer(self) -> None: # TODO: will have to make this more modular depending on whether the receiving object is a furnace/inserter/lab/etc.
         x, y = self.tile_xy
         if self.receive_dir and self.send_dir and all(self.obj_map[x + dx, y + dy] is not None for dx, dy in (self.receive_dir, self.send_dir)):
             if not self.item_holding:
-                sending_obj = self.obj_map[x + self.send_dir[0], y + self.send_dir[1]] 
+                self.sending_obj = self.obj_map[x + self.send_dir[0], y + self.send_dir[1]] 
                 if not self.rotated_over:
-                    self.rotate(sending_obj)
-                    self.rotated_over = True
+                    self.rotate(self.sending_obj)
                     self.timers['receive item'].start()
-                elif not self.timers['receive item'].running:
-                    if not isinstance(sending_obj, Pipe):
-                        if hasattr(sending_obj, 'output') and sending_obj.output['item']:
-                            self.item_holding = sending_obj.output['item']
-                            sending_obj.output['amount'] -= 1
-                            if not sending_obj.output['amount']:
-                                sending_obj.output['item'] = None
-                            self.rotate(sending_obj, reset=True)
-                            self.rotated_over = False
-                    else:
-                        if sending_obj.item_holding:
-                            self.item_holding = sending_obj.item_holding
-                            sending_obj.item_holding = None
-                            self.rotate(sending_obj, reset=True)
-                            self.rotated_over = False
             else:
-                receiving_obj = self.obj_map[x + self.receive_dir[0], y + self.receive_dir[1]]
+                self.receiving_obj = self.obj_map[x + self.receive_dir[0], y + self.receive_dir[1]]
                 if not self.rotated_over:
-                    self.rotate(receiving_obj)
-                    self.rotated_over = True
+                    self.rotate(self.receiving_obj)
                     self.timers['send item'].start()
-                elif not self.timers['send item'].running:
-                    if not isinstance(receiving_obj, Pipe):
-                        if receiving_obj.fuel_input['item'] in {None, self.item_holding}:
-                            if receiving_obj.fuel_input['item'] is None:
-                                receiving_obj.fuel_input['item'] = self.item_holding
-                            receiving_obj.fuel_input['amount'] += 1
-                            self.item_holding = None  
-                            self.rotate(receiving_obj, reset=True)
-                            self.rotated_over = False
-                    else:
-                        if not receiving_obj.item_holding:
-                            receiving_obj.item_holding = self.item_holding
-                            self.item_holding = None
-                            self.rotate(receiving_obj, reset=True)
-                            self.rotated_over = False
+
+    def receive_item(self) -> None:
+        if not isinstance(self.sending_obj, Pipe):
+            if hasattr(self.sending_obj, 'output') and self.sending_obj.output['item']:
+                self.item_holding = self.sending_obj.output['item']
+                self.sending_obj.output['amount'] -= 1
+                if not self.sending_obj.output['amount']:
+                    self.sending_obj.output['item'] = None
+                self.rotate(self.sending_obj, reset=True)
+        else:
+            if self.sending_obj.item_holding:
+                self.item_holding = self.sending_obj.item_holding
+                self.sending_obj.item_holding = None
+                self.rotate(self.sending_obj, reset=True)
+
+    def send_item(self) -> None:
+        if not isinstance(self.receiving_obj, Pipe):
+            if self.receiving_obj.fuel_input['item'] in {None, self.item_holding}:
+                if self.receiving_obj.fuel_input['item'] is None:
+                    self.receiving_obj.fuel_input['item'] = self.item_holding
+                self.receiving_obj.fuel_input['amount'] += 1
+                self.item_holding = None  
+                self.rotate(self.receiving_obj, reset=True)
+        else:
+            if not self.receiving_obj.item_holding:
+                self.receiving_obj.item_holding = self.item_holding
+                self.item_holding = None
+                self.rotate(self.receiving_obj, reset=True)
                     
     def rotate(self, target_obj: pg.sprite.Sprite, reset: bool=False) -> None:
         if not reset:
@@ -112,6 +111,7 @@ class Inserter(TransportSpriteBase):
             center = self.rect.center
             self.image = self.original_img
             self.rect = self.image.get_rect(center=center)
+        self.rotated_over = not self.rotated_over
 
     def render_transport_ui(self) -> None:
         if self.receive_dir and self.send_dir:
@@ -168,9 +168,9 @@ class ElectricInserter(Inserter):
         tile_map: np.ndarray,
         obj_map: np.ndarray
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
+        speed_factor = 1.5
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, speed_factor)
         self.tile_reach_radius = 1
-        self.speed_factor = 1.5
         self.fuel_sources = {'electricity': {}}
 
 
@@ -189,8 +189,8 @@ class LongHandedInserter(Inserter):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray,
         obj_map: np.ndarray
-    ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
+    ):  
+        speed_factor = 1.25
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, speed_factor)
         self.tile_reach_radius = 2
-        self.speed_factor = 1.25
         self.fuel_sources = {'electricity': {}}

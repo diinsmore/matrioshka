@@ -83,6 +83,7 @@ class TransportSpriteBase(SpriteBase):
         save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, z, sprite_groups)
+        self.image = self.image.copy() # for rotating the inserters
         self.screen = screen
         self.cam_offset = cam_offset
         self.mouse = mouse

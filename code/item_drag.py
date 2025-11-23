@@ -62,7 +62,7 @@ class ItemDrag:
         if l_click or r_click:
             if self.active:
                 if r_click:
-                    self.item_drag_amount //= 2
+                    self.amount //= 2
                 else:
                     self.end_drag()
             else:

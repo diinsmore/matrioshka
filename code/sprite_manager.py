@@ -86,8 +86,10 @@ class SpriteManager:
 
         self.crafting = Crafting()
 
-        self.items_init_when_placed = {cls_name_to_str(cls): cls for cls in (BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, 
-            ElectricInserter)}
+        self.items_init_when_placed = {
+            cls_name_to_str(cls): cls for cls in (
+                BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, ElectricInserter
+        )}
         self.ui, self.item_placement, self.player = None, None, None # not initialized until after the sprite manager
     
     def init_trees(self) -> None:
@@ -163,22 +165,11 @@ class SpriteManager:
                 return
 
     @staticmethod
-    def rect_in_sprite_radius(
-        sprite: pg.sprite.Sprite, 
-        rect: pg.Rect, 
-        x_dist: int = (RES[0] // 2) + 5, 
-        y_dist: int = (RES[1] // 2) + 5
-    ) -> bool:
-        return abs(sprite.rect.centerx - rect.centerx) < x_dist and abs(sprite.rect.centery - rect.centery) < y_dist
+    def rect_in_sprite_radius(spr: pg.sprite.Sprite, rect: pg.Rect, x_dist: int=(RES[0]//2)+100, y_dist: int=(RES[1]//2)) -> bool:
+        return abs(spr.rect.centerx - rect.centerx) < x_dist and abs(spr.rect.centery - rect.centery) < y_dist
 
-    def get_sprites_in_radius(
-        self, 
-        rect: pg.Rect, 
-        group: pg.sprite.Group, 
-        x_dist: int = (RES[0] // 2),  
-        y_dist: int = (RES[1] // 2) 
-    ) -> list[pg.sprite.Sprite]:
-        return [sprite for sprite in group if self.rect_in_sprite_radius(sprite, rect, x_dist, y_dist)]
+    def get_sprites_in_radius(self, rect: pg.Rect, group: pg.sprite.Group, x_dist: int=(RES[0]//2)+100, y_dist: int=(RES[1]//2)) -> list[pg.sprite.Sprite]:
+        return [spr for spr in group if self.rect_in_sprite_radius(spr, rect, x_dist, y_dist)]
 
     def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[pg.sprite.Group]:
         return set(group for group in self.all_groups.values() if sprite in group)
@@ -215,7 +206,6 @@ class SpriteManager:
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
         for sprite in self.active_sprites:
             sprite.update(dt)
-    
         self.mining.update(self.keyboard.held_keys, player, self.mouse.tile_xy)
         self.wood_gathering.update(player, self.mouse.buttons_held, self.mouse.world_xy)
         self.init_clouds(player)

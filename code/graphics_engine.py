@@ -74,21 +74,16 @@ class GraphicsEngine:
         for name, group in self.sprite_manager.all_groups.items():
             setattr(self, name, group)
 
-    def animate_sprite(self, sprite: pg.sprite.Sprite, dt: float) -> None:
-        if sprite.state not in {'idle', 'mining', 'chopping'}:
-            sprite.frame_index += sprite.animation_speed[sprite.state] * dt
-            if self.flip_sprite_x(sprite):
-                sprite.facing_left = not sprite.facing_left
-
-            sprite.image = pg.transform.flip(
-                sprite.frames[sprite.state][int(sprite.frame_index % len(sprite.frames[sprite.state]))],
-                not sprite.facing_left,
-                False
-            )
+    def animate_sprite(self, spr: pg.sprite.Sprite, dt: float) -> None:
+        if spr.state not in {'idle', 'mining', 'chopping'}:
+            spr.frame_index += spr.animation_speed[spr.state] * dt
+            if self.flip_sprite_x(spr):
+                spr.facing_left = not spr.facing_left
+            spr.image = pg.transform.flip(spr.frames[spr.state][int(spr.frame_index % len(spr.frames[spr.state]))], not spr.facing_left, False)
         else:
-            image = sprite.frames['idle'][0]
+            image = spr.frames['idle'][0]
             # added 'and sprite.facing_left' to prevent flipping left after lifting the right key
-            sprite.image = image if not self.flip_sprite_x(sprite) and sprite.facing_left else pg.transform.flip(image, True, False)
+            spr.image = image if not self.flip_sprite_x(spr) and spr.facing_left else pg.transform.flip(image, True, False)
         
     @staticmethod
     def flip_sprite_x(sprite: pg.sprite.Sprite) -> bool:
@@ -96,23 +91,15 @@ class GraphicsEngine:
         return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
     def render_sprites(self, dt: float) -> None:
-        for sprite in sorted(
-            self.sprite_manager.get_sprites_in_radius(self.player.rect, self.all_sprites), 
-            key = lambda sprite: sprite.z
-        ):  
-            self.screen.blit(sprite.image, sprite.rect.topleft - self.cam.offset)
-            groups = self.sprite_manager.get_sprite_groups(sprite) 
+        for spr in sorted(self.sprite_manager.get_sprites_in_radius(self.player.rect, self.all_sprites), key=lambda s: s.z): 
+            self.screen.blit(spr.image, spr.rect.topleft - self.cam.offset)
+            groups = self.sprite_manager.get_sprite_groups(spr) 
             if groups: # the sprite isn't just a member of all_sprites
-                self.render_group_action(groups, sprite, dt)
-
+                self.render_group_action(groups, spr, dt)
+            
     def render_group_action(self, groups: set[pg.sprite.Group], sprite: pg.sprite.Sprite, dt: float) -> None:
-        '''
-        call the rendering methods associated with specific sprite groups
-        e.g only sprites in the animated_sprite group are passed to self.animated_sprite()
-        '''
         if self.animated_sprites in groups:
             self.animate_sprite(sprite, dt)
-                
         # TODO: this may need to be updated if more sprites can also hold objects
         if self.human_sprites in groups:
             self.render_item_held(dt)
@@ -272,12 +259,10 @@ class Terrain:
                 # ensure that the tile is within the map borders & is a solid tile
                 if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != air_ID:
                     tile = self.get_tile_type(x, y)
-                    if tile == 'item extended': # to be ignored as far as rendering is concerned
+                    if tile == 'item extended' or 'inserter' in tile: # not rendering inserters here otherwise the default surface remains after being rotated
                         continue 
-
                     elif tile == 'tree base':
                         tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
-
                     self.screen.blit(
                         self.get_mined_tile_image(x, y) if (x, y) in mining_map_keys else self.graphics[tile], 
                         pg.Vector2(x * TILE_SIZE, y * TILE_SIZE) - self.cam_offset
