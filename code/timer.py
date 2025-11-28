@@ -6,8 +6,8 @@ class Timer:
         self.function = function
         self.loop = loop
         self.store_progress = store_progress
-        if store_progress:
-            self.progress_percent = 0
+        if self.store_progress:
+            self.percent = 0
         self.args = args
         self.kwargs = kwargs
         
@@ -31,6 +31,6 @@ class Timer:
         if self.running:
             progress = pg.time.get_ticks() - self.start_time
             if self.store_progress:
-                self.progress_percent = (progress / self.length) * 100
+                self.percent = (progress / self.length) * 100
             if progress >= self.length:
                 self.end()

@@ -70,7 +70,7 @@ class ItemDrag:
                     if item_name := self.get_clicked_item():
                         self.start_drag(item_name, 'left' if l_click else 'right')   
                 else:
-                    if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'has_inv') and m.ui.render]:
+                    if machines_with_inv := [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'inv') and m.ui.render]:
                         self.check_machine_extract(machines_with_inv, l_click, r_click)
         else:
             if self.active:
@@ -86,7 +86,7 @@ class ItemDrag:
         if self.player.item_holding in (self.material_names | self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
-            self.item_placement.place_item(self.player, (self.mouse.world_xy[0] // TILE_SIZE, self.mouse.world_xy[1] // TILE_SIZE), self.old_pipe_idx)
+            self.item_placement.place_item(self.player, self.mouse.tile_xy, self.old_pipe_idx)
         if self.player.item_holding not in self.player.inventory.contents: # placed the last of its kind
             self.update_item_data(remove=True)
 
@@ -124,19 +124,16 @@ class ItemDrag:
         self.player.item_holding = f'pipe {idx}'
 
     def place_item_in_machine(self) -> None:
-        for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'has_inv') and m.ui.render]:
-            inv_box_data = machine.ui.get_inv_box_data()
-            if inv_type := machine.ui.check_input(inv_box_data):
-                machine.ui.input_item(inv_type, self.amount, inv_box_data[inv_type])
+        for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'inv') and m.ui.render]:
+            if slot := machine.ui.check_input():
+                machine.ui.input_item(slot, self.amount)
                 return
     
     def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
-            inv_data = machine.ui.get_inv_box_data()
-            for inv_type in inv_data.keys():
-                inv_contents = inv_data[inv_type]['contents']
-                if inv_data[inv_type]['rect'].collidepoint(self.mouse.screen_xy) and inv_contents['item']:
-                    machine.ui.extract_item(inv_contents, 'left' if l_click else 'right')
+            for slot in machine.inv:
+                if slot.rect.collidepoint(self.mouse.screen_xy) and slot.item:
+                    machine.ui.extract_item(slot, 'left' if l_click else 'right')
                     return
 
     def update(self) -> None:

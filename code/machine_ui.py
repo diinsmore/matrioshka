@@ -1,14 +1,25 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from sprite_base import SpriteBase
+    from input_manager import Mouse, Keyboard
+    from player import Player
 
 import pygame as pg
+from dataclasses import dataclass, fields
+
+@dataclass(slots=True)
+class InvSlot:
+    item: str
+    rect: pg.Rect
+    valid_inputs: dict
+    amount: int=0
+    max_capacity: int=99
+
 
 class MachineUI:
     def __init__(
         self,
-        machine: SpriteBase,
+        machine: pg.sprite.Sprite,
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
         mouse: Mouse, 
@@ -33,6 +44,7 @@ class MachineUI:
         self.render_item_amount = render_item_amount
        
         self.render = False
+        self.mouse_hover = False
         self.graphics = self.assets['graphics']
         self.icons = self.graphics['icons']
         self.fonts = self.assets['fonts']
@@ -46,78 +58,71 @@ class MachineUI:
         self.machine_mask_surf = self.machine_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
 
         self.padding = 15
-
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
 
-    def get_bg_rect(self) -> pg.Rect:
-        return pg.Rect(self.machine.rect.midtop - pg.Vector2(self.bg_width // 2, self.bg_height + self.padding), (self.bg_width, self.bg_height))
+    def update_bg_rect(self) -> None:
+        self.bg_rect = pg.Rect(
+            self.machine.rect.midtop - pg.Vector2(self.bg_width // 2, self.bg_height + self.padding), 
+            (self.bg_width, self.bg_height)
+        )
 
-    def check_input(self, box_data: dict[str, dict]) -> str|None:
-        box_name = None
-        for name in box_data:
-            if box_data[name]['rect'].collidepoint(self.mouse.screen_xy):
-                box_name = name
-        return box_name
+    def check_input(self) -> str | None:
+        for slot in self.machine.inv:
+            if slot.rect.collidepoint(self.mouse.screen_xy):
+                return slot
+        return None
 
-    def input_item(self, box_name: str, amount: int, box_data: dict[str, dict]) -> None: 
-        if self.player.item_holding in box_data['valid inputs'] and box_name != 'output': # the output box only allows input if you're adding to the item it's holding
-            if box_data['contents']['item'] is None:
-                box_data['contents']['item'] = self.player.item_holding
-                
-        if self.player.item_holding == box_data['contents']['item']:
-            box_data['contents']['amount'] += amount
-            self.player.inventory.remove_item(self.player.item_holding, amount)
-            if self.player.item_holding not in self.player.inventory.contents:
-                self.player.item_holding = None
+    def input_item(self, slot: InvSlot, amount: int) -> None: 
+        if self.player.item_holding in slot.valid_inputs and slot.rect != self.inv.output.rect: # the output box only allows input if you're adding to the item it's holding
+            if slot.item is None:
+                slot.item = self.player.item_holding
+        if self.player.item_holding == slot.item:
+            slot.amount += amount
+            self.player.inventory.remove_item(amount=amount)
 
-    def extract_item(self, box_contents: dict[str, str|int], click_type: str) -> None:
-        extract_total = box_contents['amount'] if click_type == 'left' else (box_contents['amount'] // 2)
-        box_contents['amount'] -= extract_total
-        self.player.inventory.add_item(box_contents['item'], extract_total)
-        self.player.item_holding = box_contents['item']
-        if box_contents['amount'] == 0:
-            box_contents['item'] = None
+    def extract_item(self, slot: InvSlot, click_type: str) -> None:
+        extract_total = slot.amount if click_type == 'left' else max(1, slot.amount // 2)
+        slot.amount -= extract_total
+        self.player.inventory.add_item(slot.item, extract_total)
+        if slot.amount == 0:
+            slot.item = None
             
-    def highlight_surf_when_hovered(self, rect_mouse_collide: bool) -> None:
-        if rect_mouse_collide:
+    def highlight_surf_when_hovered(self) -> None:
+        if self.mouse_hover:
             self.screen.blit(self.machine_mask_surf, self.machine.rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_ADD)
 
-    def render_boxes(self, get_box_data: callable) -> None: 
-        data = get_box_data()
-        for k in data:
-            contents, rect = data[k]['contents'], data[k]['rect']
-            self.gen_bg(rect, color=self.highlight_color if rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
-            self.gen_outline(rect)
-            if contents['item']: 
-                self.render_box_contents(contents['item'], contents['amount'], rect)          
+    def render_inv(self) -> None: 
+        self.update_inv_rects()
+        for slot in self.machine.inv: 
+            self.gen_bg(slot.rect, color=self.highlight_color if slot.rect.collidepoint(self.mouse.screen_xy) else 'black', transparent=False) 
+            self.gen_outline(slot.rect)
+            if slot.item: 
+                self.render_inv_contents(slot)          
         
-    def render_box_contents(self, item: str, amount: int, box_rect: pg.Rect) -> None:
-        surf = self.graphics[item]
-        self.screen.blit(surf, surf.get_frect(center=box_rect.center))
-        self.render_item_amount(amount, box_rect.bottomright - pg.Vector2(5, 5))
+    def render_inv_contents(self, slot: InvSlot) -> None:
+        surf = self.graphics[slot.item]
+        self.screen.blit(surf, surf.get_frect(center=slot.rect.center))
+        self.render_item_amount(slot.amount, slot.rect.bottomright - pg.Vector2(5, 5))
 
-    def render_progress_bar(self, box: pg.Rect, progress_percent: float) -> None:
-        bar = pg.Rect(box.bottomleft, (self.box_len, self.progress_bar_height))
+    def render_progress_bar(self, inv_box: pg.Rect, percent: float) -> None:
+        bar = pg.Rect(inv_box.bottomleft, (self.box_len, self.progress_bar_height))
         pg.draw.rect(self.screen, 'black', bar, 1)
-        progress_rect = pg.Rect(bar.topleft + pg.Vector2(1, 1), ((bar.width - 2) * (progress_percent / 100), bar.height - 2))
-        pg.draw.rect(self.screen, 'green' if box == self.smelt_box else 'red', progress_rect)
+        progress_rect = pg.Rect(bar.topleft + pg.Vector2(1, 1), ((bar.width - 2) * (percent / 100), bar.height - 2))
+        pg.draw.rect(self.screen, 'green' if inv_box == self.inv.smelt.rect else 'red', progress_rect)
 
-    def update_fuel_status(self, machine_name: str) -> None:
-        if not self.machine.fuel_input['item']:
-            if 'furnace' in machine_name and self.machine.variant == 'burner' and not self.machine.smelt_input['item']: # always alert empty fuel for electrics, only alert for burners if containing an item to smelt
+    def update_fuel_status(self) -> None:
+        if not self.machine.inv.fuel.item:
+            if hasattr(self.machine, 'can_smelt') and self.machine.variant == 'burner' and not self.machine.inv.smelt.item: 
                 return
             self.screen.blit(self.empty_fuel_surf, self.empty_fuel_surf.get_rect(center=self.machine.rect.center - self.cam_offset))
-
-    def run(self, machine_name: str, rect_mouse_collide: bool) -> None:
-        self.highlight_surf_when_hovered(rect_mouse_collide)
-        self.update_fuel_status(machine_name)
+            
+    def update(self) -> None:
+        self.mouse_hover = self.machine.rect.collidepoint(self.mouse.world_xy)
+        self.highlight_surf_when_hovered()
+        self.update_fuel_status()
         if not self.render:
-            self.render = rect_mouse_collide and self.mouse.buttons_pressed['left']
-            return
+            self.render = self.mouse_hover and self.mouse.buttons_pressed['left']
         elif self.keyboard.held_keys[self.key_close_ui]:
             self.render = False
-            return
-        self.render_interface()
-            
-    def update(self, machine_name: str) -> None:
-        self.run(machine_name, self.machine.rect.collidepoint(self.mouse.world_xy))
+        else:
+            self.render_interface()

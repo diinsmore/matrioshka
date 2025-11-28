@@ -53,9 +53,12 @@ class MachineSpriteBase(SpriteBase):
         self.rect_in_sprite_radius = rect_in_sprite_radius
         self.render_item_amount = render_item_amount
         _vars = vars()
-        self.ui_params = {k: _vars[k] for k in ('screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 
-            'rect_in_sprite_radius', 'render_item_amount')}
-        
+        self.ui_params = {
+            k: _vars[k] for k in (
+                'screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 
+                'rect_in_sprite_radius', 'render_item_amount'
+            )
+        }
         self.active = False
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}

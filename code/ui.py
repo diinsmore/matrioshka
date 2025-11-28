@@ -125,7 +125,6 @@ class UI:
         draw: bool = True, # if multiple rects are used, this gives more flexibility for their layering
         return_outline: bool = False
     ) -> None | pg.Rect:
-
         # avoids evaluating 'self' prematurely when set as a default parameter
         if color is None:
             color = self.assets['colors']['outline bg']

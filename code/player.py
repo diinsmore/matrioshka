@@ -2,15 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
-    from inventory import PlayerInventory
+    from input_manager import InputManager
 
 import pygame as pg
 import numpy as np
 
-from settings import *
+from settings import GRAVITY, TILE_SIZE, BIOME_WIDTH
+from inventory import PlayerInventory
 
-# not inheriting from the base Sprite class in sprites.py since it's not a static image
-# there will probably be an AnimatedSprite type class to inherit from in the future 
 class Player(pg.sprite.Sprite):
     def __init__(
         self, 
@@ -18,22 +17,25 @@ class Player(pg.sprite.Sprite):
         frames: dict[str, pg.Surface],
         z: dict[str, int],
         sprite_groups: list[pg.sprite.Group],
+        input_manager: InputManager,
         tile_map: np.ndarray,
         tile_IDs: dict[str, dict[str, any]],
         current_biome: str,
         biome_order: dict[str, int],
-        inventory: PlayerInventory,
         save_data: dict[str, any]
     ):
         super().__init__(*sprite_groups)
-        self.spawn_point = self.xy = xy
+        self.xy, self.spawn_point = xy, xy
         self.frames = frames
         self.z = z
+        self.keyboard = input_manager.keyboard
+        self.mouse = input_manager.mouse
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.current_biome = current_biome
         self.biome_order = biome_order
-        self.inventory = inventory
+        
+        self.inventory = PlayerInventory(parent_spr=self, save_data=save_data)
 
         self.frame_index = 0
         self.state = 'idle'
@@ -61,6 +63,7 @@ class Player(pg.sprite.Sprite):
         
     def update(self, dt: float) -> None:
         self.get_current_biome()
+        self.inventory.get_idx_selection(self.keyboard)
 
     def get_save_data(self) -> dict[str, any]:
         return {

@@ -68,19 +68,17 @@ class Main:
             save_data
         )
         
-        self.player_inv = PlayerInventory(player_data['inventory data'] if save_data else None)
-
         self.player = Player( 
             player_xy if save_data else self.proc_gen.player_spawn_point,
             load_subfolders(join('..', 'graphics', 'player')), 
             Z_LAYERS['player'],
             [self.sprite_mgr.all_sprites, self.sprite_mgr.active_sprites, self.sprite_mgr.player_sprite, 
             self.sprite_mgr.human_sprites, self.sprite_mgr.animated_sprites], 
+            self.input_mgr,
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.proc_gen.current_biome,
             self.proc_gen.biome_order,
-            self.player_inv,
             save_data=player_data if save_data else None
         )
         self.sprite_mgr.player = self.player
@@ -91,7 +89,7 @@ class Main:
             assets, 
             self.mouse,
             self.keyboard,
-            self.player_inv, 
+            self.player.inventory, 
             self.sprite_mgr, 
             self.player, 
             self.proc_gen.tile_map,
@@ -107,7 +105,6 @@ class Main:
             self.proc_gen.tile_map,
             self.proc_gen.tile_IDs,
             self.physics_engine.collision_map,
-            self.player_inv,
             self.sprite_mgr,
             self.mouse,
             self.keyboard,
@@ -123,9 +120,8 @@ class Main:
         self.sprite_mgr.item_placement = self.item_placement
        # if save_data:
            # self.sprite_mgr.init_placed_items()
-        inv_ui = self.ui.inventory_ui
-        inv_ui.item_placement = self.item_placement
-        inv_ui.item_drag.item_placement = self.item_placement
+        self.ui.inventory_ui.item_placement = self.item_placement
+        self.ui.inventory_ui.item_drag.item_placement = self.item_placement
         
         self.chunk_mgr = ChunkManager(self.cam.offset)
         
@@ -175,7 +171,6 @@ class Main:
         self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
         self.graphics_engine.update(self.player.current_biome, dt) 
         self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
-        self.player_inv.get_idx_selection(self.keyboard, self.player)
 
     def run(self) -> None:
         while self.running:

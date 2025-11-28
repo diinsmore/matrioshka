@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from inventory import Inventory
     from input_manager import Mouse, Keyboard
     from sprite_manager import SpriteManager
     from player import Player
@@ -22,7 +21,6 @@ class ItemPlacement:
         tile_map: np.ndarray,
         tile_IDs: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
-        inventory: Inventory,
         sprite_mgr: SpriteManager,
         mouse: Mouse,
         keyboard: Keyboard,
@@ -40,7 +38,6 @@ class ItemPlacement:
         self.tile_map = tile_map
         self.tile_IDs = tile_IDs
         self.collision_map = collision_map
-        self.inventory = inventory
         self.sprite_mgr = sprite_mgr
         self.mouse = mouse
         self.keyboard = keyboard
@@ -108,7 +105,7 @@ class ItemPlacement:
     def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, old_pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
         self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]
         self.collision_map.update_map(tile_xy, add_tile=True)
-        sprite.inventory.remove_item(sprite.item_holding if old_pipe_idx is None else f'pipe {old_pipe_idx}')
+        sprite.inventory.remove_item()
         if sprite.item_holding in OBJ_ITEMS:
             self.init_obj(sprite.item_holding, [tile_xy])  
 
