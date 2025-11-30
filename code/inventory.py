@@ -70,7 +70,9 @@ class PlayerInventory(Inventory):
             'stone pickaxe': {'amount': 10},
             'pipe 0': {'amount': 100},
             'copper': {'amount': 100},
-            'burner inserter': {'amount': 50}
+            'burner inserter': {'amount': 50},
+            'burner furnace': {'amount': 50},
+            'assembler': {'amount': 50}
         })
          
     def get_idx_selection(self, keyboard: Keyboard) -> None:

@@ -22,6 +22,7 @@ from furnaces import BurnerFurnace, ElectricFurnace
 from drills import BurnerDrill, ElectricDrill
 from pipe import Pipe
 from inserter import BurnerInserter, ElectricInserter, LongHandedInserter
+from assembler import Assembler
 
 class SpriteManager:
     def __init__(
@@ -70,8 +71,6 @@ class SpriteManager:
         self.item_sprites = pg.sprite.Group()
         self.all_groups = {k: v for k, v in vars(self).items() if isinstance(v, pg.sprite.Group)}
         
-        self.init_trees()
-        
         self.mining = Mining(
             self.tile_map, 
             self.tile_IDs,
@@ -86,9 +85,10 @@ class SpriteManager:
 
         self.crafting = Crafting()
 
+        self.init_trees()
         self.items_init_when_placed = {
             cls_name_to_str(cls): cls for cls in (
-                BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, ElectricInserter
+                BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, ElectricInserter, Assembler
         )}
         self.ui, self.item_placement, self.player = None, None, None # not initialized until after the sprite manager
     

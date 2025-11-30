@@ -100,13 +100,7 @@ class UI:
             self.gen_bg
         )
 
-        for key in (
-            'expand inventory ui', 
-            'toggle inventory ui', 
-            'toggle craft window ui', 
-            'toggle mini map ui', 
-            'toggle HUD ui'
-        ):
+        for key in ('expand inventory ui', 'toggle inventory ui', 'toggle craft window ui', 'toggle mini map ui', 'toggle HUD ui'):
             setattr(self, '_'.join(key.split(' ')), self.keyboard.key_bindings[key])
 
         self.active_item_names = []
@@ -118,34 +112,30 @@ class UI:
     def gen_outline(
         self,
         rect: pg.Rect,
-        color: str | tuple[int, int, int] = None,
-        width: int = 1,
-        padding: int = 1,
-        radius: int = 0,
-        draw: bool = True, # if multiple rects are used, this gives more flexibility for their layering
-        return_outline: bool = False
+        color: str | tuple[int, int, int]=None,
+        width: int=1,
+        padding: int=1,
+        radius: int=0,
+        draw: bool=True, # if multiple rects are used, this gives more flexibility for their layering
+        return_outline: bool=False
     ) -> None | pg.Rect:
-        # avoids evaluating 'self' prematurely when set as a default parameter
-        if color is None:
+        if color is None: # avoids evaluating 'self' prematurely when set as a default parameter
             color = self.assets['colors']['outline bg']
-
         outline = pg.Rect(rect.topleft - pg.Vector2(padding, padding), (rect.width + (padding * 2), rect.height + (padding * 2)))
         if draw:
             pg.draw.rect(self.screen, color, outline, width, radius)
-
         if return_outline: # use the outline as the base rect for creating another outline
             return outline
 
     def gen_bg(
         self, 
         rect: pg.Rect, 
-        color: str | tuple[int, int, int] = 'black', 
-        transparent: bool = False, 
-        alpha: int = None
+        color: str | tuple[int, int, int]='black', 
+        transparent: bool=False, 
+        alpha: int=None
     ) -> None:
         if alpha is None:
             alpha = 200 if transparent else 255
-        
         img = pg.Surface(rect.size)
         img.fill(color)
         img.set_alpha(alpha)

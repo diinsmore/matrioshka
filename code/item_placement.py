@@ -4,7 +4,6 @@ if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from sprite_manager import SpriteManager
     from player import Player
-    from sprite_base import SpriteBase
 
 import pygame as pg
 import numpy as np
@@ -30,7 +29,7 @@ class ItemPlacement:
         gen_bg: callable, 
         rect_in_sprite_radius: callable, 
         render_item_amount: callable, 
-        items_init_when_placed: dict[str, type[SpriteBase]],
+        items_init_when_placed: dict[str, pg.sprite.Sprite],
         save_data: dict[str, any] | None
     ):
         self.screen = screen

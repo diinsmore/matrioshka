@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from sprite_bases import MachineSpriteBase
+from sprite_bases import MachineSpriteBase, Inventory, InvSlot
 from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from assembler_ui import AssemblerUI
 
@@ -50,6 +50,10 @@ class Assembler(MachineSpriteBase):
             render_item_amount, 
             save_data
         )
-        self.ui = self.init_ui(AssemblerUI)
-        self.item_crafting, self.req_items = None, None
+        self.inv = Inventory(input_slot=[])
+        self.item_crafting, self.recipe = None, None
         self.num_categories = 6
+        self.init_ui(AssemblerUI)
+
+    def update(self, dt: float) -> None:
+        self.ui.update()

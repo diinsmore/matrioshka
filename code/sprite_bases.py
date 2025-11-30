@@ -3,8 +3,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Mouse, Keyboard
     from player import Player
+    from machine_ui import MachineUI
 
 import pygame as pg
+from dataclasses import dataclass, field
+
 from settings import TILE_SIZE
 
 class SpriteBase(pg.sprite.Sprite):
@@ -64,8 +67,28 @@ class MachineSpriteBase(SpriteBase):
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
         self.pipe_connections = {}
 
-    def init_ui(self, ui_cls: any) -> None:
+    def init_ui(self, ui_cls: MachineUI) -> None:
         self.ui = ui_cls(machine=self, **self.ui_params) # not initializing self.ui until the machine variant (burner/electric) is determined
+
+
+@dataclass(slots=True)
+class InvSlot:
+    item: str=None
+    rect: pg.Rect=None
+    valid_inputs: dict=None
+    amount: int=0
+    max_capacity: int=99
+
+
+@dataclass
+class Inventory:
+    input_slots: dict[str, InvSlot]=None
+    output_slot: InvSlot=field(default_factory=InvSlot)
+
+    def __iter__(self):
+        for slot in self.input_slots.values():
+            yield slot
+        yield self.output_slot
 
 
 class TransportSpriteBase(SpriteBase):

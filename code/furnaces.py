@@ -8,23 +8,10 @@ if TYPE_CHECKING:
 import pygame as pg
 from dataclasses import dataclass, field
 
-from sprite_bases import MachineSpriteBase
+from sprite_bases import MachineSpriteBase, Inventory, InvSlot
 from settings import MACHINES
 from furnace_ui import FurnaceUI
 from timer import Timer
-from machine_ui import InvSlot
-
-@dataclass()
-class Inventory:
-    smelt: InvSlot
-    output: InvSlot
-    fuel: InvSlot=None
-
-    def __iter__(self):
-        for v in self.__dict__.values():
-            if v is not None:
-                yield v
-
 
 class Furnace(MachineSpriteBase):
     def __init__(
@@ -71,22 +58,19 @@ class Furnace(MachineSpriteBase):
             'iron': {'speed': 5000, 'output': 'iron plate'},
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
-        self.inv = Inventory(
-            smelt=InvSlot(item=None, rect=None, valid_inputs=self.can_smelt.keys()),
-            output=InvSlot(item=None, rect=None, valid_inputs=None)
-        )
+        self.inv = Inventory(input_slots={'fuel': InvSlot(valid_inputs=self.fuel_sources.keys()), 'smelt': InvSlot(valid_inputs=self.can_smelt.keys())})
         self.timers = {}
 
     def update_active_state(self) -> None:
-        self.active = self.inv.smelt.item and self.inv.fuel.item and self.inv.output.amount < self.inv.output.max_capacity
+        self.active = self.inv.input_slots['smelt'].item and self.inv.input_slots['fuel'].item and self.inv.output_slot.amount < self.inv.output_slot.max_capacity
         if not self.active:
             self.timers.clear()
     
     def smelt(self) -> None:
         if not self.timers:
             self.timers['smelt'] = Timer(
-                length=self.can_smelt[self.inv.smelt.item]['speed'] // self.speed_factor, 
-                function=self.update_inv_box, 
+                length=self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, 
+                function=self.update_inv_slot, 
                 auto_start=True, 
                 loop=True, 
                 store_progress=True,
@@ -95,8 +79,8 @@ class Furnace(MachineSpriteBase):
             self.timers['smelt'].start()
             if self.variant == 'burner':
                 self.timers['fuel'] = Timer(
-                    length=self.fuel_sources[self.inv.fuel.item]['burn speed'] // self.speed_factor, 
-                    function=self.update_inv_box, 
+                    length=self.fuel_sources[self.inv.input_slots['fuel'].item]['burn speed'] // self.speed_factor, 
+                    function=self.update_inv_slot, 
                     auto_start=True, 
                     loop=True, 
                     store_progress=True,
@@ -107,17 +91,20 @@ class Furnace(MachineSpriteBase):
         for timer in self.timers.values():
             timer.update()
 
-    def update_inv_box(self, smelt: bool=False, fuel: bool=False) -> None:
-        data = self.inv.smelt if smelt else self.inv.fuel
+    def update_inv_slot(self, smelt: bool=False, fuel: bool=False) -> None:
+        if self.variant == 'burner':
+            data = self.inv.input_slots['smelt' if smelt else 'fuel']
+        else:
+            data = self.inv.input_slots['smelt']
         data.amount -= 1
         if data.amount == 0:
             data.item = None
             self.active = False
         if smelt and data.item:
             output_item = self.can_smelt[data.item]['output']
-            if not self.inv.output.item:
-                self.inv.output.item = output_item
-            self.inv.output.amount += 1
+            if not self.inv.output_slot.item:
+                self.inv.output_slot.item = output_item
+            self.inv.output_slot.amount += 1
 
     def get_save_data(self) -> dict[str, list|str]:
         return {
@@ -154,7 +141,8 @@ class BurnerFurnace(Furnace):
         rect_in_sprite_radius: callable,
         render_item_amount: callable,
         save_data: dict[str, any]
-    ):
+    ):  
+        self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         super().__init__(
             xy, 
             image, 
@@ -176,9 +164,7 @@ class BurnerFurnace(Furnace):
         )
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
-        self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         self.speed_factor = 1
-        self.inv.fuel = InvSlot(item=None, rect=None, valid_inputs=self.fuel_sources.keys())
         self.init_ui(FurnaceUI)
 
 
@@ -231,7 +217,6 @@ class SteelFurnace(Furnace):
             },
             'electric': {'electric poles'}
         }
-        self.inv.fuel = InvSlot(item=None, rect=None, valid_inputs=self.fuel_sources['non-electric'].keys() + self.fuel_sources['electric'])
         self.speed_factor = 2
         self.init_ui(FurnaceUI)
 
@@ -278,6 +263,7 @@ class ElectricFurnace(Furnace):
         )
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']
+        self.inv = Inventory(input_slots={'smelt': InvSlot(valid_inputs=self.can_smelt.keys())})
         self.fuel_sources = {'electric poles'}
         self.speed_factor = 2.5
         self.init_ui(FurnaceUI)

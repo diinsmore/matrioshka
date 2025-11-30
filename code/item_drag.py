@@ -127,14 +127,21 @@ class ItemDrag:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'inv') and m.ui.render]:
             if slot := machine.ui.check_input():
                 machine.ui.input_item(slot, self.amount)
+                self.player.item_holding = None
                 return
     
     def check_machine_extract(self, machines: list[pg.sprite.Sprite], l_click: bool, r_click: bool) -> None:
         for machine in machines:
             for slot in machine.inv:
-                if slot.rect.collidepoint(self.mouse.screen_xy) and slot.item:
-                    machine.ui.extract_item(slot, 'left' if l_click else 'right')
-                    return
+                if isinstance(slot, dict):
+                    for s in slot.values():
+                        if s.item and rect.collidepoint(self.mouse.screen_xy):
+                            machine.ui.extract_item(s, 'left' if l_click else 'right')
+                            return
+                else:
+                    if slot.item and slot.rect.collidepoint(self.mouse.screen_xy):
+                        machine.ui.extract_item(slot, 'left' if l_click else 'right')
+                        return
 
     def update(self) -> None:
         self.check_drag()
