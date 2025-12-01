@@ -21,6 +21,27 @@ class SpriteBase(pg.sprite.Sprite):
         self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
 
 
+@dataclass(slots=True)
+class InvSlot:
+    item: str=None
+    rect: pg.Rect=None
+    valid_inputs: dict=None
+    amount: int=0
+    max_capacity: int=99
+
+
+@dataclass
+class Inventory:
+    input_slots: dict[str, InvSlot]=None
+    output_slot: InvSlot=field(default_factory=InvSlot)
+
+    def __iter__(self):
+        if self.input_slots:
+            for slot in self.input_slots.values():
+                yield slot
+        yield self.output_slot
+
+
 class MachineSpriteBase(SpriteBase):
     def __init__(
         self, 
@@ -55,6 +76,7 @@ class MachineSpriteBase(SpriteBase):
         self.gen_bg = gen_bg
         self.rect_in_sprite_radius = rect_in_sprite_radius
         self.render_item_amount = render_item_amount
+
         _vars = vars()
         self.ui_params = {
             k: _vars[k] for k in (
@@ -69,26 +91,6 @@ class MachineSpriteBase(SpriteBase):
 
     def init_ui(self, ui_cls: MachineUI) -> None:
         self.ui = ui_cls(machine=self, **self.ui_params) # not initializing self.ui until the machine variant (burner/electric) is determined
-
-
-@dataclass(slots=True)
-class InvSlot:
-    item: str=None
-    rect: pg.Rect=None
-    valid_inputs: dict=None
-    amount: int=0
-    max_capacity: int=99
-
-
-@dataclass
-class Inventory:
-    input_slots: dict[str, InvSlot]=None
-    output_slot: InvSlot=field(default_factory=InvSlot)
-
-    def __iter__(self):
-        for slot in self.input_slots.values():
-            yield slot
-        yield self.output_slot
 
 
 class TransportSpriteBase(SpriteBase):

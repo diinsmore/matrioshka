@@ -27,11 +27,11 @@ class Pipe(TransportSpriteBase):
         assets: dict[str, dict[str, any]],
         tile_map: np.ndarray,
         obj_map: np.ndarray,
-        tile_IDs: dict[str, int],
+        names_to_ids: dict[str, int],
         variant_idx: int
     ):
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
-        self.tile_IDs = tile_IDs
+        self.names_to_ids = names_to_ids
         self.variant_idx = variant_idx
         
         self.speed_factor = 1

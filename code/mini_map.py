@@ -9,8 +9,8 @@ class MiniMap:
         screen: pg.Surface,
         cam_offset: pg.Vector2,
         tile_map: np.ndarray, 
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str], 
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str], 
         gen_outline: callable,
         get_tile_material: callable,
         saved_data: dict[str, any] | None
@@ -18,8 +18,8 @@ class MiniMap:
         self.screen = screen
         self.cam_offset = cam_offset
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.gen_outline = gen_outline
         self.get_tile_material = get_tile_material
         self.saved_data = saved_data
@@ -60,8 +60,8 @@ class MiniMap:
             for x in range(cols):
                 image = pg.Surface((self.tile_px_w, self.tile_px_h))
                 if visited_map[x, y]:
-                    tile_ID = tile_map[x, y]
-                    tile_name = self.tile_IDs_to_names[tile_ID]
+                    tile_id = tile_map[x, y]
+                    tile_name = self.ids_to_names[tile_id]
                     if tile_name in self.non_tiles:
                         tile_color = self.non_tiles[tile_name]['rgb']
                         if tile_name == 'tree base':
@@ -123,7 +123,7 @@ class MiniMap:
         cols = min(map_cols, self.tiles_x - start_x) 
         rows = min(map_rows, self.tiles_y - start_y)
 
-        full_slice = np.full((self.tiles_x, self.tiles_y), self.tile_IDs['air'], dtype = np.uint8)
+        full_slice = np.full((self.tiles_x, self.tiles_y), self.names_to_ids['air'], dtype = np.uint8)
         full_slice[start_x:start_x + map_cols, start_y:start_y + map_rows] = map_slice[start_x:start_x + map_cols, start_y:start_y + map_rows]
         
         visited_slice = np.full((self.tiles_x, self.tiles_y), False, dtype = bool)

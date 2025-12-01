@@ -1,5 +1,4 @@
 import pygame as pg
-
 from settings import TILE_SIZE
 
 class InputManager:
@@ -51,13 +50,11 @@ class Mouse:
     
     def update_click_states(self) -> None:
         self.reset_click_states()
-
         clicked = pg.mouse.get_just_pressed()
         if clicked[0]:
             self.buttons_pressed['left'] = True
         elif clicked[2]:
             self.buttons_pressed['right'] = True
-
         held = pg.mouse.get_pressed()
         if held[0]:
             self.buttons_held['left'] = True

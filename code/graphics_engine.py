@@ -29,8 +29,8 @@ class GraphicsEngine:
         key_map: dict[int, int],
         player: Player,
         tile_map: np.ndarray, 
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str],
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str],
         current_biome: str,
         biome_order: dict[str, int],
         save_data: dict[str, any]
@@ -44,8 +44,8 @@ class GraphicsEngine:
         self.key_map = key_map
         self.player = player
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.current_biome = current_biome
         self.biome_order = biome_order
         
@@ -55,8 +55,8 @@ class GraphicsEngine:
             self.cam.offset, 
             self.chunk_manager,
             self.tile_map,
-            self.tile_IDs,
-            self.tile_IDs_to_names,
+            self.names_to_ids,
+            self.ids_to_names,
             self.sprite_manager.mining.mining_map,
             self.current_biome,
             self.biome_order,
@@ -167,8 +167,8 @@ class Terrain:
         cam_offset: pg.Vector2, 
         chunk_manager: ChunkManager,
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str],
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str],
         mining_map: dict[tuple[int, int], dict[str, int]],
         current_biome: str,
         biome_order: dict[str, int],
@@ -179,8 +179,8 @@ class Terrain:
         self.cam_offset = cam_offset
         self.chunk_manager = chunk_manager
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.mining_map = mining_map
         self.current_biome = current_biome
         self.biome_order = biome_order 
@@ -191,7 +191,7 @@ class Terrain:
         self.elev_data = self.get_elevation_data()
 
     def get_tile_type(self, x: int, y: int) -> str:
-        return self.tile_IDs_to_names.get(self.tile_map[x, y], 'item extended')
+        return self.ids_to_names.get(self.tile_map[x, y], 'item extended')
 
     def get_terrain_type(self) -> str:
         '''just for getting a specific wall variant but could become more modular'''
@@ -252,7 +252,7 @@ class Terrain:
 
     def render_tiles(self) -> None:
         visible_chunks = self.chunk_manager.update()
-        air_ID = self.tile_IDs['air']
+        air_ID = self.names_to_ids['air']
         mining_map_keys = self.mining_map.keys()
         for coords in visible_chunks: # all visible tile coordinates
             for (x, y) in coords: # individual tile coordinates
@@ -347,6 +347,5 @@ class ToolAnimation:
 
     @staticmethod
     def get_rotation(sprite: pg.sprite.Sprite, image: pg.Surface, dt: float) -> pg.Surface:
-        sprite.rotate_timer = getattr(sprite, "rotate_timer", 0.0) + dt
-        angle = 45 * sin(sprite.rotate_timer * 10)
+        angle = 45 * sin(dt * 10)
         return pg.transform.rotate(image, -angle if not sprite.facing_left else angle) # negative angles rotate clockwise

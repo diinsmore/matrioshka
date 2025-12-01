@@ -50,9 +50,16 @@ class Assembler(MachineSpriteBase):
             render_item_amount, 
             save_data
         )
-        self.inv = Inventory(input_slot=[])
-        self.item_crafting, self.recipe = None, None
-        self.num_categories = 6
+        self.inv = Inventory(input_slots={})
+        self.item_category, self.item_crafting, self.craft_recipe = None, None, None
+        self.item_category_data = {
+            'machines': MACHINES,
+            'logistics': LOGISTICS,
+            'electricity': ELECTRICITY,
+            'materials': MATERIALS,
+            'storage': STORAGE,
+            'research': RESEARCH,
+        }
         self.init_ui(AssemblerUI)
 
     def update(self, dt: float) -> None:

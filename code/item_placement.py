@@ -18,7 +18,7 @@ class ItemPlacement:
         screen: pg.Surface,
         cam_offset: pg.Vector2,
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
+        names_to_ids: dict[str, int],
         collision_map: dict[tuple[int, int], pg.Rect],
         sprite_mgr: SpriteManager,
         mouse: Mouse,
@@ -35,7 +35,7 @@ class ItemPlacement:
         self.screen = screen
         self.cam_offset = cam_offset
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
+        self.names_to_ids = names_to_ids
         self.collision_map = collision_map
         self.sprite_mgr = sprite_mgr
         self.mouse = mouse
@@ -50,8 +50,8 @@ class ItemPlacement:
         self.save_data = save_data
        
         self.obj_map = np.full(MAP_SIZE, None, dtype=object) # stores every tile an object overlaps with (tile_map only stores the topleft since it controls rendering)
-        self.machine_ids = {self.tile_IDs[m] for m in MACHINES if 'pipe' not in m} | {self.tile_IDs['item extended']}
-        self.pipe_ids = {self.tile_IDs[f'pipe {i}'] for i in range(len(PIPE_TRANSPORT_DIRS))}
+        self.machine_ids = {self.names_to_ids[m] for m in MACHINES if 'pipe' not in m} | {self.names_to_ids['item extended']}
+        self.pipe_ids = {self.names_to_ids[f'pipe {i}'] for i in range(len(PIPE_TRANSPORT_DIRS))}
 
     def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], old_pipe_idx: int=None) -> None:
         surf = self.graphics[sprite.item_holding]
@@ -68,12 +68,12 @@ class ItemPlacement:
             x, y = tile_xy
             valid = all((
                 self.can_reach_tile(x, y, sprite.rect.center),
-                self.tile_map[x, y] == self.tile_IDs['air'],
+                self.tile_map[x, y] == self.names_to_ids['air'],
                 self.valid_item_border(x, y, single_tile=True) if 'pipe' not in sprite.item_holding else self.valid_pipe_border(x, y, int(sprite.item_holding[-1]))
             ))
         else:
             grounded = all((self.valid_item_border(*xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
-            valid = grounded and all((self.can_reach_tile(*xy, sprite.rect.center) and self.tile_map[xy] == self.tile_IDs['air'] for xy in tile_xy))
+            valid = grounded and all((self.can_reach_tile(*xy, sprite.rect.center) and self.tile_map[xy] == self.names_to_ids['air'] for xy in tile_xy))
         return valid
         
     def can_reach_tile(self, x: int, y: int, sprite_xy_world: tuple[int, int]) -> bool:
@@ -86,13 +86,13 @@ class ItemPlacement:
         return [xy for xy in tile_xy if xy[1] == max_y]
 
     def valid_item_border(self, x: int, y: int, single_tile: bool=False, multi_tile: bool=False) -> bool:
-        tile_IDs = {self.tile_IDs[name] for name in list(TILES.keys())}
+        tile_ids = {self.names_to_ids[name] for name in list(TILES.keys())}
         if single_tile:
             for name in RAMP_TILES:
-                tile_IDs.add(name)
-            return any(self.tile_map[xy] in tile_IDs for xy in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]) # TODO: update the ramp tile checks to prevent placing tiles that only attach to the slanted side
+                tile_ids.add(name)
+            return any(self.tile_map[xy] in tile_ids for xy in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]) # TODO: update the ramp tile checks to prevent placing tiles that only attach to the slanted side
         else:
-            return self.tile_map[x, y + 1] in tile_IDs
+            return self.tile_map[x, y + 1] in tile_ids
 
     def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
         pipe_data = PIPE_TRANSPORT_DIRS[pipe_idx]
@@ -102,7 +102,7 @@ class ItemPlacement:
         return False
 
     def place_single_tile_item(self, tile_xy: tuple[int, int], sprite: pg.sprite.Sprite, old_pipe_idx: int=None) -> None: # passing the item name if a class needs to be initialized
-        self.tile_map[tile_xy] = self.tile_IDs[sprite.item_holding]
+        self.tile_map[tile_xy] = self.names_to_ids[sprite.item_holding]
         self.collision_map.update_map(tile_xy, add_tile=True)
         sprite.inventory.remove_item()
         if sprite.item_holding in OBJ_ITEMS:
@@ -112,11 +112,11 @@ class ItemPlacement:
         obj = sprite.item_holding in OBJ_ITEMS
         for i, xy in enumerate(tile_xy_list):
             if i == 0:
-                self.tile_map[xy] = self.tile_IDs[sprite.item_holding] # only store the topleft as the item ID to avoid rendering multiple surfaces
+                self.tile_map[xy] = self.names_to_ids[sprite.item_holding] # only store the topleft as the item ID to avoid rendering multiple surfaces
                 if obj:
                     self.init_obj(sprite.item_holding, tile_xy_list)
             else:
-                self.tile_map[xy] = self.tile_IDs['item extended'] 
+                self.tile_map[xy] = self.names_to_ids['item extended'] 
             self.collision_map.update_map(xy, add_tile=True)
         sprite.inventory.remove_item(sprite.item_holding)
         sprite.item_holding = None

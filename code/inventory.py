@@ -47,6 +47,7 @@ class Inventory:
             self.contents[item]['amount'] += max_amount
         if not self.parent_spr.item_holding == item:
             self.parent_spr.item_holding = item
+            self.index = self.contents[item]['index']
             
     def remove_item(self, item: str=None, amount: int=1) -> None:
         if item is None:
@@ -65,14 +66,14 @@ class PlayerInventory(Inventory):
         super().__init__(parent_spr, save_data, default_contents=None if save_data else {
             'stone': {'amount': 100}, 
             'wood': {'amount': 100}, 
-            'wood torch': {'amount': 100},
-            'stone axe': {'amount': 10}, 
-            'stone pickaxe': {'amount': 10},
+            'copper': {'amount': 10},
+            'stone axe': {'amount': 1}, 
+            'stone pickaxe': {'amount': 1},
             'pipe 0': {'amount': 100},
-            'copper': {'amount': 100},
-            'burner inserter': {'amount': 50},
-            'burner furnace': {'amount': 50},
-            'assembler': {'amount': 50}
+            'burner inserter': {'amount': 10},
+            'burner furnace': {'amount': 10},
+            'burner drill': {'amount': 10},
+            'assembler': {'amount': 10},
         })
          
     def get_idx_selection(self, keyboard: Keyboard) -> None:

@@ -13,28 +13,28 @@ class PhysicsEngine:
     def __init__(
         self, 
         tile_map: np.ndarray, 
-        tile_IDs: dict[str, int], 
-        tile_IDs_to_names: dict[int, str], 
+        names_to_ids: dict[str, int], 
+        ids_to_names: dict[int, str], 
         key_bindings: dict[str, int]
     ):
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.key_bindings = key_bindings
         
-        self.collision_map = CollisionMap(self.tile_map, self.tile_IDs)
+        self.collision_map = CollisionMap(self.tile_map, self.names_to_ids)
 
         self.collision_detection = CollisionDetection(
             self.collision_map, 
             self.tile_map, 
-            self.tile_IDs, 
-            self.tile_IDs_to_names, 
+            self.names_to_ids, 
+            self.ids_to_names, 
             self.step_over_tile
         )
         
         self.sprite_movement = SpriteMovement(
             self.tile_map, 
-            self.tile_IDs, 
+            self.names_to_ids, 
             self.collision_detection.tile_collision_update,
             self.key_bindings['move left'],
             self.key_bindings['move right'],
@@ -48,7 +48,7 @@ class PhysicsEngine:
             for i in range(1, ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
                 above_tiles.append(self.tile_map[tile_x, tile_y - i])
             above_tiles.append(self.tile_map[tile_x - 1, tile_y - 2]) # also check if the tile above the player's head is air
-            return all(tile_id == self.tile_IDs['air'] for tile_id in above_tiles)
+            return all(tile_id == self.names_to_ids['air'] for tile_id in above_tiles)
         return False
 
     def update(self, player: pg.sprite.Sprite, held_keys: Sequence[bool], pressed_keys: Sequence[bool], dt: float) -> None:
@@ -56,9 +56,9 @@ class PhysicsEngine:
 
 
 class CollisionMap:
-    def __init__(self, tile_map: np.ndarray, tile_IDs: dict[str, int]):
+    def __init__(self, tile_map: np.ndarray, names_to_ids: dict[str, int]):
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
+        self.names_to_ids = names_to_ids
 
         self.map = defaultdict(list)
         self.generate_map()
@@ -67,7 +67,7 @@ class CollisionMap:
         '''precompute rects with the coordinates of solid tiles'''
         for x in range(MAP_SIZE[0]):
             for y in range(MAP_SIZE[1]):
-                if self.tile_map[x, y] != self.tile_IDs['air']: 
+                if self.tile_map[x, y] != self.names_to_ids['air']: 
                     cell_coords = (x // CELL_SIZE, y // CELL_SIZE)
                     self.map[cell_coords].append(pg.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
@@ -105,7 +105,7 @@ class CollisionMap:
             elif remove_tile and rect in self.map[cell_coords]:
                 # sprites could occasionally pass through tiles whose graphic was still being rendered
                 # removing the associated rectangle only after the tile ID update is confirmed appears to fix the issue
-                if self.tile_map[tile_coords] == self.tile_IDs['air']:
+                if self.tile_map[tile_coords] == self.names_to_ids['air']:
                     self.map[cell_coords].remove(rect)
         
 
@@ -114,17 +114,17 @@ class CollisionDetection:
         self, 
         collision_map: CollisionMap, 
         tile_map: np.ndarray, 
-        tile_IDs: dict[str, int], 
-        tile_IDs_to_names: dict[int, str],
+        names_to_ids: dict[str, int], 
+        ids_to_names: dict[int, str],
         step_over_tile: callable
     ):
         self.collision_map = collision_map
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.step_over_tile = step_over_tile
 
-        self.ramp_IDs = {self.tile_IDs[tile] for tile in self.tile_IDs.keys() if 'ramp' in tile}
+        self.ramp_ids = {self.names_to_ids[tile] for tile in self.names_to_ids if 'ramp' in tile}
 
     def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str) -> None:
         '''adjust movement/positioning upon detecting a tile collision'''
@@ -136,9 +136,9 @@ class CollisionDetection:
         
         for tile in tiles_near:
             if sprite.rect.colliderect(tile):
-                tile_ID = self.tile_map[tile.x // TILE_SIZE, tile.y // TILE_SIZE]
-                if tile_ID in self.ramp_IDs:
-                    self.ramp_collision(sprite, tile, 'left' if 'left' in self.tile_IDs_to_names[tile_ID] else 'right')
+                tile_id = self.tile_map[tile.x // TILE_SIZE, tile.y // TILE_SIZE]
+                if tile_id in self.ramp_ids:
+                    self.ramp_collision(sprite, tile, 'left' if 'left' in self.ids_to_names[tile_id] else 'right')
                 else:
                     if axis == 'x' and sprite.direction.x:
                         self.tile_collision_x(sprite, tile, 'right' if sprite.direction.x > 0 else 'left')
@@ -206,14 +206,14 @@ class SpriteMovement:
     def __init__(
         self,  
         tile_map: np.ndarray, 
-        tile_IDs: dict[str, int],
+        names_to_ids: dict[str, int],
         tile_collision_update: callable,
         key_move_left: int,
         key_move_right: int,
         key_jump: int
     ) -> None:
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
+        self.names_to_ids = names_to_ids
         self.tile_collision_update = tile_collision_update
         self.key_move_left = key_move_left
         self.key_move_right = key_move_right

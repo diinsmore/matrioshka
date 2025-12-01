@@ -31,8 +31,8 @@ class SpriteManager:
         cam_offset: pg.Vector2,
         assets: dict[str, dict[str, any]],
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[str, int],
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str],
         tree_map: set[tuple[int, int]],
         height_map: np.ndarray,
         current_biome: str,
@@ -47,8 +47,8 @@ class SpriteManager:
         self.cam_offset = cam_offset
         self.assets = assets
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.tree_map = tree_map
         self.height_map = height_map
         self.current_biome = current_biome
@@ -73,8 +73,8 @@ class SpriteManager:
         
         self.mining = Mining(
             self.tile_map, 
-            self.tile_IDs,
-            self.tile_IDs_to_names,
+            self.names_to_ids,
+            self.ids_to_names,
             self.keyboard.key_bindings['mine'],
             self.collision_map.update_map,
             self.get_tool_strength, 
@@ -86,9 +86,8 @@ class SpriteManager:
         self.crafting = Crafting()
 
         self.init_trees()
-        self.items_init_when_placed = {
-            cls_name_to_str(cls): cls for cls in (
-                BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, ElectricInserter, Assembler
+        self.items_init_when_placed = {cls_name_to_str(cls): cls for cls in (BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, 
+            ElectricInserter, Assembler
         )}
         self.ui, self.item_placement, self.player = None, None, None # not initialized until after the sprite manager
     
@@ -111,7 +110,7 @@ class SpriteManager:
                 )
         self.wood_gathering = WoodGathering(
             self.tile_map, 
-            self.tile_IDs, 
+            self.names_to_ids, 
             self.tree_sprites, 
             self.tree_map, 
             self.cam_offset, 
@@ -196,11 +195,11 @@ class SpriteManager:
             'save_data': self.save_data['sprites'][name][save_idx] if self.save_data else None
         }
         if 'drill' in name:
-            params.update([('save_data', self.tile_IDs), ('tile_IDs_to_names', self.tile_IDs_to_names)])
+            params.update([('names_to_ids', self.names_to_ids), ('ids_to_names', self.ids_to_names)])
         elif 'pipe' in name or 'inserter' in name:
             params = dict(islice(params.items(), 12))
             if 'pipe' in name:
-                params.update([('tile_IDs', self.tile_IDs), ('variant_idx', int(name[-1]))])
+                params.update([('names_to_ids', self.names_to_ids), ('variant_idx', int(name[-1]))])
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
@@ -215,8 +214,8 @@ class Mining:
     def __init__(
         self, 
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str],
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str],
         key_mine: int,
         update_map: callable,
         get_tool_strength: callable,
@@ -225,8 +224,8 @@ class Mining:
         end_action: callable
     ):
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.key_mine = key_mine
         self.update_map = update_map
         self.get_tool_strength = get_tool_strength
@@ -235,7 +234,7 @@ class Mining:
         self.end_action = end_action
         
         self.mining_map = {} # {tile coords: {hardness: int, hits: int}}
-        self.invalid_IDs = {self.tile_IDs['air'], self.tile_IDs['tree base']} # can't be mined
+        self.invalid_ids = {self.names_to_ids['air'], self.names_to_ids['tree base']} # can't be mined
     
     def run(self, sprite: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> None:
         if sprite.item_holding and 'pickaxe' in sprite.item_holding:
@@ -251,7 +250,7 @@ class Mining:
     def valid_tile(self, sprite: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> bool:
         sprite_coords = pg.Vector2(sprite.rect.center) // TILE_SIZE
         tile_distance = sprite_coords.distance_to(mouse_tile_xy)
-        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[mouse_tile_xy] not in self.invalid_IDs
+        return tile_distance <= TILE_REACH_RADIUS and self.tile_map[mouse_tile_xy] not in self.invalid_ids
     
     # TODO: decrease the strength of the current tool as its usage accumulates    
     def update_tile(self, sprite: pg.sprite.Sprite, mouse_tile_xy: tuple[int, int]) -> bool:   
@@ -260,7 +259,7 @@ class Mining:
         data['hardness'] = max(0, data['hardness'] - (self.get_tool_strength(sprite) * data['hits']))
         if self.mining_map[mouse_tile_xy]['hardness'] == 0:
             sprite.inventory.add_item(self.get_tile_material(self.tile_map[mouse_tile_xy]))
-            self.tile_map[mouse_tile_xy] = self.tile_IDs['air']
+            self.tile_map[mouse_tile_xy] = self.names_to_ids['air']
             self.update_map(mouse_tile_xy, remove_tile = True)
             del self.mining_map[mouse_tile_xy]
     
@@ -287,7 +286,7 @@ class WoodGathering:
     def __init__(
         self, 
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
+        names_to_ids: dict[str, int],
         tree_sprites: pg.sprite.Group(),
         tree_map: list[tuple[int, int]],
         cam_offset: pg.Vector2,
@@ -296,7 +295,7 @@ class WoodGathering:
         rect_in_sprite_radius: callable
     ):
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
+        self.names_to_ids = names_to_ids
         self.tree_sprites = tree_sprites
         self.tree_map = tree_map
         self.cam_offset = cam_offset

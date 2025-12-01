@@ -38,7 +38,7 @@ class FurnaceUI(MachineUI):
         
     def render_interface(self) -> None:
         self.update_bg_rect()
-        self.gen_bg(self.bg_rect, color='black', transparent=True) 
+        self.gen_bg(self.bg_rect, transparent=True) 
         self.gen_outline(self.bg_rect)
         self.render_inv()
         self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=self.bg_rect.center))

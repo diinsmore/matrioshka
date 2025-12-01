@@ -34,8 +34,8 @@ class Drill(MachineSpriteBase):
         rect_in_sprite_radius: callable,
         render_item_amount: callable,
         save_data: dict[str, any],
-        tile_ids: dict[str, int],
-        tile_id_name_map: dict[int, str]
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str]
     ):
         super().__init__(
             xy, 
@@ -57,8 +57,8 @@ class Drill(MachineSpriteBase):
             save_data
         )
         self.tile_map = tile_map
-        self.tile_ids = tile_ids
-        self.tile_id_name_map = tile_id_name_map
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
 
         min_x, max_x = self.rect.left // TILE_SIZE, self.rect.right // TILE_SIZE
         min_y = self.rect.bottom // TILE_SIZE
@@ -81,10 +81,10 @@ class Drill(MachineSpriteBase):
         self.has_inv = True
 
     def get_ore_data(self) -> dict[str, int]:
-        ignore_ids = {self.tile_ids['air'], self.tile_ids['item extended'], self.tile_ids['dirt']}
+        ignore_ids = {self.names_to_ids['air'], self.names_to_ids['item extended'], self.names_to_ids['dirt']}
         ore_data = {self.tile_id_name_map[i]: {'amount': a * TILE_ORE_RATIO} for i, a in zip(*np.unique(self.map_slice, return_counts=True)) if i not in ignore_ids}
         for k in ore_data:
-            ore_data[k]['locations'] = np.argwhere(self.map_slice == self.tile_ids[k])
+            ore_data[k]['locations'] = np.argwhere(self.map_slice == self.names_to_ids[k])
         return ore_data
 
     def extract(self) -> None:
@@ -109,20 +109,20 @@ class Drill(MachineSpriteBase):
         if directions:
             neighbor_ID_counter = Counter(self.tile_map[tile_xy + xy] for xy in directions)
         else:
-            self.tile_map[tile_xy] = self.tile_IDs['air']
+            self.tile_map[tile_xy] = self.names_to_ids['air']
             return
 
         tile_freqs = neighbor_ID_counter.most_common()
-        (IDs, freqs) = zip(*tile_freqs)
+        (ids, freqs) = zip(*tile_freqs)
         f0, f1, f2, f3 = (list(freqs) + [0, 0, 0])[:4] # adding zeros to follow in case the original list has less than 4 elements
         if f0 > f1:
-            self.tile_map[tile_xy] = IDs[0]
+            self.tile_map[tile_xy] = ids[0]
 
         elif f0 == f1 and f1 != f2: # f0 & f1 have the majority
-            self.tile_map[tile_xy] = choice(IDs[:2])
+            self.tile_map[tile_xy] = choice(ids[:2])
 
         else: # all indices store different tiles
-            self.tile_map[tile_xy] = choice(IDs)
+            self.tile_map[tile_xy] = choice(ids)
 
     def get_neighbor_directions(self, tile_xy: tuple[int, int]) -> list[tuple[int, int]]:
         directions = [(0, -1), (1, 0), (0, 1), (-1, 0)] # north, east, south, west
@@ -191,8 +191,8 @@ class BurnerDrill(Drill):
         rect_in_sprite_radius: callable,
         render_item_amount: callable,
         save_data: dict[str, any],
-        tile_ids: dict[str, int],
-        tile_id_name_map: dict[int, str]
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str]
     ):  
         self.speed_factor = 1
         super().__init__(
@@ -213,8 +213,8 @@ class BurnerDrill(Drill):
             rect_in_sprite_radius,
             render_item_amount,
             save_data,
-            tile_ids,
-            tile_id_name_map
+            names_to_ids,
+            ids_to_names
         )
         self.variant = 'burner'
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
@@ -242,8 +242,8 @@ class ElectricDrill(Drill):
         rect_in_sprite_radius: callable,
         render_item_amount: callable,
         save_data: dict[str, any],
-        tile_ids: dict[str, int],
-        tile_id_name_map: dict[int, str]
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str]
     ):  
         self.speed_factor = 1.5
         super().__init__(
@@ -264,8 +264,8 @@ class ElectricDrill(Drill):
             rect_in_sprite_radius,
             render_item_amount,
             save_data,
-            tile_ids,
-            tile_id_name_map
+            names_to_ids,
+            ids_to_names
         )
         self.variant = 'electric'
         self.fuel_sources = {'electric poles'}

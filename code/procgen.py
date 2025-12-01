@@ -15,20 +15,20 @@ class ProcGen:
         self.saved_data = saved_data
         self.player_xy = player_xy
         
-        self.tile_IDs = self.get_tile_IDs()
-        self.tile_IDs_to_names = {v: k for k, v in self.tile_IDs.items()}
-        self.ramp_IDs = [self.tile_IDs[name] for name in self.tile_IDs.keys() if 'ramp' in name]
+        self.names_to_ids = self.get_tile_ids()
+        self.ids_to_names = {v: k for k, v in self.names_to_ids.items()}
+        self.ramp_ids = [self.names_to_ids[name] for name in self.names_to_ids if 'ramp' in name]
 
         if self.saved_data:
             self.load_saved_data()
         else:
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
-            self.terrain_gen = TerrainGen(self.tile_IDs, self.biome_order, self.current_biome)
+            self.terrain_gen = TerrainGen(self.names_to_ids, self.biome_order, self.current_biome)
             self.tile_map = self.terrain_gen.tile_map
             self.height_map = self.terrain_gen.height_map
             self.cave_maps = self.terrain_gen.cave_maps
-            self.tree_gen = TreeGen(self.tile_map, self.tile_IDs, self.height_map, self.valid_spawn_point, self.biome_order)
+            self.tree_gen = TreeGen(self.tile_map, self.names_to_ids, self.height_map, self.valid_spawn_point, self.biome_order)
             self.tree_map = self.tree_gen.tree_map
             
             self.gen_world()
@@ -45,7 +45,7 @@ class ProcGen:
         self.current_biome = self.saved_data['current biome']
 
     @staticmethod
-    def get_tile_IDs() -> dict[str, int]:
+    def get_tile_ids() -> dict[str, int]:
         '''give each tile a unique number to store at its locations within the tile map'''
         id_map = {'air': 0}
         ids = [
@@ -61,8 +61,8 @@ class ProcGen:
         return id_map
 
     def get_tile_material(self, tile_ID: int) -> str:
-        tile_name = self.tile_IDs_to_names[tile_ID]
-        return tile_name.split(' ')[0] if tile_ID in self.ramp_IDs else tile_name
+        tile_name = self.ids_to_names[tile_ID]
+        return tile_name.split(' ')[0] if tile_ID in self.ramp_ids else tile_name
 
     @staticmethod
     def order_biomes() -> dict[str, int]:
@@ -101,7 +101,7 @@ class ProcGen:
         topcenter_tile = self.tile_map[x, y - 1]
         topright_tile = self.tile_map[x + 1, y - 1]
         
-        air = self.tile_IDs['air'] 
+        air = self.names_to_ids['air'] 
         return all(tile != air for tile in (left_tile, center_tile, right_tile)) and \
                all(tile == air for tile in (topleft_tile, topcenter_tile, topright_tile))
 
@@ -121,8 +121,8 @@ class ProcGen:
 
 
 class TerrainGen:
-    def __init__(self, tile_IDs: dict[str, int], biome_order: dict[str, int], current_biome: str):
-        self.tile_IDs = tile_IDs
+    def __init__(self, names_to_ids: dict[str, int], biome_order: dict[str, int], current_biome: str):
+        self.names_to_ids = names_to_ids
         self.biome_order = biome_order
         self.current_biome = current_biome
         
@@ -214,7 +214,7 @@ class TerrainGen:
 
     def place_tiles(self) -> None:
         biomes = list(self.biome_order.keys())
-        surface_tiles = np.array([self.tile_IDs[self.get_biome_tile(x, biomes[x // BIOME_WIDTH])] for x in range(MAP_SIZE[0])])
+        surface_tiles = np.array([self.names_to_ids[self.get_biome_tile(x, biomes[x // BIOME_WIDTH])] for x in range(MAP_SIZE[0])])
         self.tile_map[np.arange(MAP_SIZE[0]), self.surface_lvls] = surface_tiles
         self.place_ramps(biomes)
         self.place_underground_tiles(surface_tiles) 
@@ -225,11 +225,11 @@ class TerrainGen:
         l_ramp_x = np.where(elev_diffs < 0)[0] + 1
 
         self.tile_map[r_ramp_x, self.surface_lvls[r_ramp_x]] = np.array([
-            self.tile_IDs[f'{self.get_biome_tile(x, biomes[x // BIOME_WIDTH])} ramp right'] for x in r_ramp_x
+            self.names_to_ids[f'{self.get_biome_tile(x, biomes[x // BIOME_WIDTH])} ramp right'] for x in r_ramp_x
         ])
 
         self.tile_map[l_ramp_x, self.surface_lvls[l_ramp_x]] = np.array([
-            self.tile_IDs[f'{self.get_biome_tile(x, biomes[x // BIOME_WIDTH])} ramp left'] for x in l_ramp_x
+            self.names_to_ids[f'{self.get_biome_tile(x, biomes[x // BIOME_WIDTH])} ramp left'] for x in l_ramp_x
         ])
 
     def place_underground_tiles(self, surface_tiles: np.ndarray) -> None:
@@ -241,7 +241,7 @@ class TerrainGen:
         
         biome_names = self.biome_order.keys()
         tile_probs = {biome: BIOMES[biome]['tile probs'] for biome in biome_names}
-        tile_names = {biome: np.array([self.tile_IDs[tile] for tile in tile_probs[biome].keys()]) for biome in biome_names}
+        tile_names = {biome: np.array([self.names_to_ids[tile] for tile in tile_probs[biome].keys()]) for biome in biome_names}
 
         for biome, idx in self.biome_order.items(): 
             biome_cols = (x_axs // BIOME_WIDTH == idx)
@@ -322,13 +322,13 @@ class TreeGen:
     def __init__(
         self, 
         tile_map: np.ndarray, 
-        tile_IDs: dict[str, int], 
+        names_to_ids: dict[str, int], 
         height_map: np.ndarray, 
         valid_spawn_point: callable, 
         biome_order: dict[str, int]
     ):
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
+        self.names_to_ids = names_to_ids
         self.height_map = height_map
         self.valid_spawn_point = valid_spawn_point
         self.biome_order = biome_order
@@ -344,7 +344,7 @@ class TreeGen:
                 if self.valid_spawn_point(x, y) and not self.get_tree_neighbors(x, y, 2, True, True) and \
                 randint(0, 100) <= self.get_tree_prob(data['name'], x, y):
                     self.tree_map.add((x, y))
-                    self.tile_map[x, y] = self.tile_IDs['tree base']
+                    self.tile_map[x, y] = self.names_to_ids['tree base']
     
     def get_tree_prob(self, current_biome: str, x: int, y: int) -> int:
         '''

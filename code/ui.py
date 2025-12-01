@@ -29,8 +29,8 @@ class UI:
         sprite_manager: SpriteManager,
         player: Player,
         tile_map: np.ndarray,
-        tile_IDs: dict[str, int],
-        tile_IDs_to_names: dict[int, str],
+        names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str],
         saved_data: dict[str, any] | None
     ):
         self.screen = screen
@@ -42,16 +42,16 @@ class UI:
         self.sprite_manager = sprite_manager
         self.player = player
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
-        self.tile_IDs_to_names = tile_IDs_to_names
+        self.names_to_ids = names_to_ids
+        self.ids_to_names = ids_to_names
         self.saved_data = saved_data
 
         self.mini_map = MiniMap(
             self.screen, 
             self.cam_offset, 
             self.tile_map,
-            self.tile_IDs,
-            self.tile_IDs_to_names, 
+            self.names_to_ids,
+            self.ids_to_names, 
             self.gen_outline,
             self.sprite_manager.mining.get_tile_material,
             self.saved_data

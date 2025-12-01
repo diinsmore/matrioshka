@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import numpy as np
 
-from settings import GRAVITY, TILE_SIZE, BIOME_WIDTH
+from settings import GRAVITY, TILE_SIZE, BIOME_WIDTH, Z_LAYERS
 from inventory import PlayerInventory
 
 class Player(pg.sprite.Sprite):
@@ -15,11 +15,9 @@ class Player(pg.sprite.Sprite):
         self, 
         xy: tuple[int, int], 
         frames: dict[str, pg.Surface],
-        z: dict[str, int],
         sprite_groups: list[pg.sprite.Group],
         input_manager: InputManager,
         tile_map: np.ndarray,
-        tile_IDs: dict[str, dict[str, any]],
         current_biome: str,
         biome_order: dict[str, int],
         save_data: dict[str, any]
@@ -27,16 +25,15 @@ class Player(pg.sprite.Sprite):
         super().__init__(*sprite_groups)
         self.xy, self.spawn_point = xy, xy
         self.frames = frames
-        self.z = z
         self.keyboard = input_manager.keyboard
         self.mouse = input_manager.mouse
         self.tile_map = tile_map
-        self.tile_IDs = tile_IDs
         self.current_biome = current_biome
         self.biome_order = biome_order
         
         self.inventory = PlayerInventory(parent_spr=self, save_data=save_data)
 
+        self.z = Z_LAYERS['player']
         self.frame_index = 0
         self.state = 'idle'
         self.image = self.frames[self.state][self.frame_index]

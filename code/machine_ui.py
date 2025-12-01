@@ -48,10 +48,7 @@ class MachineUI:
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
 
     def update_bg_rect(self) -> None:
-        self.bg_rect = pg.Rect(
-            (self.machine.rect.midtop - self.cam_offset) - pg.Vector2(self.bg_width // 2, self.bg_height + self.padding), 
-            (self.bg_width, self.bg_height)
-        )
+        self.bg_rect = pg.Rect(self.machine.rect.midtop - self.cam_offset - pg.Vector2(self.bg_width // 2, self.bg_height + self.padding), (self.bg_width, self.bg_height))
 
     def check_input(self) -> str | None:
         for slot in self.machine.inv:
@@ -81,7 +78,8 @@ class MachineUI:
     def render_inv(self) -> None: 
         self.update_inv_rects()
         for slot in [*self.machine.inv.input_slots.values(), self.machine.inv.output_slot]: 
-            self.gen_bg(slot.rect, color=self.colors['ui bg highlight'] if slot.rect.collidepoint(self.mouse.screen_xy) else 'black') 
+            print(slot)
+            self.gen_bg(slot.rect, self.colors['ui bg highlight'] if slot.rect.collidepoint(self.mouse.screen_xy) else 'black') 
             self.gen_outline(slot.rect)
             if slot.item: 
                 self.render_inv_contents(slot)          

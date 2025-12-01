@@ -45,8 +45,8 @@ class Main:
 
         self.physics_engine = PhysicsEngine(
             self.proc_gen.tile_map, 
-            self.proc_gen.tile_IDs, 
-            self.proc_gen.tile_IDs_to_names,
+            self.proc_gen.names_to_ids, 
+            self.proc_gen.ids_to_names,
             self.keyboard.key_bindings
         )
         
@@ -55,8 +55,8 @@ class Main:
             self.cam.offset, 
             assets,
             self.proc_gen.tile_map,
-            self.proc_gen.tile_IDs,
-            self.proc_gen.tile_IDs_to_names,
+            self.proc_gen.names_to_ids,
+            self.proc_gen.ids_to_names,
             self.proc_gen.tree_map,
             self.proc_gen.height_map,
             self.proc_gen.current_biome,
@@ -71,12 +71,10 @@ class Main:
         self.player = Player( 
             player_xy if save_data else self.proc_gen.player_spawn_point,
             load_subfolders(join('..', 'graphics', 'player')), 
-            Z_LAYERS['player'],
             [self.sprite_mgr.all_sprites, self.sprite_mgr.active_sprites, self.sprite_mgr.player_sprite, 
-            self.sprite_mgr.human_sprites, self.sprite_mgr.animated_sprites], 
+                self.sprite_mgr.human_sprites, self.sprite_mgr.animated_sprites], 
             self.input_mgr,
             self.proc_gen.tile_map,
-            self.proc_gen.tile_IDs,
             self.proc_gen.current_biome,
             self.proc_gen.biome_order,
             save_data=player_data if save_data else None
@@ -93,8 +91,8 @@ class Main:
             self.sprite_mgr, 
             self.player, 
             self.proc_gen.tile_map,
-            self.proc_gen.tile_IDs,
-            self.proc_gen.tile_IDs_to_names,
+            self.proc_gen.names_to_ids,
+            self.proc_gen.ids_to_names,
             save_data
         )
         self.sprite_mgr.ui = self.ui
@@ -103,7 +101,7 @@ class Main:
             screen,
             self.cam.offset,
             self.proc_gen.tile_map,
-            self.proc_gen.tile_IDs,
+            self.proc_gen.names_to_ids,
             self.physics_engine.collision_map,
             self.sprite_mgr,
             self.mouse,
@@ -135,8 +133,8 @@ class Main:
             self.keyboard.key_map,
             self.player,
             self.proc_gen.tile_map,
-            self.proc_gen.tile_IDs,
-            self.proc_gen.tile_IDs_to_names,
+            self.proc_gen.names_to_ids,
+            self.proc_gen.ids_to_names,
             self.proc_gen.current_biome,
             self.proc_gen.biome_order, 
             save_data
@@ -159,7 +157,7 @@ class Main:
         for sprite in [s for s in self.sprite_mgr.all_sprites if hasattr(s, 'get_save_data')]:
             data['sprites'][cls_name_to_str(sprite)].append(sprite.get_save_data())
 
-    def get_save_data(self) -> dict[str, list|dict]|None:
+    def get_save_data(self) -> dict[str, list|dict] | None:
         data = None
         if os.path.exists('save.json'):
             with open('save.json', 'r') as f:
