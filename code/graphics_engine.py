@@ -19,21 +19,9 @@ from weather import Weather
 
 class GraphicsEngine:
     def __init__(
-        self, 
-        screen: pg.Surface,
-        cam: Camera,
-        graphics: dict[str, list[pg.Surface]],
-        ui: UI,
-        sprite_manager: SpriteManager,
-        chunk_manager: ChunkManager,
-        key_map: dict[int, int],
-        player: Player,
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str],
-        current_biome: str,
-        biome_order: dict[str, int],
-        save_data: dict[str, any]
+        self, screen: pg.Surface, cam: Camera, graphics: dict[str, list[pg.Surface]], ui: UI, sprite_manager: SpriteManager, chunk_manager: ChunkManager, 
+        key_map: dict[int, int], player: Player, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], current_biome: str,
+        biome_order: dict[str, int], save_data: dict[str, any]
     ):
         self.screen = screen
         self.cam = cam
@@ -50,17 +38,8 @@ class GraphicsEngine:
         self.biome_order = biome_order
         
         self.terrain = Terrain(
-            self.screen, 
-            self.graphics, 
-            self.cam.offset, 
-            self.chunk_manager,
-            self.tile_map,
-            self.names_to_ids,
-            self.ids_to_names,
-            self.sprite_manager.mining.mining_map,
-            self.current_biome,
-            self.biome_order,
-            self.player
+            self.screen, self.graphics, self.cam.offset, self.chunk_manager, self.tile_map, self.names_to_ids, self.ids_to_names, self.sprite_manager.mining.mining_map,
+            self.current_biome, self.biome_order, self.player
         )
 
         self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
@@ -87,14 +66,12 @@ class GraphicsEngine:
         
     @staticmethod
     def flip_sprite_x(sprite: pg.sprite.Sprite) -> bool:
-        '''signals when the sprite's facing & movement directions misalign'''
         return sprite.facing_left and sprite.direction.x > 0 or not sprite.facing_left and sprite.direction.x < 0
         
     def render_sprites(self, dt: float) -> None:
-        for spr in sorted(self.sprite_manager.get_sprites_in_radius(self.player.rect, self.all_sprites), key=lambda s: s.z): 
+        for spr in sorted(self.sprite_manager.get_sprites_in_radius(self.player.rect, self.all_sprites), key=lambda spr: spr.z): 
             self.screen.blit(spr.image, spr.rect.topleft - self.cam.offset)
-            groups = self.sprite_manager.get_sprite_groups(spr) 
-            if groups: # the sprite isn't just a member of all_sprites
+            if groups := self.sprite_manager.get_sprite_groups(spr): # the sprite isn't just a member of all_sprites
                 self.render_group_action(groups, spr, dt)
             
     def render_group_action(self, groups: set[pg.sprite.Group], sprite: pg.sprite.Sprite, dt: float) -> None:
@@ -161,18 +138,8 @@ class Camera:
 
 class Terrain:
     def __init__(
-        self, 
-        screen: pg.Surface, 
-        graphics: dict[str, list[pg.Surface]], 
-        cam_offset: pg.Vector2, 
-        chunk_manager: ChunkManager,
-        tile_map: np.ndarray,
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str],
-        mining_map: dict[tuple[int, int], dict[str, int]],
-        current_biome: str,
-        biome_order: dict[str, int],
-        player: Player
+        self, screen: pg.Surface, graphics: dict[str, list[pg.Surface]], cam_offset: pg.Vector2, chunk_manager: ChunkManager, tile_map: np.ndarray, names_to_ids: dict[str, int],
+        ids_to_names: dict[int, str], mining_map: dict[tuple[int, int], dict[str, int]], current_biome: str, biome_order: dict[str, int], player: Player
     ):
         self.screen = screen
         self.graphics = graphics
@@ -198,16 +165,12 @@ class Terrain:
         match self.current_biome:
             case 'highlands':
                 return 'stone'
-
             case 'defiled':
                 return 'defiled stone'
-
             case 'taiga':
                 return 'dirt' if randint(0, 10) < 6 else 'stone'
-
             case 'desert':
                 return 'sandstone'
-                
             case 'underworld':
                 return 'magma'
 

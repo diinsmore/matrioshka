@@ -10,21 +10,8 @@ from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPOR
 
 class ItemDrag:
     def __init__(
-        self, 
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2,
-        graphics: dict[str, pg.Surface],
-        player: Player, 
-        mouse: Mouse, 
-        keyboard: Keyboard, 
-        inventory: Inventory,
-        outline: pg.Rect,
-        slot_len: int,
-        num_cols: int,
-        num_rows: int,
-        item_rect_base: pg.Rect,
-        mech_sprites: pg.sprite.Group,
-        get_grid_xy: callable,
+        self, screen: pg.Surface, cam_offset: pg.Vector2, graphics: dict[str, pg.Surface], player: Player, mouse: Mouse, keyboard: Keyboard, inventory: Inventory, 
+        outline: pg.Rect, slot_len: int, num_cols: int, num_rows: int, item_rect_base: pg.Rect, mech_sprites: pg.sprite.Group, get_grid_xy: callable,
         get_sprites_in_radius: callable
     ):
         self.screen = screen

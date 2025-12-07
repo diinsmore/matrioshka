@@ -12,15 +12,8 @@ from inventory import PlayerInventory
 
 class Player(pg.sprite.Sprite):
     def __init__(
-        self, 
-        xy: tuple[int, int], 
-        frames: dict[str, pg.Surface],
-        sprite_groups: list[pg.sprite.Group],
-        input_manager: InputManager,
-        tile_map: np.ndarray,
-        current_biome: str,
-        biome_order: dict[str, int],
-        save_data: dict[str, any]
+        self, xy: tuple[int, int], frames: dict[str, pg.Surface], sprite_groups: list[pg.sprite.Group], input_manager: InputManager, tile_map: np.ndarray, current_biome: str,
+        biome_order: dict[str, int], save_data: dict[str, any]
     ):
         super().__init__(*sprite_groups)
         self.xy, self.spawn_point = xy, xy
@@ -64,10 +57,6 @@ class Player(pg.sprite.Sprite):
 
     def get_save_data(self) -> dict[str, any]:
         return {
-            'xy': self.spawn_point,
-            'current biome': self.current_biome,
-            'inventory data': {'contents': self.inventory.contents, 'index': self.inventory.index},
-            'facing left': self.facing_left,
-            'health': self.health,
-            'item holding': self.item_holding
+            'xy': self.spawn_point, 'current biome': self.current_biome, 'inventory data': {'contents': self.inventory.contents, 'index': self.inventory.index},
+            'facing left': self.facing_left, 'health': self.health, 'item holding': self.item_holding
         }

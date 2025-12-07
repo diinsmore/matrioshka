@@ -4,7 +4,6 @@ import noise
 from random import randint, choice
 
 from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE, PIPE_TRANSPORT_DIRS
-from timer import Timer
 from helper_functions import load_image
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 

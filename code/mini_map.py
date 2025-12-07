@@ -5,15 +5,8 @@ from settings import MAP_SIZE, TILE_SIZE, TILES
 
 class MiniMap:
     def __init__(
-        self, 
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str], 
-        gen_outline: callable,
-        get_tile_material: callable,
-        saved_data: dict[str, any] | None
+        self, screen: pg.Surface, cam_offset: pg.Vector2, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], gen_outline: callable,
+        get_tile_material: callable, saved_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset

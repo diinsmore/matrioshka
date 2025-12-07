@@ -44,24 +44,9 @@ class Inventory:
 
 class MachineSpriteBase(SpriteBase):
     def __init__(
-        self, 
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]], 
-        tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
-        save_data: dict[str, any]
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
+        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
+        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.screen = screen
@@ -78,12 +63,8 @@ class MachineSpriteBase(SpriteBase):
         self.render_item_amount = render_item_amount
 
         _vars = vars()
-        self.ui_params = {
-            k: _vars[k] for k in (
-                'screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 
-                'rect_in_sprite_radius', 'render_item_amount'
-            )
-        }
+        self.ui_params = {k: _vars[k] for k in ('screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 'rect_in_sprite_radius', 
+            'render_item_amount')}
         self.active = False
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
@@ -95,20 +76,8 @@ class MachineSpriteBase(SpriteBase):
 
 class TransportSpriteBase(SpriteBase):
     def __init__(
-        self,
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]], 
-        tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        save_data: dict[str, any]=None
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
+        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.image = self.image.copy() # for rotating the inserters
@@ -137,6 +106,6 @@ class TransportSpriteBase(SpriteBase):
             10: {(1, 0): 'E', (-1, 0): 'W', (0, 1): 'S'}
         }
 
-    def update_timers(self) -> None:
-        for t in self.timers.values():
-            t.update()
+    def update_alarms(self) -> None:
+        for alarm in self.alarms.values():
+            alarm.update()

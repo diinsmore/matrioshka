@@ -11,22 +11,9 @@ from item_drag import ItemDrag
 
 class InventoryUI:
     def __init__(
-        self,
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        assets: dict[str, dict[str, any]], 
-        mouse: Mouse,
-        keyboard: Keyboard,
-        top: int,
-        player: Player,
-        mech_sprites: pg.sprite.Group,
-        gen_outline: callable,
-        gen_bg: callable,
-        render_inv_item_name: callable,
-        get_scaled_img: callable,
-        get_grid_xy: callable,
-        get_sprites_in_radius: callable,
-        render_item_amount: callable
+        self, screen: pg.Surface, cam_offset: pg.Vector2, assets: dict[str, dict[str, any]], mouse: Mouse, keyboard: Keyboard, top: int, player: Player, 
+        mech_sprites: pg.sprite.Group, gen_outline: callable, gen_bg: callable, render_inv_item_name: callable, get_scaled_img: callable, get_grid_xy: callable,
+        get_sprites_in_radius: callable, render_item_amount: callable
     ):  
         self.screen = screen
         self.cam_offset = cam_offset
@@ -55,21 +42,8 @@ class InventoryUI:
         self.render = True
         self.expand = False
         self.item_drag = ItemDrag(
-            screen, 
-            cam_offset,
-            self.graphics,
-            player, 
-            mouse, 
-            keyboard, 
-            self.player.inventory,
-            self.outline, 
-            self.slot_len,
-            self.num_cols,
-            self.num_rows, 
-            pg.Rect(self.icon_padding, self.icon_size),
-            self.mech_sprites,
-            self.get_grid_xy,
-            self.get_sprites_in_radius
+            screen, cam_offset, self.graphics, player, mouse, keyboard, self.player.inventory, self.outline, self.slot_len, self.num_cols, self.num_rows, 
+            pg.Rect(self.icon_padding, self.icon_size), self.mech_sprites, self.get_grid_xy, self.get_sprites_in_radius
         )
         self.item_placement = None # not initialized yet
 

@@ -8,34 +8,22 @@ class AssetManager:
     def __init__(self):
         self.assets = {
             'graphics': {
-                'clouds': load_folder(join('..', 'graphics', 'weather', 'clouds')),
-                'consumables': load_subfolders(join('..', 'graphics', 'consumables')),
-                'decor': load_subfolders(join('..', 'graphics', 'decor')),
-                'icons': load_folder(join('..', 'graphics', 'ui', 'icons')),
-                'minerals': load_subfolders(join('..', 'graphics', 'minerals')),
-                'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')),
-                'research': load_folder(join('..', 'graphics', 'research')),
-                'storage': load_folder(join('..', 'graphics', 'storage')),
-                'tools': load_folder(join('..', 'graphics', 'tools')),
-                'ui': load_folder(join('..', 'graphics', 'ui')),
-                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport dirs'))
+                'clouds': load_folder(join('..', 'graphics', 'weather', 'clouds')), 'consumables': load_subfolders(join('..', 'graphics', 'consumables')), 
+                'decor': load_subfolders(join('..', 'graphics', 'decor')), 'icons': load_folder(join('..', 'graphics', 'ui', 'icons')), 
+                'minerals': load_subfolders(join('..', 'graphics', 'minerals')), 'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')), 
+                'research': load_folder(join('..', 'graphics', 'research')), 'storage': load_folder(join('..', 'graphics', 'storage')), 
+                'tools': load_folder(join('..', 'graphics', 'tools')), 'ui': load_folder(join('..', 'graphics', 'ui')), 
+                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport dirs')) 
             },
-        
             'fonts': {
-                'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')),
-                'craft menu category': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=14),
-                'item label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=16),
-                'item label small': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=13),
+                'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')), 
+                'craft menu category': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=14), 
+                'item label': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=16), 
+                'item label small': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=13), 
                 'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size=8)
             },
-        
-            'colors': {
-                'outline bg': 'gray18',
-                'text': 'ivory4',
-                'ui bg highlight': 'gray4'
-            }, 
+            'colors': {'outline bg': 'gray18', 'text': 'ivory4', 'ui bg highlight': 'gray4'}, 
         }
-
         self.graphics = self.assets['graphics']
         self.load_remaining_graphics()
 
@@ -51,7 +39,6 @@ class AssetManager:
     def load_tile_graphics(self) -> None:
         for tile in TILES.keys():
             self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
-        
         for tile in RAMP_TILES:
             self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', 'ramps', f'{tile}.png'))
 

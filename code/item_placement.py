@@ -14,23 +14,9 @@ from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, 
 
 class ItemPlacement:
     def __init__(
-        self,
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        tile_map: np.ndarray,
-        names_to_ids: dict[str, int],
-        collision_map: dict[tuple[int, int], pg.Rect],
-        sprite_mgr: SpriteManager,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]],
-        gen_outline: callable, 
-        gen_bg: callable, 
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
-        items_init_when_placed: dict[str, pg.sprite.Sprite],
-        save_data: dict[str, any] | None
+        self, screen: pg.Surface, cam_offset: pg.Vector2, tile_map: np.ndarray, names_to_ids: dict[str, int], collision_map: dict[tuple[int, int], pg.Rect], 
+        sprite_mgr: SpriteManager, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], gen_outline: callable, gen_bg: callable, 
+        rect_in_sprite_radius: callable, render_item_amount: callable, items_init_when_placed: dict[str, pg.sprite.Sprite], save_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset

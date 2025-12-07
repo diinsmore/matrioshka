@@ -8,18 +8,8 @@ import pygame as pg
 
 class MachineUI:
     def __init__(
-        self,
-        machine: pg.sprite.Sprite,
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable
+        self, machine: pg.sprite.Sprite, screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]],
+        gen_outline: callable, gen_bg: callable, rect_in_sprite_radius: callable, render_item_amount: callable
     ):
         self.machine = machine
         self.screen = screen
@@ -27,7 +17,7 @@ class MachineUI:
         self.mouse = mouse
         self.keyboard = keyboard
         self.player = player
-        self.assets = assets
+        self.graphics, self.fonts, self.colors = assets['graphics'], assets['fonts'], assets['colors']
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
         self.rect_in_sprite_radius = rect_in_sprite_radius
@@ -35,10 +25,10 @@ class MachineUI:
        
         self.render = False
         self.mouse_hover = False
-        self.graphics, self.fonts, self.colors = self.assets['graphics'], self.assets['fonts'], self.assets['colors']
+        self.bg_rect = None
+        self.bg_width, self.bg_height = 150, 150
         self.icons = self.graphics['icons']
         self.box_len = 40
-        self.bg_width, self.bg_height = 150, 150
         self.padding = 15
         self.empty_fuel_surf = pg.transform.scale(self.icons['empty fuel'].convert_alpha(), pg.Vector2(machine.image.get_size()) * 0.8)
         self.empty_fuel_surf.set_colorkey((255, 255, 255))
@@ -75,11 +65,10 @@ class MachineUI:
         if self.mouse_hover:
             self.screen.blit(self.machine_mask_surf, self.machine.rect.topleft - self.cam_offset, special_flags=pg.BLEND_RGBA_SUB)
 
-    def render_inv(self) -> None: 
+    def render_inv(self, color='black') -> None: 
         self.update_inv_rects()
-        for slot in [*self.machine.inv.input_slots.values(), self.machine.inv.output_slot]: 
-            print(slot)
-            self.gen_bg(slot.rect, self.colors['ui bg highlight'] if slot.rect.collidepoint(self.mouse.screen_xy) else 'black') 
+        for slot in [s for s in [*self.machine.inv.input_slots.values(), self.machine.inv.output_slot] if s.rect]: 
+            self.gen_bg(slot.rect, self.colors['ui bg highlight'] if slot.rect.collidepoint(self.mouse.screen_xy) else color) 
             self.gen_outline(slot.rect)
             if slot.item: 
                 self.render_inv_contents(slot)          

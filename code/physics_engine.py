@@ -10,34 +10,16 @@ from collections import defaultdict
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
 class PhysicsEngine:
-    def __init__(
-        self, 
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int], 
-        ids_to_names: dict[int, str], 
-        key_bindings: dict[str, int]
-    ):
+    def __init__(self, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], key_bindings: dict[str, int]):
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
         self.ids_to_names = ids_to_names
         self.key_bindings = key_bindings
         
         self.collision_map = CollisionMap(self.tile_map, self.names_to_ids)
-
-        self.collision_detection = CollisionDetection(
-            self.collision_map, 
-            self.tile_map, 
-            self.names_to_ids, 
-            self.ids_to_names, 
-            self.step_over_tile
-        )
-        
+        self.collision_detection = CollisionDetection(self.collision_map, self.tile_map, self.names_to_ids, self.ids_to_names, self.step_over_tile)
         self.sprite_movement = SpriteMovement(
-            self.tile_map, 
-            self.names_to_ids, 
-            self.collision_detection.tile_collision_update,
-            self.key_bindings['move left'],
-            self.key_bindings['move right'],
+            self.tile_map, self.names_to_ids, self.collision_detection.tile_collision_update, self.key_bindings['move left'], self.key_bindings['move right'],
             self.key_bindings['jump']
         )
 
@@ -110,14 +92,7 @@ class CollisionMap:
         
 
 class CollisionDetection:
-    def __init__(
-        self, 
-        collision_map: CollisionMap, 
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int], 
-        ids_to_names: dict[int, str],
-        step_over_tile: callable
-    ):
+    def __init__(self,  collision_map: CollisionMap, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], step_over_tile: callable):
         self.collision_map = collision_map
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
@@ -203,15 +178,7 @@ class CollisionDetection:
         
 
 class SpriteMovement:
-    def __init__(
-        self,  
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int],
-        tile_collision_update: callable,
-        key_move_left: int,
-        key_move_right: int,
-        key_jump: int
-    ) -> None:
+    def __init__(self, tile_map: np.ndarray, names_to_ids: dict[str, int], tile_collision_update: callable, key_move_left: int, key_move_right: int, key_jump: int) -> None:
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
         self.tile_collision_update = tile_collision_update

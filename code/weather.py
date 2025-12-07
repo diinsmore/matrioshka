@@ -2,7 +2,7 @@ import pygame as pg
 import numpy as np
 
 from settings import RES
-from timer import Timer
+from alarm import Alarm
 
 class Weather:
     def __init__(self, screen: pg.Surface, save_data: dict[str, any]) -> None:
@@ -24,9 +24,9 @@ class Sky:
         self.tint_alpha = save_data['sky tint alpha'] if save_data else 0
         self.tint_update = save_data['sky tint update'] if save_data else 1
         
-        self.timers = {
-            'day/night cycle': Timer(length=10_000, function=self.day_night_cycle, auto_start=True, loop=True),
-            'tint update': Timer(length=1000, function=self.update_tint, auto_start=False, loop=True)
+        self.alarms = {
+            'day/night cycle': Alarm(length=10_000, function=self.day_night_cycle, auto_start=True, loop=True),
+            'tint update': Alarm(length=1000, function=self.update_tint, auto_start=False, loop=True)
         }
 
     def day_night_cycle(self) -> None:
@@ -37,8 +37,8 @@ class Sky:
     def render_tint(self) -> None:
         min_range, max_range = self.rgb_tint_ranges[0 if self.rgb_update > 0 else 1]
         if min_range < self.rgb[2] < max_range: # checking the 2nd index since it's the last to reach min_range
-            if not self.timers['tint update'].running:
-                self.timers['tint update'].start()
+            if not self.alarms['tint update'].running:
+                self.alarms['tint update'].start()
             tint_image = pg.Surface(RES)
             tint_image.fill((255, 100, 100))
             tint_image.set_alpha(self.tint_alpha)
@@ -57,14 +57,8 @@ class Sky:
         
     def update(self) -> None:
         self.render()
-
-        for timer in self.timers.values():
-            timer.update()
+        for alarm in self.alarms.values():
+            alarm.update()
 
     def make_save(self) -> dict[str, list|int]:
-        return {
-            'sky rgb': self.rgb.tolist(), 
-            'sky rgb update': self.rgb_update, 
-            'sky tint alpha': self.tint_alpha, 
-            'sky tint update': self.tint_update
-        }
+        return {'sky rgb': self.rgb.tolist(), 'sky rgb update': self.rgb_update, 'sky tint alpha': self.tint_alpha, 'sky tint update': self.tint_update}

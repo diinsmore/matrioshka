@@ -11,24 +11,12 @@ from settings import TILE_SIZE, MAP_SIZE, INSERTER_TRANSPORT_DIRS
 from sprite_bases import TransportSpriteBase
 from pipe import Pipe
 from furnaces import Furnace
-from timer import Timer
+from alarm import Alarm
 
 class Inserter(TransportSpriteBase):
     def __init__(
-        self,
-        xy: tuple[int, int], 
-        image: pg.Surface,
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]], 
-        tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        speed_factor: int=1
+        self, xy: tuple[int, int], image: pg.Surface, z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse,
+        keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, speed_factor: int=1
     ):
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
         self.speed_factor = speed_factor
@@ -46,10 +34,10 @@ class Inserter(TransportSpriteBase):
         self.rotate_speed = 1250
         self.rotate_dir = None
         self.original_img = self.image
-        self.timers = {
-            'transfer': Timer(length=self.rotate_speed/self.speed_factor, function=self.transfer, auto_start=True, loop=True),
-            'receive item': Timer(length=200, function=self.receive_item, auto_start=False, loop=False),
-            'send item': Timer(length=100, function=self.send_item, auto_start=False, loop=False),
+        self.alarms = {
+            'transfer': Alarm(length=self.rotate_speed / self.speed_factor, fn=self.transfer, auto=True, loop=True),
+            'receive item': Alarm(length=200, fn=self.receive_item, auto=False, loop=False),
+            'send item': Alarm(length=100, function=self.send_item, auto=False, loop=False),
         }
         
     def config_transport_dir(self) -> None:
@@ -64,12 +52,12 @@ class Inserter(TransportSpriteBase):
                 self.obj_receive_from = self.obj_map[x + self.receive_dir[0], y + self.receive_dir[1]] 
                 if not self.rotated_over:
                     self.rotate(self.obj_receive_from)
-                self.timers['receive item'].start()
+                self.alarms['receive item'].start()
             else:
                 self.obj_send_to = self.obj_map[x + self.send_dir[0], y + self.send_dir[1]]
                 if not self.rotated_over:
                     self.rotate(self.obj_send_to)
-                self.timers['send item'].start()
+                self.alarms['send item'].start()
 
     def receive_item(self) -> None:
         if not isinstance(self.obj_receive_from, Pipe):
@@ -124,26 +112,15 @@ class Inserter(TransportSpriteBase):
             self.screen.blit(item_surf, item_surf.get_rect(center=self.rect.midtop - self.cam_offset))
 
     def update(self, dt: float) -> None:
-        self.update_timers()
+        self.update_alarms()
         self.render_transport_ui()
         self.config_transport_dir()
 
 
 class BurnerInserter(Inserter):
     def __init__(
-        self,
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]], 
-        tile_map: np.ndarray,
-        obj_map: np.ndarray
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
+        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray
     ):
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
         self.tile_reach_radius = 1
@@ -152,19 +129,8 @@ class BurnerInserter(Inserter):
 
 class ElectricInserter(Inserter):
     def __init__(
-        self,
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]], 
-        tile_map: np.ndarray,
-        obj_map: np.ndarray
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface,
+        cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray
     ):
         speed_factor = 1.5
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, speed_factor)
@@ -174,20 +140,9 @@ class ElectricInserter(Inserter):
 
 class LongHandedInserter(Inserter):
     def __init__(
-        self,
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]], 
-        tile_map: np.ndarray,
-        obj_map: np.ndarray
-    ):  
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface,
+        cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray
+    ):
         speed_factor = 1.25
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, speed_factor)
         self.tile_reach_radius = 2

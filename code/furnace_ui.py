@@ -9,18 +9,8 @@ from machine_ui import MachineUI
     
 class FurnaceUI(MachineUI):
     def __init__(
-        self, 
-        machine: pg.sprite.Sprite,
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable
+        self, machine: pg.sprite.Sprite, screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]],
+        gen_outline: callable, gen_bg: callable, rect_in_sprite_radius: callable, render_item_amount: callable
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
         self.y_offset = self.padding if self.machine.variant == 'burner' else (self.box_len // 2)
@@ -45,7 +35,7 @@ class FurnaceUI(MachineUI):
         if self.machine.variant == 'burner':
             offset = pg.Vector2(0, (self.machine.inv.input_slots['fuel'].rect.top - self.machine.inv.input_slots['smelt'].rect.bottom) // 2)
             self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(center=self.machine.inv.input_slots['smelt'].rect.midbottom + offset))
-        if self.machine.active and 'smelt' in self.machine.timers:
-            self.render_progress_bar(self.machine.inv.input_slots['smelt'].rect, self.machine.timers['smelt'].percent)
+        if self.machine.active and 'smelt' in self.machine.alarms:
+            self.render_progress_bar(self.machine.inv.input_slots['smelt'].rect, self.machine.alarms['smelt'].percent)
             if self.machine.variant == 'burner':
-                self.render_progress_bar(self.machine.inv.input_slots['fuel'].rect, self.machine.timers['fuel'].percent)
+                self.render_progress_bar(self.machine.inv.input_slots['fuel'].rect, self.machine.alarms['fuel'].percent)

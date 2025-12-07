@@ -16,7 +16,7 @@ from itertools import islice
 from helper_functions import load_image, cls_name_to_str
 from settings import TILE_SIZE, TILES, TILE_REACH_RADIUS, TOOLS, MACHINES, FPS, Z_LAYERS, MAP_SIZE, RES, TREE_BIOMES
 from player import Player
-from timer import Timer
+from alarm import Alarm
 from nature_sprites import Tree, Cloud
 from furnaces import BurnerFurnace, ElectricFurnace
 from drills import BurnerDrill, ElectricDrill
@@ -26,22 +26,9 @@ from assembler import Assembler
 
 class SpriteManager:
     def __init__(
-        self,
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        assets: dict[str, dict[str, any]],
-        tile_map: np.ndarray,
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str],
-        tree_map: set[tuple[int, int]],
-        height_map: np.ndarray,
-        current_biome: str,
-        get_tile_material: callable,
-        sprite_movement: callable,
-        collision_map: CollisionMap,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        save_data: dict[str, any] | None
+        self, screen: pg.Surface, cam_offset: pg.Vector2, assets: dict[str, dict[str, any]], tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str],
+        tree_map: set[tuple[int, int]], height_map: np.ndarray, current_biome: str, get_tile_material: callable, sprite_movement: callable, collision_map: CollisionMap,
+        mouse: Mouse, keyboard: Keyboard, save_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -97,26 +84,14 @@ class SpriteManager:
             tree_map = self.tree_map if not self.save_data else self.save_data['tree map']
             for i, xy in enumerate(tree_map): 
                 Tree(
-                    xy=(pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, 
-                    image=choice(image_folder), 
-                    z=Z_LAYERS['bg'],
-                    sprite_groups=[self.all_sprites, self.nature_sprites, self.tree_sprites], 
-                    tree_map=self.tree_map, 
-                    tree_map_xy=xy,
-                    sprite_movement=self.sprite_movement,
-                    wood_image=self.assets['graphics']['wood'],
+                    xy=(pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, image=choice(image_folder), z=Z_LAYERS['bg'], 
+                    sprite_groups=[self.all_sprites, self.nature_sprites, self.tree_sprites], tree_map=self.tree_map, tree_map_xy=xy,
+                    sprite_movement=self.sprite_movement, wood_image=self.assets['graphics']['wood'], 
                     wood_sprites=[self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites],
                     save_data=self.save_data['sprites']['tree'][i] if self.save_data else None
                 )
         self.wood_gathering = WoodGathering(
-            self.tile_map, 
-            self.names_to_ids, 
-            self.tree_sprites, 
-            self.tree_map, 
-            self.cam_offset, 
-            self.get_tool_strength,
-            self.pick_up_item,
-            self.rect_in_sprite_radius
+            self.tile_map, self.names_to_ids, self.tree_sprites, self.tree_map, self.cam_offset, self.get_tool_strength, self.pick_up_item, self.rect_in_sprite_radius
         )
 
     def init_clouds(self, player: pg.sprite.Sprite) -> None:
@@ -176,22 +151,10 @@ class SpriteManager:
     def get_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int]) -> dict[str, any]:
         tile_x, tile_y = tiles_covered if isinstance(tiles_covered, tuple) else tiles_covered[0] # only extract the topleft coordinate for multi-tile items
         params = {
-            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
-            'image': self.assets['graphics'][name],
-            'z': Z_LAYERS['main'],
-            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites],
-            'screen': self.screen,
-            'cam_offset': self.cam_offset,
-            'mouse': self.mouse,
-            'keyboard': self.keyboard,
-            'player': self.player,
-            'assets': self.assets,
-            'tile_map': self.tile_map, 
-            'obj_map': self.item_placement.obj_map,
-            'gen_outline': self.ui.gen_outline,
-            'gen_bg': self.ui.gen_bg,
-            'rect_in_sprite_radius': self.rect_in_sprite_radius,
-            'render_item_amount': self.ui.render_item_amount,
+            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE), 'image': self.assets['graphics'][name], 'z': Z_LAYERS['main'], 
+            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites], 'screen': self.screen, 'cam_offset': self.cam_offset, 'mouse': self.mouse,
+            'keyboard': self.keyboard, 'player': self.player, 'assets': self.assets, 'tile_map': self.tile_map, 'obj_map': self.item_placement.obj_map,
+            'gen_outline': self.ui.gen_outline, 'gen_bg': self.ui.gen_bg, 'rect_in_sprite_radius': self.rect_in_sprite_radius, 'render_item_amount': self.ui.render_item_amount,
             'save_data': self.save_data['sprites'][name][save_idx] if self.save_data else None
         }
         if 'drill' in name:
@@ -212,16 +175,8 @@ class SpriteManager:
 
 class Mining:
     def __init__(
-        self, 
-        tile_map: np.ndarray,
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str],
-        key_mine: int,
-        update_map: callable,
-        get_tool_strength: callable,
-        pick_up_item: callable,
-        get_tile_material: callable,
-        end_action: callable
+        self, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], key_mine: int, update_map: callable, get_tool_strength: callable,
+        pick_up_item: callable, get_tile_material: callable, end_action: callable
     ):
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
@@ -284,15 +239,8 @@ class Crafting:
 
 class WoodGathering:
     def __init__(
-        self, 
-        tile_map: np.ndarray,
-        names_to_ids: dict[str, int],
-        tree_sprites: pg.sprite.Group(),
-        tree_map: list[tuple[int, int]],
-        cam_offset: pg.Vector2,
-        get_tool_strength: callable,
-        pick_up_item: callable,
-        rect_in_sprite_radius: callable
+        self, tile_map: np.ndarray, names_to_ids: dict[str, int], tree_sprites: pg.sprite.Group(), tree_map: list[tuple[int, int]], cam_offset: pg.Vector2,
+        get_tool_strength: callable, pick_up_item: callable, rect_in_sprite_radius: callable
     ):
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids

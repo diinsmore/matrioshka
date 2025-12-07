@@ -10,7 +10,7 @@ import numpy as np
 
 from settings import MAP_SIZE, TILE_SIZE, PIPE_TRANSPORT_DIRS
 from sprite_bases import SpriteBase, TransportSpriteBase
-from timer import Timer
+from alarm import Alarm
 
 class Pipe(TransportSpriteBase):
     def __init__(
@@ -35,7 +35,7 @@ class Pipe(TransportSpriteBase):
         self.variant_idx = variant_idx
         
         self.speed_factor = 1
-        self.timers = {'move item': Timer(length=2000 / self.speed_factor, function=self.transport, auto_start=True, loop=True)}
+        self.alarms = {'move item': Alarm(length=2000 / self.speed_factor, fn=self.transport, auto=True, loop=True)}
         self.connections = {}
         self.transport_dir = None
         self.get_connected_objs()
@@ -120,7 +120,7 @@ class Pipe(TransportSpriteBase):
             self.item_holding = None
 
     def update(self, dt: float) -> None:
-        self.update_timers()
+        self.update_alarms()
         self.render_transport_ui()
         self.update_rotation()
         self.config_transport_dir()

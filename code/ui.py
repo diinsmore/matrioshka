@@ -15,23 +15,12 @@ from settings import TILE_SIZE, RES
 from mini_map import MiniMap
 from craft_window import CraftWindow
 from inventory_ui import InventoryUI
-from timer import Timer
+from alarm import Alarm
 
 class UI:
     def __init__(
-        self,
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        assets: dict[str, dict[str, any]],
-        mouse: Mouse,
-        keyboard: Keyboard,
-        inventory: Inventory,
-        sprite_manager: SpriteManager,
-        player: Player,
-        tile_map: np.ndarray,
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str],
-        saved_data: dict[str, any] | None
+        self, screen: pg.Surface, cam_offset: pg.Vector2, assets: dict[str, dict[str, any]], mouse: Mouse, keyboard: Keyboard, inventory: Inventory, 
+        sprite_manager: SpriteManager, player: Player, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], saved_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
@@ -46,59 +35,24 @@ class UI:
         self.ids_to_names = ids_to_names
         self.saved_data = saved_data
 
-        self.mini_map = MiniMap(
-            self.screen, 
-            self.cam_offset, 
-            self.tile_map,
-            self.names_to_ids,
-            self.ids_to_names, 
-            self.gen_outline,
-            self.sprite_manager.mining.get_tile_material,
-            self.saved_data
+        self.mini_map = MiniMap(self.screen, self.cam_offset, self.tile_map, self.names_to_ids, self.ids_to_names, self.gen_outline,
+            self.sprite_manager.mining.get_tile_material, self.saved_data
         )
         
         self.mouse_grid = MouseGrid(self.mouse, self.screen, self.cam_offset, self.get_grid_xy)
 
         self.inventory_ui = InventoryUI(
-            self.screen,
-            self.cam_offset,
-            self.assets,
-            self.mouse,
-            self.keyboard,
-            self.mini_map.outline_h + self.mini_map.padding,
-            self.player,
-            self.sprite_manager.mech_sprites,
-            self.gen_outline, 
-            self.gen_bg, 
-            self.render_inventory_item_name, 
-            self.get_scaled_image, 
-            self.get_grid_xy,
-            self.sprite_manager.get_sprites_in_radius,
-            self.render_item_amount
+            self.screen, self.cam_offset, self.assets, self.mouse, self.keyboard, self.mini_map.outline_h + self.mini_map.padding, self.player,
+            self.sprite_manager.mech_sprites, self.gen_outline, self.gen_bg, self.render_inventory_item_name, self.get_scaled_image, self.get_grid_xy,
+            self.sprite_manager.get_sprites_in_radius, self.render_item_amount
         )
 
         self.craft_window = CraftWindow(
-            self.mouse,
-            self.screen,
-            self.cam_offset,
-            self.assets, 
-            self.inventory_ui, 
-            self.sprite_manager,
-            self.player,
-            self.get_craft_window_height, 
-            self.gen_outline, 
-            self.gen_bg, 
-            self.render_inventory_item_name, 
-            self.get_scaled_image
+            self.mouse, self.screen, self.cam_offset, self.assets, self.inventory_ui, self.sprite_manager, self.player, self.get_craft_window_height, self.gen_outline, 
+            self.gen_bg, self.render_inventory_item_name, self.get_scaled_image
         )
 
-        self.HUD = HUD(
-            self.screen, 
-            self.assets, 
-            self.craft_window.outline.right, 
-            self.gen_outline, 
-            self.gen_bg
-        )
+        self.HUD = HUD(self.screen, self.assets, self.craft_window.outline.right, self.gen_outline, self.gen_bg)
 
         for key in ('expand inventory ui', 'toggle inventory ui', 'toggle craft window ui', 'toggle mini map ui', 'toggle HUD ui'):
             setattr(self, '_'.join(key.split(' ')), self.keyboard.key_bindings[key])
@@ -110,14 +64,7 @@ class UI:
         return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
 
     def gen_outline(
-        self,
-        rect: pg.Rect,
-        color: str | tuple[int, int, int]=None,
-        width: int=1,
-        padding: int=1,
-        radius: int=0,
-        draw: bool=True, # if multiple rects are used, this gives more flexibility for their layering
-        return_outline: bool=False
+        self, rect: pg.Rect, color: str | tuple[int, int, int]=None, width: int=1, padding: int=1, radius: int=0, draw: bool=True, return_outline: bool=False
     ) -> None | pg.Rect:
         if color is None: # avoids evaluating 'self' prematurely when set as a default parameter
             color = self.assets['colors']['outline bg']
@@ -127,13 +74,7 @@ class UI:
         if return_outline: # use the outline as the base rect for creating another outline
             return outline
 
-    def gen_bg(
-        self, 
-        rect: pg.Rect, 
-        color: str | tuple[int, int, int]='black', 
-        transparent: bool=False, 
-        alpha: int=None
-    ) -> None:
+    def gen_bg(self, rect: pg.Rect, color: str | tuple[int, int, int]='black', transparent: bool=False, alpha: int=None) -> None:
         if alpha is None:
             alpha = 200 if transparent else 255
         img = pg.Surface(rect.size)
@@ -153,22 +94,15 @@ class UI:
         world_coords = pg.Vector2(item_rect.midtop)
         self.active_item_names.append(
             ItemName(
-                name = item_name,
-                color = color,
-                alpha = 255,
-                font = self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
-                screen = self.screen,
-                cam_offset = self.cam_offset,
-                world_coords = world_coords,
-                timer = Timer(length = 2000)
+                name = item_name, color = color, alpha = 255, font = self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
+                screen = self.screen, cam_offset = self.cam_offset, world_coords = world_coords, alarm = Alarm(length = 2000)
             )
         )
 
     def update_item_name_data(self) -> None:
         for index, cls in enumerate(self.active_item_names):
             cls.update(index)
-        
-        self.active_item_names = [cls for cls in self.active_item_names if cls.timer.running]
+        self.active_item_names = [cls for cls in self.active_item_names if cls.alarm.running]
 
     def get_scaled_image(self, image: pg.Surface, item_name: str, width: int, height: int, padding: int=0) -> pg.Surface:
         bounding_box = (width - (padding * 2), height - (padding * 2))
@@ -244,14 +178,7 @@ class MouseGrid:
 
 
 class HUD:
-    def __init__(
-        self, 
-        screen: pg.Surface, 
-        assets: dict[str, dict[str, any]], 
-        craft_window_right: int,
-        gen_outline: callable,
-        gen_bg: callable,
-    ):
+    def __init__(self, screen: pg.Surface, assets: dict[str, dict[str, any]], craft_window_right: int, gen_outline: callable, gen_bg: callable):
         self.screen = screen
         self.assets = assets
         self.craft_window_right = craft_window_right
@@ -290,17 +217,7 @@ class HUD:
 
 
 class ItemName:
-    def __init__(
-        self, 
-        name: str, 
-        color: str, 
-        alpha: int,
-        font: pg.Font, 
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        world_coords: tuple[int, int],
-        timer: Timer
-    ):
+    def __init__(self,name: str, color: str, alpha: int, font: pg.Font, screen: pg.Surface, cam_offset: pg.Vector2, world_coords: tuple[int, int], alarm: Alarm):
         self.name = name
         self.color = color
         self.alpha = alpha
@@ -308,14 +225,13 @@ class ItemName:
         self.screen = screen
         self.cam_offset = cam_offset
         self.world_coords = world_coords
-        self.timer = timer
+        self.alarm = alarm
 
     def update(self, index: int) -> None:
-        if not self.timer.running:
-            self.timer.start()
+        if not self.alarm.running:
+            self.alarm.start()
             return
-            
-        self.timer.update()    
+        self.alarm.update()    
         
         self.alpha = max(0, self.alpha - 2)
         self.font.set_alpha(self.alpha)

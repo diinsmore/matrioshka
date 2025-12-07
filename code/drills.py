@@ -9,51 +9,19 @@ import numpy as np
 from collections import Counter
 from random import choice
 
-from timer import Timer
+from alarm import Alarm
 from drill_ui import DrillUI
 from sprite_bases import MachineSpriteBase
 from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES
 
 class Drill(MachineSpriteBase):
     def __init__(
-        self, 
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]],
-        tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
-        save_data: dict[str, any],
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str]
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2, 
+        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable, 
+        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any], names_to_ids: dict[str, int], ids_to_names: dict[int, str]
     ):
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            mouse, 
-            keyboard, 
-            player, 
-            assets, 
-            tile_map,
-            obj_map,
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
+            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount, 
             save_data
         )
         self.tile_map = tile_map
@@ -73,11 +41,10 @@ class Drill(MachineSpriteBase):
         self.ore_row = save_data['ore row'] if save_data else 0
 
         self.extract_time_factor = 1.05 # extraction times increase as the drill moves deeper into the ground
-        self.timers = {
-            'extract': Timer(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, auto_start=False, loop=True),
-            'burn fuel': Timer(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, auto_start=False, loop=True),
+        self.alarms = {
+            'extract': Alarm(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, auto_start=False, loop=True),
+            'burn fuel': Alarm(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, auto_start=False, loop=True),
         }
-
         self.has_inv = True
 
     def get_ore_data(self) -> dict[str, int]:
@@ -102,7 +69,7 @@ class Drill(MachineSpriteBase):
 
         if self.ore_col % self.span_x == 0:
             self.ore_row += 1
-            self.timers['extract'].length *= self.extract_time_factor
+            self.alarms['extract'].length *= self.extract_time_factor
 
     def convert_tile(self, tile_xy: tuple[int, int]) -> None: 
         directions = self.get_neighbor_directions(tile_xy)
@@ -158,63 +125,29 @@ class Drill(MachineSpriteBase):
                 self.active = True
         elif not (self.fuel_input['item'] and self.output['amount'] < self.max_capacity['output']):
             self.active = False
-            self.timers.clear()
+            self.alarms.clear()
 
         return self.active
     
     def update(self, dt: float) -> None:
         self.ui.update('drill')
         if self.get_active_state():
-            if self.timers['extract'].running: 
-                self.timers['extract'].update()
+            if self.alarms['extract'].running: 
+                self.alarms['extract'].update()
             else:
-                self.timers['extract'].start()
+                self.alarms['extract'].start()
 
 
 class BurnerDrill(Drill):
     def __init__(
-        self, 
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]],
-        tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
-        save_data: dict[str, any],
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str]
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
+        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
+        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any], names_to_ids: dict[str, int], ids_to_names: dict[int, str]
     ):  
         self.speed_factor = 1
         super().__init__(
-            xy, 
-            image,
-            z, 
-            sprite_groups,
-            screen,
-            cam_offset,
-            mouse,
-            keyboard,
-            player,
-            assets,
-            tile_map,
-            obj_map,
-            gen_outline,
-            gen_bg,
-            rect_in_sprite_radius,
-            render_item_amount,
-            save_data,
-            names_to_ids,
-            ids_to_names
+            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg,rect_in_sprite_radius, render_item_amount,
+            save_data, names_to_ids, ids_to_names
         )
         self.variant = 'burner'
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
@@ -224,48 +157,14 @@ class BurnerDrill(Drill):
 
 class ElectricDrill(Drill):
     def __init__(
-        self, 
-        xy: tuple[int, int], 
-        image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
-        sprite_groups: list[pg.sprite.Group],
-        screen: pg.Surface,
-        cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
-        player: Player,
-        assets: dict[str, dict[str, any]],
-        tile_map: np.ndarray,
-        obj_map: np.ndarray,
-        gen_outline: callable,
-        gen_bg: callable,
-        rect_in_sprite_radius: callable,
-        render_item_amount: callable,
-        save_data: dict[str, any],
-        names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str]
+        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
+        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
+        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any], names_to_ids: dict[str, int], ids_to_names: dict[int, str]
     ):  
         self.speed_factor = 1.5
         super().__init__(
-            xy, 
-            image,
-            z, 
-            sprite_groups,
-            screen,
-            cam_offset,
-            mouse,
-            keyboard,
-            player,
-            assets,
-            tile_map,
-            obj_map,
-            gen_outline,
-            gen_bg,
-            rect_in_sprite_radius,
-            render_item_amount,
-            save_data,
-            names_to_ids,
-            ids_to_names
+            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg,rect_in_sprite_radius, render_item_amount,
+            save_data, names_to_ids, ids_to_names
         )
         self.variant = 'electric'
         self.fuel_sources = {'electric poles'}
