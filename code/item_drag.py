@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from inventory import Inventory
 
 import pygame as pg
-from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPORT_DIRS
+from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPORT_DIRS, MACHINES
 
 class ItemDrag:
     def __init__(
@@ -34,6 +34,7 @@ class ItemDrag:
         self.image, self.rect = None, None 
         self.amount = None
         self.material_names, self.tile_names = set(MATERIALS.keys()), set(TILES.keys())
+        self.machine_recipes = {item for machine in MACHINES.values() for item in machine['recipe']}
         self.old_pipe_idx = None # storing the original pipe index if it gets rotated while being dragged
         self.item_placement = None # not initialized yet
 
@@ -70,7 +71,8 @@ class ItemDrag:
         self.update_item_data(item_name, click_type, add=True)
 
     def end_drag(self) -> None: 
-        if self.player.item_holding in (self.material_names | self.tile_names) and not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
+        if self.player.item_holding in (self.material_names | self.tile_names | self.machine_recipes) and \
+        not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
             self.place_item_in_machine()
         else:
             self.item_placement.place_item(self.player, self.mouse.tile_xy, self.old_pipe_idx)
@@ -113,6 +115,7 @@ class ItemDrag:
     def place_item_in_machine(self) -> None:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'inv') and m.ui.render]:
             if slot := machine.ui.check_input():
+                print(slot)
                 machine.ui.input_item(slot, self.amount)
                 self.player.item_holding = None
                 return
@@ -122,11 +125,12 @@ class ItemDrag:
             for slot in machine.inv:
                 if isinstance(slot, dict):
                     for s in slot.values():
-                        if s.item and rect.collidepoint(self.mouse.screen_xy):
+                        if s.amount and rect.collidepoint(self.mouse.screen_xy):
                             machine.ui.extract_item(s, 'left' if l_click else 'right')
                             return
                 else:
-                    if slot.item and slot.rect.collidepoint(self.mouse.screen_xy):
+                    print(slot)
+                    if slot.amount and slot.rect.collidepoint(self.mouse.screen_xy):
                         machine.ui.extract_item(slot, 'left' if l_click else 'right')
                         return
 

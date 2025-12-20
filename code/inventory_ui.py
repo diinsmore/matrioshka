@@ -87,7 +87,7 @@ class InventoryUI:
                 pass
 
     def get_item_surf(self, name: str) -> pg.Surface:
-        surf = self.graphics[name] 
+        surf = self.graphics[name]
         return surf if surf.get_size() == self.icon_size else self.get_scaled_img(surf, name, *self.icon_size)
 
     def update(self) -> None:

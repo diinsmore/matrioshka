@@ -25,7 +25,7 @@ class SpriteBase(pg.sprite.Sprite):
 class InvSlot:
     item: str=None
     rect: pg.Rect=None
-    valid_inputs: dict=None
+    valid_inputs: set=None
     amount: int=0
     max_capacity: int=99
 
