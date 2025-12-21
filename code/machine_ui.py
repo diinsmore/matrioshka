@@ -27,6 +27,7 @@ class MachineUI:
         self.mouse_hover = False
         self.bg_rect = None
         self.bg_w, self.bg_h = 150, 150
+        self.progress_bar_height = 4
         self.icons = self.graphics['icons']
         self.box_len = 40
         self.padding = 15
@@ -84,11 +85,11 @@ class MachineUI:
         if slot.amount:
             self.render_item_amount(slot.amount, slot.rect.bottomright - pg.Vector2(5, 5))
 
-    def render_progress_bar(self, inv_box: pg.Rect, percent: float) -> None:
-        bar = pg.Rect(inv_box.bottomleft, (self.box_len, self.progress_bar_height))
-        pg.draw.rect(self.screen, 'black', bar, 1)
+    def render_progress_bar(self, inv_box: pg.Rect, percent: float, width=None, padding: pg.Vector2=pg.Vector2(0, 0), color: str='black') -> None:
+        bar = pg.Rect(inv_box.bottomleft + padding, (width if width else self.box_len, self.progress_bar_height))
+        pg.draw.rect(self.screen, color, bar, 1)
         progress_rect = pg.Rect(bar.topleft + pg.Vector2(1, 1), ((bar.width - 2) * (percent / 100), bar.height - 2))
-        pg.draw.rect(self.screen, 'green' if inv_box == selfinv.input_slots['smelt'].rect else 'red', progress_rect)
+        pg.draw.rect(self.screen, 'forestgreen', progress_rect)
 
     def update_fuel_status(self) -> None:
         if hasattr(self.machine, 'can_smelt') and self.machine.variant == 'burner' and not self.inv.input_slots['fuel'].item:

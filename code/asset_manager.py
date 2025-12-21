@@ -13,7 +13,7 @@ class AssetManager:
                 'minerals': load_subfolders(join('..', 'graphics', 'minerals')), 'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')), 
                 'research': load_folder(join('..', 'graphics', 'research')), 'storage': load_folder(join('..', 'graphics', 'storage')), 
                 'tools': load_folder(join('..', 'graphics', 'tools')), 'ui': load_folder(join('..', 'graphics', 'ui')), 
-                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport dirs')) 
+                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport directions')) 
             },
             'fonts': {
                 'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')), 
@@ -80,7 +80,7 @@ class AssetManager:
                 self.graphics[material] = load_image(join('..', 'graphics', 'materials', f'{material}.png'))
             except FileNotFoundError:
                 pass
-                
+
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
         self.load_tile_graphics()

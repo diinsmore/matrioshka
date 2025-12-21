@@ -14,7 +14,6 @@ class FurnaceUI(MachineUI):
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
         self.y_offset = self.padding if self.machine.variant == 'burner' else (self.box_len // 2)
-        self.progress_bar_height = 4
         self.right_arrow_surf = self.icons['right arrow'].convert()
         if self.machine.variant == 'burner':
             self.fuel_icon = self.icons['fuel'].convert()

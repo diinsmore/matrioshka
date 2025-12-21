@@ -17,15 +17,17 @@ class AssemblerUI(MachineUI):
         assets: dict[str, dict[str, any]], gen_outline: callable, gen_bg: callable, rect_in_sprite_radius: callable, render_item_amount: callable
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
+        self.bg_width, self.bg_height = 200, 200
         self.category_names = list(self.machine.item_category_data.keys())
         self.category_cols = 3
         self.category_rows = ceil(len(self.category_names) / self.category_cols)
         self.category_rect = None
         self.item_rows, self.item_cols = None, None
+        self.box_len = 50
         self.icon_size = self.box_len * 0.6
         self.category_icons = self.get_icons(self.graphics['icons'], self.category_names)
         self.machine_icons, self.item_surf = None, None
-        self.inv_box_len = 30
+        self.inv_box_len = 40
         self.update_bg_dimensions()
 
     def get_icons(self, folder: dict[str, pg.Surface], keys: list[str], scale: int=None) -> dict[str, pg.Surface]:
@@ -63,15 +65,24 @@ class AssemblerUI(MachineUI):
                     category = self.category_names[x + (y * self.category_cols)]
                     icon = self.icons[category]
                     self.screen.blit(icon, icon.get_rect(center=outline.center))
+                    font = self.fonts['item label small'].render(category, True, self.colors['text'])
+                    self.screen.blit(font, font.get_rect(midtop=outline.midbottom + pg.Vector2(0, 1)))
                     self.get_category_input(outline, category)
         elif not self.machine.item:
             self.category_rect = pg.Rect(self.bg_rect.topleft + pg.Vector2((self.bg_w // 2) - (self.box_len // 2), self.padding), (self.box_len, self.box_len))
+            font = self.fonts['item label'].render(self.machine.item_category, True, self.colors['text'])
+            self.screen.blit(font, font.get_rect(midtop=self.category_rect.midbottom - pg.Vector2(0, 8))) # subtracring since the icon is smaller than the rect
             self.screen.blit(self.icons[self.machine.item_category], self.category_rect)
             self.render_item_options()
         else:
-            self.category_rect = pg.Rect(self.bg_rect.topleft + pg.Vector2((self.bg_w // 2) - (self.box_len // 2), self.padding), (self.box_len, self.box_len))
+            self.category_rect = pg.Rect(self.bg_rect.topleft + pg.Vector2((self.bg_w // 2) - (self.box_len // 2), 5), (self.box_len, self.box_len))
             self.screen.blit(self.item_surf, self.category_rect)
+            font = self.fonts['item label small'].render(self.machine.item, True, self.colors['text'])
+            self.screen.blit(font, font.get_rect(midtop=self.category_rect.midbottom + pg.Vector2(0, 1)))
             self.render_inv(slot_preview=True)
+            for item in self.machine.recipe:
+                font = self.fonts['item label small'].render(item, True, self.colors['text'])
+                self.screen.blit(font, font.get_rect(midtop=self.inv.input_slots[item].rect.midbottom + pg.Vector2(0, self.progress_bar_height + 2)))
     
     def get_category_input(self, input_box: pg.Rect, category: str) -> None:
         if input_box.collidepoint(self.mouse.screen_xy) and self.mouse.buttons_pressed['left']:
@@ -80,9 +91,9 @@ class AssemblerUI(MachineUI):
             self.update_bg_dimensions() 
 
     def render_item_options(self) -> None:
-        icons = list(self.machine_icons.values())
+        icon_names, icon_surfs = list(self.machine_icons.keys()), list(self.machine_icons.values())
         y = self.category_rect.bottom - self.bg_rect.top
-        for i in range(len(icons)):
+        for i in range(len(icon_names)):
             row, col = divmod(i, self.item_cols)
             outline = pg.Rect(
                 self.bg_rect.topleft + pg.Vector2((self.padding * (col + 1)) + (col * self.inv_box_len), y + (self.padding * (row + 1)) + (row * self.inv_box_len)), 
@@ -94,12 +105,14 @@ class AssemblerUI(MachineUI):
                     self.machine.assign_item(i)
                     self.item_surf = pg.transform.scale(self.graphics[self.machine.item].copy(), self.category_rect.size)
                     self.update_bg_dimensions()
+                font = self.fonts['item label small'].render(icon_names[i], True, self.colors['text'])
+                self.screen.blit(font, font.get_rect(midtop=outline.midbottom + pg.Vector2(0, 1)))
             else:
                 color = 'black'
             self.gen_bg(outline, color) 
             self.gen_outline(outline)
-            icon = icons[i]
-            self.screen.blit(icon, icon.get_rect(center=outline.center))
+            icon_surf = icon_surfs[i]
+            self.screen.blit(icon_surf, icon_surf.get_rect(center=outline.center))
 
     def update_inv_rects(self) -> None:
         y = self.padding + self.category_rect.bottom - self.bg_rect.top
@@ -124,3 +137,5 @@ class AssemblerUI(MachineUI):
         self.gen_outline(self.bg_rect)
         self.render_item_categories()
         self.undo_selection()
+        for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]:
+            self.render_progress_bar(slot.rect, self.machine.alarms[next(iter(slot.valid_inputs))].pct, self.inv_box_len, pg.Vector2(0, 2), 'gray18')
