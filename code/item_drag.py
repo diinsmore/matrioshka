@@ -115,7 +115,6 @@ class ItemDrag:
     def place_item_in_machine(self) -> None:
         for machine in [m for m in self.get_sprites_in_radius(self.player.rect, self.mech_sprites) if hasattr(m, 'inv') and m.ui.render]:
             if slot := machine.ui.check_input():
-                print(slot)
                 machine.ui.input_item(slot, self.amount)
                 self.player.item_holding = None
                 return
@@ -129,7 +128,6 @@ class ItemDrag:
                             machine.ui.extract_item(s, 'left' if l_click else 'right')
                             return
                 else:
-                    print(slot)
                     if slot.amount and slot.rect.collidepoint(self.mouse.screen_xy):
                         machine.ui.extract_item(slot, 'left' if l_click else 'right')
                         return

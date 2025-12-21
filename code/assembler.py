@@ -9,6 +9,7 @@ import pygame as pg
 from sprite_bases import MachineSpriteBase, Inventory, InvSlot
 from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from assembler_ui import AssemblerUI
+from alarm import Alarm
 
 class Assembler(MachineSpriteBase):
     def __init__(
@@ -23,15 +24,42 @@ class Assembler(MachineSpriteBase):
         self.inv = Inventory(input_slots={})
         self.item_category, self.item, self.recipe = None, None, None
         self.item_category_data = {'machines': MACHINES, 'logistics': LOGISTICS, 'electricity': ELECTRICITY, 'materials': MATERIALS, 'storage': STORAGE, 'research': RESEARCH}
+        self.assemble_progress = {}
+        self.alarms = {}
         self.init_ui(AssemblerUI)
 
     def assign_item(self, idx: int) -> None:
         data = self.item_category_data[self.item_category]
         self.item = list(data.keys())[idx]
+        self.inv.output_slot.valid_inputs = {self.item}
         self.recipe = list(data.values())[idx]['recipe']
-        self.inv.input_slots.clear()
+        for dct in (self.inv.input_slots, self.alarms, self.assemble_progress):
+            dct.clear()
         for item in self.recipe:
             self.inv.input_slots[item] = InvSlot(item, valid_inputs={item}) # assigning the rect in the ui class
- 
+            self.alarms[item] = Alarm(500, self.update_slot, loop=True, track_pct=True, slot=self.inv.input_slots[item]) # TODO: have alarm length vary by material
+            self.assemble_progress[item] = 0
+    
+    def update_slot(self, slot: InvSlot) -> None:
+        slot.amount -= 1
+        self.assemble_progress[slot.item] += 1
+        if not slot.amount:
+            slot.item = None
+
+    def assemble(self) -> None:
+        if self.inv.input_slots and all(slot.amount > 0 for slot in self.inv.input_slots.values()):
+            for alarm in self.alarms.values():
+                if not alarm.running:
+                    alarm.start()
+                else:
+                    alarm.update()
+            if all(self.assemble_progress[item] >= self.recipe[item] for item in self.recipe):
+                if not self.inv.output_slot.item:
+                    self.inv.output_slot.item = self.item
+                self.inv.output_slot.amount += 1
+                for item in self.recipe:
+                    self.assemble_progress[item] = 0
+
     def update(self, dt=None) -> None:
         self.ui.update()
+        self.assemble()

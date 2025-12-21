@@ -45,7 +45,7 @@ class MachineUI:
         return next((slot for slot in self.machine.inv if slot.rect.collidepoint(self.mouse.screen_xy)), None)
 
     def input_item(self, slot: InvSlot, amount: int) -> None: 
-        if self.player.item_holding in slot.valid_inputs and slot.rect != self.inv.output_slot.rect: # the output box only allows input if you're adding to the item it's holding
+        if slot.valid_inputs and self.player.item_holding in slot.valid_inputs:
             if slot.item is None:
                 slot.item = self.player.item_holding
         if self.player.item_holding == slot.item:
@@ -68,7 +68,7 @@ class MachineUI:
         for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]: 
             self.gen_bg(slot.rect, self.colors['ui bg highlight'] if slot.rect.collidepoint(self.mouse.screen_xy) else color) 
             self.gen_outline(slot.rect)
-            if slot.item or slot_preview:
+            if slot.item or (slot_preview and slot.valid_inputs): # checking valid inputs to avoid rendering a preview of nothing if the assembler's output slot is empty
                 self.render_inv_contents(slot, icon_scale, slot_preview)
         
     def render_inv_contents(self, slot: InvSlot, icon_scale: int | None, slot_preview: bool=False) -> None:
@@ -78,7 +78,7 @@ class MachineUI:
             return
         if icon_scale is not None:
             surf = pg.transform.scale(surf, pg.Vector2(surf.get_size()) * icon_scale)
-        if not slot.item and slot_preview:
+        if not slot.amount > 0 and slot_preview:
             surf.set_alpha(150)
         self.screen.blit(surf, surf.get_frect(center=slot.rect.center))
         if slot.amount:

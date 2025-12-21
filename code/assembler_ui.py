@@ -22,16 +22,17 @@ class AssemblerUI(MachineUI):
         self.category_rows = ceil(len(self.category_names) / self.category_cols)
         self.category_rect = None
         self.item_rows, self.item_cols = None, None
-        self.icon_scale = self.box_len * 0.6
+        self.icon_size = self.box_len * 0.6
         self.category_icons = self.get_icons(self.graphics['icons'], self.category_names)
         self.machine_icons, self.item_surf = None, None
         self.inv_box_len = 30
         self.update_bg_dimensions()
 
     def get_icons(self, folder: dict[str, pg.Surface], keys: list[str], scale: int=None) -> dict[str, pg.Surface]:
-        if scale is None:
-            scale = self.icon_scale
-        return {k: pg.transform.scale(surf.copy(), (scale, scale)) for k, surf in folder.items() if k in keys}
+        return {
+            k: pg.transform.scale(surf, (self.icon_size, self.icon_size) if scale is None else (self.box_len * scale, self.box_len * scale)) 
+            for k, surf in folder.items() if k in keys
+        }
 
     def update_bg_dimensions(self) -> None:
         if not self.machine.item_category:
@@ -108,6 +109,9 @@ class AssemblerUI(MachineUI):
                 self.inv.input_slots[item] = InvSlot(item, rect, valid_inputs={item})
             else:
                 self.inv.input_slots[item].rect = rect
+        self.inv.output_slot.rect = pg.Rect(
+            self.inv.input_slots[list(self.machine.recipe.keys())[-1]].rect.topleft + pg.Vector2(self.inv_box_len + self.padding, 0), (self.inv_box_len, self.inv_box_len) 
+        )
 
     def undo_selection(self) -> None:
         if self.keyboard.pressed_keys[pg.K_x] and self.machine.rect.collidepoint(self.mouse.world_xy):

@@ -38,16 +38,12 @@ class Furnace(MachineSpriteBase):
     
     def smelt(self) -> None:
         if not self.alarms:
-            self.alarms['smelt'] = Alarm(
-                length=self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, fn=self.update_inv_slot, auto=True, loop=True, track_pct=True,
-                smelt=True
-            )
+            self.alarms['smelt'] = Alarm(self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, self.update_inv_slot, True, True, True, smelt=True)
             self.alarms['smelt'].start()
             if self.variant == 'burner':
                 self.alarms['fuel'] = Alarm(
-                length=self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, fn=self.update_inv_slot, auto=True, loop=True, track_pct=True,
-                smelt=True, fuel=True
-            )
+                    self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, self.update_inv_slot, True, True, True, smelt=True, fuel=True
+                )
                 self.alarms['fuel'].start()
         for alarm in self.alarms.values():
             alarm.update()

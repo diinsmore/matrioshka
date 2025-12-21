@@ -25,6 +25,8 @@ class AssetManager:
             'colors': {'outline bg': 'gray18', 'text': 'ivory4', 'ui bg highlight': 'gray4'}, 
         }
         self.graphics = self.assets['graphics']
+        for surf in self.graphics['transport dirs'].values():
+            surf.set_alpha(100)
         self.load_remaining_graphics()
 
     def load_biome_graphics(self) -> None:
@@ -78,11 +80,6 @@ class AssetManager:
                 self.graphics[material] = load_image(join('..', 'graphics', 'materials', f'{material}.png'))
             except FileNotFoundError:
                 pass
-
-    def load_ui_graphics(self) -> None:
-        self.graphics['transport dirs'] = load_folder(join('..', 'graphics', 'ui', 'transport directions'))
-        for surf in self.graphics['transport dirs'].values():
-            surf.set_alpha(100)
                 
     def load_remaining_graphics(self) -> None:
         self.load_biome_graphics()
@@ -91,4 +88,3 @@ class AssetManager:
         self.load_machine_graphics()
         self.load_logistics_graphics()
         self.load_material_graphics()
-        self.load_ui_graphics()
