@@ -37,7 +37,6 @@ class MachineUI:
         self.machine_mask = pg.mask.from_surface(machine.image)
         self.machine_mask_surf = self.machine_mask.to_surface(setcolor=(20, 20, 20, 255), unsetcolor=(0, 0, 0, 0))
         self.key_close_ui = self.keyboard.key_bindings['close ui window']
-        self.inv = self.machine.inv
 
     def update_bg_rect(self) -> None:
         self.bg_rect = pg.Rect(self.machine.rect.midtop - self.cam_offset - pg.Vector2(self.bg_w // 2, self.bg_h + self.padding), (self.bg_w, self.bg_h))
@@ -66,7 +65,7 @@ class MachineUI:
 
     def render_inv(self, color='black', icon_scale: int=None, slot_preview: bool=False) -> None: 
         self.update_inv_rects()
-        for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]: 
+        for slot in [s for s in [*self.machine.inv.input_slots.values(), self.machine.inv.output_slot] if s.rect]: 
             self.gen_bg(slot.rect, self.colors['ui bg highlight'] if slot.rect.collidepoint(self.mouse.screen_xy) else color) 
             self.gen_outline(slot.rect)
             if slot.item or (slot_preview and slot.valid_inputs): # checking valid inputs to avoid rendering a preview of nothing if the assembler's output slot is empty
@@ -85,14 +84,15 @@ class MachineUI:
         if slot.amount:
             self.render_item_amount(slot.amount, slot.rect.bottomright - pg.Vector2(5, 5))
 
-    def render_progress_bar(self, inv_box: pg.Rect, percent: float, width=None, padding: pg.Vector2=pg.Vector2(0, 0), color: str='black') -> None:
+    def render_progress_bar(self, inv_box: pg.Rect, percent: float, width=None, padding: pg.Vector2=pg.Vector2(0, 1), color: str='black') -> None:
         bar = pg.Rect(inv_box.bottomleft + padding, (width if width else self.box_len, self.progress_bar_height))
         pg.draw.rect(self.screen, color, bar, 1)
         progress_rect = pg.Rect(bar.topleft + pg.Vector2(1, 1), ((bar.width - 2) * (percent / 100), bar.height - 2))
         pg.draw.rect(self.screen, 'forestgreen', progress_rect)
 
     def update_fuel_status(self) -> None:
-        if hasattr(self.machine, 'can_smelt') and self.machine.variant == 'burner' and not self.inv.input_slots['fuel'].item:
+        slots = self.machine.inv.input_slots
+        if 'smelt' in slots and not slots['fuel'].item:
             self.screen.blit(self.empty_fuel_surf, self.empty_fuel_surf.get_rect(center=self.machine.rect.center - self.cam_offset))
 
     def update(self) -> None:

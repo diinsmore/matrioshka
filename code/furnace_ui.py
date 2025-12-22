@@ -27,14 +27,17 @@ class FurnaceUI(MachineUI):
         
     def render_interface(self) -> None:
         self.update_bg_rect()
-        self.gen_bg(self.bg_rect, transparent=True) 
-        self.gen_outline(self.bg_rect)
-        self.render_inv()
-        self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=self.bg_rect.center))
-        if self.machine.variant == 'burner':
-            offset = pg.Vector2(0, (self.machine.inv.input_slots['fuel'].rect.top - self.machine.inv.input_slots['smelt'].rect.bottom) // 2)
-            self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(center=self.machine.inv.input_slots['smelt'].rect.midbottom + offset))
-        if self.machine.active and 'smelt' in self.machine.alarms:
-            self.render_progress_bar(self.machine.inv.input_slots['smelt'].rect, self.machine.alarms['smelt'].percent)
+        if self.rect_in_sprite_radius(self.player, self.bg_rect, rect_world_space=False):
+            self.gen_bg(self.bg_rect, transparent=True) 
+            self.gen_outline(self.bg_rect)
+            self.render_inv()
+            self.screen.blit(self.right_arrow_surf, self.right_arrow_surf.get_rect(center=self.bg_rect.center))
             if self.machine.variant == 'burner':
-                self.render_progress_bar(self.machine.inv.input_slots['fuel'].rect, self.machine.alarms['fuel'].percent)
+                offset = pg.Vector2(0, (self.machine.inv.input_slots['fuel'].rect.top - self.machine.inv.input_slots['smelt'].rect.bottom) // 2)
+                self.screen.blit(self.fuel_icon, self.fuel_icon.get_rect(center=self.machine.inv.input_slots['smelt'].rect.midbottom + offset))
+            if self.machine.active and 'smelt' in self.machine.alarms:
+                self.render_progress_bar(self.machine.inv.input_slots['smelt'].rect, self.machine.alarms['smelt'].percent)
+                if self.machine.variant == 'burner':
+                    self.render_progress_bar(self.machine.inv.input_slots['fuel'].rect, self.machine.alarms['fuel'].percent)
+        else:
+            self.render = False

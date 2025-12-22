@@ -138,13 +138,16 @@ class SpriteManager:
                 obj.kill()
                 return
 
-    @staticmethod
-    def rect_in_sprite_radius(spr: pg.sprite.Sprite, rect: pg.Rect, x_dist: int=(RES[0]//2)+100, y_dist: int=(RES[1]//2)) -> bool:
-        return abs(spr.rect.centerx - rect.centerx) < x_dist and abs(spr.rect.centery - rect.centery) < y_dist
-
-    def get_sprites_in_radius(self, rect: pg.Rect, group: pg.sprite.Group, x_dist: int=(RES[0]//2)+100, y_dist: int=(RES[1]//2)) -> list[pg.sprite.Sprite]:
+    def get_sprites_in_radius(self, rect: pg.Rect, group: pg.sprite.Group, x_dist: int=(RES[0] // 2), y_dist: int=(RES[1] // 2)) -> list[pg.sprite.Sprite]:
         return [spr for spr in group if self.rect_in_sprite_radius(spr, rect, x_dist, y_dist)]
-
+    
+    def rect_in_sprite_radius(
+        self, spr: pg.sprite.Sprite, rect: pg.Rect, x_dist: int=(RES[0] // 2), y_dist: int=(RES[1] // 2), spr_world_space: bool=True, rect_world_space: bool=True
+    ) -> bool:
+        spr_xy = spr.rect.center if spr_world_space else spr.rect.center + self.cam_offset
+        rect_xy = rect.center if rect_world_space else rect.center + self.cam_offset
+        return abs(spr_xy[0] - rect_xy[0]) < x_dist and abs(spr_xy[1] - rect_xy[1]) < y_dist
+    
     def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[pg.sprite.Group]:
         return set(group for group in self.all_groups.values() if sprite in group)
 

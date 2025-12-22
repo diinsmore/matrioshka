@@ -49,12 +49,9 @@ class Furnace(MachineSpriteBase):
             alarm.update()
 
     def update_inv_slot(self, smelt: bool=False, fuel: bool=False) -> None:
-        if self.variant == 'burner':
-            data = self.inv.input_slots['smelt' if smelt else 'fuel']
-        else:
-            data = self.inv.input_slots['smelt']
+        data = self.inv.input_slots['smelt' if smelt or self.variant != 'burner' else 'fuel']
         data.amount -= 1
-        if data.amount == 0:
+        if not data.amount:
             data.item = None
             self.active = False
         if smelt and data.item:

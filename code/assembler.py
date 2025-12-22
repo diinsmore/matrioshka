@@ -25,7 +25,6 @@ class Assembler(MachineSpriteBase):
         self.item_category, self.item, self.recipe = None, None, None
         self.item_category_data = {'machines': MACHINES, 'logistics': LOGISTICS, 'electricity': ELECTRICITY, 'materials': MATERIALS, 'storage': STORAGE, 'research': RESEARCH}
         self.assemble_progress = {}
-        self.total_assemble_time = None
         self.alarms = {}
         self.init_ui(AssemblerUI)
 

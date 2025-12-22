@@ -133,9 +133,12 @@ class AssemblerUI(MachineUI):
             
     def render_interface(self) -> None:
         self.update_bg_rect()
-        self.gen_bg(self.bg_rect, transparent=True)
-        self.gen_outline(self.bg_rect)
-        self.render_item_categories()
-        self.undo_selection()
-        for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]:
-            self.render_progress_bar(slot.rect, self.machine.alarms[next(iter(slot.valid_inputs))].pct, self.inv_box_len, pg.Vector2(0, 2), 'gray18')
+        if self.rect_in_sprite_radius(self.player, self.bg_rect, rect_world_space=False):
+            self.gen_bg(self.bg_rect, transparent=True)
+            self.gen_outline(self.bg_rect)
+            self.render_item_categories()
+            self.undo_selection()
+            for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]:
+                self.render_progress_bar(slot.rect, self.machine.alarms[next(iter(slot.valid_inputs))].pct, self.inv_box_len, pg.Vector2(0, 2), 'gray18')
+        else:
+            self.render = False
