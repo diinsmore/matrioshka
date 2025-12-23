@@ -22,7 +22,7 @@ class AssetManager:
                 'item label small': pg.font.Font(join('..', 'graphics', 'fonts', 'C&C.ttf'), size=13), 
                 'number': pg.font.Font(join('..', 'graphics', 'fonts', 'PKMN RBYGSC.ttf'), size=8)
             },
-            'colors': {'outline bg': 'gray18', 'text': 'ivory4', 'ui bg highlight': 'gray4'}, 
+            'colors': {'outline bg': 'gray18', 'text': 'ivory4', 'ui bg highlight': 'gray4', 'progress bar': 'gray18'}, 
         }
         self.graphics = self.assets['graphics']
         for surf in self.graphics['transport dirs'].values():

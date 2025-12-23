@@ -139,6 +139,6 @@ class AssemblerUI(MachineUI):
             self.render_item_categories()
             self.undo_selection()
             for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]:
-                self.render_progress_bar(slot.rect, self.machine.alarms[next(iter(slot.valid_inputs))].pct, self.inv_box_len, pg.Vector2(0, 2), 'gray18')
+                self.render_progress_bar(slot.rect, self.machine.alarms[next(iter(slot.valid_inputs))].pct, self.inv_box_len, pg.Vector2(0, 2), self.colors['progress bar'])
         else:
             self.render = False
