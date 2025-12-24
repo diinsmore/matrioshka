@@ -39,8 +39,9 @@ class AssetManager:
                 self.graphics[biome]['trees'] = load_folder(join('..', 'graphics', 'terrain', 'trees', biome))
 
     def load_tile_graphics(self) -> None:
-        for tile in TILES.keys():
+        for tile in [*TILES.keys(), 'water']:
             self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
+        self.graphics['water'].set_alpha(150)
         for tile in RAMP_TILES:
             self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', 'ramps', f'{tile}.png'))
 
