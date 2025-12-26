@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from physics_engine import CollisionMap
     from input_manager import Mouse, Keyboard
     from sprite_base import SpriteBase
+    from procgen import ProcGen
 
 import pygame as pg
 from os.path import join
@@ -26,20 +27,27 @@ from assembler import Assembler
 
 class SpriteManager:
     def __init__(
-        self, screen: pg.Surface, cam_offset: pg.Vector2, assets: dict[str, dict[str, any]], tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str],
-        tree_map: set[tuple[int, int]], height_map: np.ndarray, current_biome: str, get_tile_material: callable, sprite_movement: callable, collision_map: CollisionMap,
-        mouse: Mouse, keyboard: Keyboard, save_data: dict[str, any] | None
+        self, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        assets: dict[str, dict[str, any]], 
+        proc_gen: ProcGen,
+        sprite_movement: callable, 
+        collision_map: CollisionMap,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        save_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
         self.assets = assets
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
-        self.tree_map = tree_map
-        self.height_map = height_map
-        self.current_biome = current_biome
-        self.get_tile_material = get_tile_material
+        self.tile_map = proc_gen.tile_map
+        self.names_to_ids = proc_gen.names_to_ids
+        self.ids_to_names = proc_gen.ids_to_names
+        self.tree_map = proc_gen.tree_map
+        self.height_map = proc_gen.height_map
+        self.current_biome = proc_gen.current_biome
+        self.get_tile_material = proc_gen.get_tile_material
         self.sprite_movement = sprite_movement
         self.collision_map = collision_map
         self.mouse = mouse
@@ -73,9 +81,18 @@ class SpriteManager:
         self.crafting = Crafting()
 
         self.init_trees()
-        self.items_init_when_placed = {cls_name_to_str(cls): cls for cls in (BurnerFurnace, ElectricFurnace, BurnerDrill, ElectricDrill, Pipe, BurnerInserter, 
-            ElectricInserter, Assembler
-        )}
+        self.items_init_when_placed = {
+            cls_name_to_str(cls): cls for cls in (
+                BurnerFurnace, 
+                ElectricFurnace, 
+                BurnerDrill, 
+                ElectricDrill, 
+                Pipe, 
+                BurnerInserter, 
+                ElectricInserter, 
+                Assembler
+            )
+        }
         self.ui, self.item_placement, self.player = None, None, None # not initialized until after the sprite manager
     
     def init_trees(self) -> None:
@@ -91,7 +108,14 @@ class SpriteManager:
                     save_data=self.save_data['sprites']['tree'][i] if self.save_data else None
                 )
         self.wood_gathering = WoodGathering(
-            self.tile_map, self.names_to_ids, self.tree_sprites, self.tree_map, self.cam_offset, self.get_tool_strength, self.pick_up_item, self.rect_in_sprite_radius
+            self.tile_map, 
+            self.names_to_ids, 
+            self.tree_sprites, 
+            self.tree_map, 
+            self.cam_offset, 
+            self.get_tool_strength, 
+            self.pick_up_item, 
+            self.rect_in_sprite_radius
         )
 
     def init_clouds(self, player: pg.sprite.Sprite) -> None:
@@ -150,6 +174,9 @@ class SpriteManager:
     
     def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[pg.sprite.Group]:
         return set(group for group in self.all_groups.values() if sprite in group)
+
+    def update_oxygen_level(self, spr: pg.sprite.Sprite) -> None:
+        pass
 
     def get_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int]) -> dict[str, any]:
         tile_x, tile_y = tiles_covered if isinstance(tiles_covered, tuple) else tiles_covered[0] # only extract the topleft coordinate for multi-tile items

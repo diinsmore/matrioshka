@@ -43,18 +43,32 @@ class Main:
         self.asset_mgr = AssetManager()
         assets = self.asset_mgr.assets
 
-        self.physics_engine = PhysicsEngine(self.proc_gen.tile_map, self.proc_gen.names_to_ids, self.proc_gen.ids_to_names, self.keyboard.key_bindings)
+        self.physics_engine = PhysicsEngine(self.proc_gen, self.cam.offset, self.keyboard.key_bindings)
         
         self.sprite_mgr = SpriteManager(
-            screen, self.cam.offset, assets, self.proc_gen.tile_map, self.proc_gen.names_to_ids, self.proc_gen.ids_to_names, self.proc_gen.tree_map,
-            self.proc_gen.height_map, self.proc_gen.current_biome, self.proc_gen.get_tile_material, self.physics_engine.sprite_movement, self.physics_engine.collision_map,
-            self.mouse, self.keyboard, save_data
+            screen, 
+            self.cam.offset, 
+            assets, 
+            self.proc_gen,
+            self.physics_engine.sprite_movement, 
+            self.physics_engine.collision_map,
+            self.mouse, 
+            self.keyboard, 
+            save_data
         )
-        
         self.player = Player( 
-            player_xy if save_data else self.proc_gen.player_spawn_point, load_subfolders(join('..', 'graphics', 'player')), 
-            [self.sprite_mgr.all_sprites, self.sprite_mgr.active_sprites, self.sprite_mgr.player_sprite, self.sprite_mgr.human_sprites, self.sprite_mgr.animated_sprites], 
-            self.input_mgr, self.proc_gen.tile_map, self.proc_gen.current_biome, self.proc_gen.biome_order, save_data=player_data if save_data else None
+            screen,
+            player_xy if save_data else self.proc_gen.player_spawn_point, 
+            load_subfolders(join('..', 'graphics', 'player')), 
+            [getattr(self.sprite_mgr, spr_group) for spr_group in (
+                'all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites'
+            )],
+            self.input_mgr, 
+            self.proc_gen.tile_map, 
+            self.proc_gen.current_biome, 
+            self.proc_gen.biome_order, 
+            assets,
+            save_data=player_data if save_data else None
         )
         self.sprite_mgr.player = self.player
 
@@ -107,6 +121,7 @@ class Main:
         self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
         self.graphics_engine.update(self.player.current_biome, dt) 
         self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
+        self.graphics_engine.terrain.render_water()
 
     def run(self) -> None:
         while self.running:

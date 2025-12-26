@@ -10,17 +10,27 @@ from collections import defaultdict
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
 class PhysicsEngine:
-    def __init__(self, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], key_bindings: dict[str, int]):
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
+    def __init__(self, proc_gen: ProcGen, cam_offset: pg.Vector2, key_bindings: dict[str, int]):
+        self.tile_map: np.ndarray = proc_gen.tile_map
+        self.names_to_ids: dict[str, int] = proc_gen.names_to_ids
+        self.ids_to_names: dict[int, str] = proc_gen.ids_to_names
         self.key_bindings = key_bindings
+        self.cam_offset = cam_offset
         
         self.collision_map = CollisionMap(self.tile_map, self.names_to_ids)
-        self.collision_detection = CollisionDetection(self.collision_map, self.tile_map, self.names_to_ids, self.ids_to_names, self.step_over_tile)
+        self.collision_detection = CollisionDetection(
+            self.collision_map, 
+            self.tile_map, 
+            self.names_to_ids, 
+            self.ids_to_names, 
+            self.cam_offset, 
+            self.step_over_tile
+        )
         self.sprite_movement = SpriteMovement(
-            self.tile_map, self.names_to_ids, self.collision_detection.tile_collision_update, self.key_bindings['move left'], self.key_bindings['move right'],
-            self.key_bindings['jump']
+            self.tile_map, 
+            self.names_to_ids, 
+            self.collision_detection.tile_collision_update, 
+            self.key_bindings
         )
 
     def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
@@ -92,34 +102,46 @@ class CollisionMap:
         
 
 class CollisionDetection:
-    def __init__(self,  collision_map: CollisionMap, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], step_over_tile: callable):
+    def __init__(
+        self, 
+        collision_map: CollisionMap, 
+        tile_map: np.ndarray, 
+        names_to_ids: dict[str, int], 
+        ids_to_names: dict[int, str], 
+        cam_offset: pg.Vector2,
+        step_over_tile: callable
+    ):
         self.collision_map = collision_map
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
         self.ids_to_names = ids_to_names
+        self.cam_offset = cam_offset
         self.step_over_tile = step_over_tile
 
         self.ramp_ids = {self.names_to_ids[tile] for tile in self.names_to_ids if 'ramp' in tile}
+        self.liquid_ids = {self.names_to_ids['water']} # TODO: add water
 
-    def tile_collision_update(self, sprite: pg.sprite.Sprite, axis: str) -> None:
-        '''adjust movement/positioning upon detecting a tile collision'''
-        tiles_near = self.collision_map.search_map(sprite)
+    def tile_collision_update(self, spr: pg.sprite.Sprite, axis: str) -> None:
+        tiles_near = self.collision_map.search_map(spr)
         if not tiles_near: # surrounded by air
-            sprite.grounded = False
-            sprite.state = 'jumping' # the jumping graphic applies to both jumping/falling
+            spr.grounded = False
+            spr.state = 'jumping' # the jumping graphic applies to both jumping/falling
             return
-        
         for tile in tiles_near:
-            if sprite.rect.colliderect(tile):
+            if spr.rect.colliderect(tile):
                 tile_id = self.tile_map[tile.x // TILE_SIZE, tile.y // TILE_SIZE]
                 if tile_id in self.ramp_ids:
-                    self.ramp_collision(sprite, tile, 'left' if 'left' in self.ids_to_names[tile_id] else 'right')
+                    self.ramp_collision(spr, tile, 'left' if 'left' in self.ids_to_names[tile_id] else 'right')
+                elif tile_id in self.liquid_ids:
+                    self.check_spr_underwater(spr)
                 else:
-                    if axis == 'x' and sprite.direction.x:
-                        self.tile_collision_x(sprite, tile, 'right' if sprite.direction.x > 0 else 'left')
+                    if spr.underwater:
+                        self.check_spr_underwater(spr)
 
-                    elif axis == 'y' and sprite.direction.y:
-                        self.tile_collision_y(sprite, tile, 'up' if sprite.direction.y < 0 else 'down')
+                    if axis == 'x' and spr.direction.x:
+                        self.tile_collision_x(spr, tile, 'right' if spr.direction.x > 0 else 'left')
+                    elif axis == 'y' and spr.direction.y:
+                        self.tile_collision_y(spr, tile, 'up' if spr.direction.y < 0 else 'down')
  
     def tile_collision_x(self, sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
         if not self.step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):
@@ -175,16 +197,39 @@ class CollisionDetection:
             sprite.direction.y = 0
         
         sprite.direction.x = 0 # otherwise the player paused midway through ascending the ramp
-        
+    
+    def check_spr_underwater(self, spr: pg.sprite.Sprite) -> None:
+        spr_w, spr_h = spr.rect.width // TILE_SIZE, spr.rect.height // TILE_SIZE
+        spr_tile_x, spr_tile_y = spr.rect.left // TILE_SIZE, spr.rect.top // TILE_SIZE
+        spr.underwater = all(
+            self.tile_map[int(spr_tile_x) + x, int(spr_tile_y) + y] == self.names_to_ids['water'] 
+            for x in range(int(spr_w)) for y in range(int(spr_h))
+        )
+        if spr.underwater:
+            spr.direction.x = 1.5
+            if spr.gravity == spr.default_gravity:
+                spr.gravity //= 10
+            if spr.jump_height == spr.default_jump_height:
+                spr.jump_height = int(spr.jump_height / 1.5)
+        else:
+            spr.gravity = spr.default_gravity
+            spr.jump_height = spr.default_jump_height
+
 
 class SpriteMovement:
-    def __init__(self, tile_map: np.ndarray, names_to_ids: dict[str, int], tile_collision_update: callable, key_move_left: int, key_move_right: int, key_jump: int) -> None:
+    def __init__(
+        self, 
+        tile_map: np.ndarray, 
+        names_to_ids: dict[str, int], 
+        tile_collision_update: callable, 
+        key_bindings: dict[str, int]
+    ): 
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
         self.tile_collision_update = tile_collision_update
-        self.key_move_left = key_move_left
-        self.key_move_right = key_move_right
-        self.key_jump = key_jump
+        self.key_move_left = key_bindings['move left']
+        self.key_move_right = key_bindings['move right']
+        self.key_jump = key_bindings['jump']
 
         self.active_states = {'jumping', 'mining', 'chopping'} # TODO: revisit this line in case more relevant states are added
 

@@ -8,11 +8,16 @@ class AssetManager:
     def __init__(self):
         self.assets = {
             'graphics': {
-                'clouds': load_folder(join('..', 'graphics', 'weather', 'clouds')), 'consumables': load_subfolders(join('..', 'graphics', 'consumables')), 
-                'decor': load_subfolders(join('..', 'graphics', 'decor')), 'icons': load_folder(join('..', 'graphics', 'ui', 'icons')), 
-                'minerals': load_subfolders(join('..', 'graphics', 'minerals')), 'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')), 
-                'research': load_folder(join('..', 'graphics', 'research')), 'storage': load_folder(join('..', 'graphics', 'storage')), 
-                'tools': load_folder(join('..', 'graphics', 'tools')), 'ui': load_folder(join('..', 'graphics', 'ui')), 
+                'clouds': load_folder(join('..', 'graphics', 'weather', 'clouds')), 
+                'consumables': load_subfolders(join('..', 'graphics', 'consumables')), 
+                'decor': load_subfolders(join('..', 'graphics', 'decor')), 
+                'icons': load_folder(join('..', 'graphics', 'ui', 'icons')), 
+                'minerals': load_subfolders(join('..', 'graphics', 'minerals')), 
+                'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')), 
+                'research': load_folder(join('..', 'graphics', 'research')), 
+                'storage': load_folder(join('..', 'graphics', 'storage')), 
+                'tools': load_folder(join('..', 'graphics', 'tools')), 
+                'ui': load_folder(join('..', 'graphics', 'ui')), 
                 'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport directions')) 
             },
             'fonts': {
@@ -41,7 +46,7 @@ class AssetManager:
     def load_tile_graphics(self) -> None:
         for tile in [*TILES.keys(), 'water']:
             self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', f'{tile}.png'))
-        self.graphics['water'].set_alpha(150)
+        self.graphics['water'].set_alpha(80)
         for tile in RAMP_TILES:
             self.graphics[tile] = load_image(join('..', 'graphics', 'terrain', 'tiles', 'ramps', f'{tile}.png'))
 

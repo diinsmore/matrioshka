@@ -54,7 +54,7 @@ class ItemPlacement:
             x, y = tile_xy
             valid = all((
                 self.can_reach_tile(x, y, sprite.rect.center),
-                self.tile_map[x, y] == self.names_to_ids['air'],
+                self.tile_map[x, y] in {self.names_to_ids['air'], self.names_to_ids['water']},
                 self.valid_item_border(x, y, single_tile=True) if 'pipe' not in sprite.item_holding else self.valid_pipe_border(x, y, int(sprite.item_holding[-1]))
             ))
         else:

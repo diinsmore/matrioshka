@@ -214,15 +214,14 @@ class Terrain:
                         self.screen.blit(img, (biome_x_offset + (img_width * x), base_y + (img_height * y)) - self.cam_offset)
 
     def render_tiles(self) -> None:
-        visible_chunks = self.chunk_manager.update()
-        air_ID = self.names_to_ids['air']
+        air_id = self.names_to_ids['air']
         mining_map_keys = self.mining_map.keys()
-        for coords in visible_chunks: # all visible tile coordinates
+        for coords in self.chunk_manager.update(): # all visible tile coordinates
             for (x, y) in coords: # individual tile coordinates
                 # ensure that the tile is within the map borders & is a solid tile
-                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != air_ID:
+                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] != air_id:
                     tile = self.get_tile_type(x, y)
-                    if tile == 'item extended' or 'inserter' in tile: # not rendering inserters here otherwise the default surface remains after being rotated
+                    if tile in {'water', 'item extended'} or 'inserter' in tile: # not rendering inserters here otherwise the default surface remains after being rotated
                         continue 
                     elif tile == 'tree base':
                         tile = 'dirt' # otherwise the tile at the base of the tree won't be rendered
@@ -230,6 +229,13 @@ class Terrain:
                         self.get_mined_tile_image(x, y) if (x, y) in mining_map_keys else self.graphics[tile], 
                         pg.Vector2(x * TILE_SIZE, y * TILE_SIZE) - self.cam_offset
                     )
+    
+    def render_water(self) -> None:
+        water_id = self.names_to_ids['water']
+        for coords in self.chunk_manager.update():
+            for (x, y) in coords:
+                if 0 <= x < MAP_SIZE[0] and 0 <= y < MAP_SIZE[1] and self.tile_map[x, y] == water_id:
+                    self.screen.blit(self.graphics['water'], pg.Vector2(x * TILE_SIZE, y * TILE_SIZE) - self.cam_offset)
 
     def get_mined_tile_image(self, x: int, y: int) -> None:
         '''reduce the opacity of a given tile as it's mined away'''

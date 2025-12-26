@@ -28,7 +28,7 @@ BIOMES = { # TODO: the highlands & snow noise parameters are especially in need 
         'tile probs': {'dirt': 35, 'stone': 25, 'clay': 7, 'tin': 5, 'coal': 9, 'iron': 11, 'copper': 8},
         'liquid probs': {'water': 7, 'lava': 2},
         'tree probs': 30,
-        'lake prob': 15
+        'lake prob': 10
     },
     'taiga': {
         'height map': {'scale': 375, 'octaves': 4, 'persistence': 1.3, 'lacunarity': 1.6},
@@ -37,7 +37,7 @@ BIOMES = { # TODO: the highlands & snow noise parameters are especially in need 
         'tile probs': {'stone': 35, 'dirt': 25, 'clay': 4, 'ice': 15, 'coal': 13, 'iron': 8},
         'liquid probs': {'water': 5},
         'tree probs': 20,
-        'lake prob': 10
+        'lake prob': 5
     },
     'tundra': {
         'height map': {'scale': 450, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 1.5},

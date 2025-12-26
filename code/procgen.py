@@ -8,7 +8,7 @@ from helper_functions import load_image
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 class ProcGen:
-    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any]|None, player_xy: list[int, int]|None):
+    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any] | None, player_xy: list[int, int] | None):
         self.screen = screen
         self.cam_offset = cam_offset
         self.saved_data = saved_data
@@ -23,12 +23,7 @@ class ProcGen:
             self.biome_order = self.order_biomes()
             self.current_biome = 'forest'
             self.terrain_gen = TerrainGen(self.names_to_ids, self.biome_order, self.current_biome)
-            self.tile_map = self.terrain_gen.tile_map
-            self.height_map = self.terrain_gen.height_map
-            self.cave_maps = self.terrain_gen.cave_gen.maps
-            self.tree_gen = TreeGen(self.tile_map, self.names_to_ids, self.height_map, self.valid_spawn_point, self.biome_order)
-            self.tree_map = self.tree_gen.tree_map
-            self.gen_world()
+            self.tile_map, self.height_map, self.tree_map = self.terrain_gen.tile_map, self.terrain_gen.height_map, self.terrain_gen.tree_gen.map
             self.player_spawn_point = self.get_player_spawn_point()
         
     def load_saved_data(self) -> None:
@@ -65,13 +60,12 @@ class ProcGen:
     @staticmethod
     def order_biomes() -> dict[str, int]:
         # TODO: randomize this sequence
-        surface_biomes = list(BIOMES.keys())[:-1]
-        return {biome: i for i, biome in enumerate(surface_biomes)}
+        return {biome: i for i, biome in enumerate(list(BIOMES.keys())[:-1])} # excluding the underworld
 
     def get_player_spawn_point(self) -> tuple[int, int]:
         center_x = MAP_SIZE[0] // 2
         y = int(self.height_map[center_x])
-        if self.valid_spawn_point(center_x, y): 
+        if self.terrain_gen.valid_spawn_point(center_x, y): 
             return (center_x * TILE_SIZE, y * TILE_SIZE)
         else:
             valid_coords = []
@@ -84,15 +78,6 @@ class ProcGen:
                 return (spawn_point[0] * TILE_SIZE, spawn_point[1] * TILE_SIZE)
             else:
                 return (center_x * TILE_SIZE, y * TILE_SIZE)
-
-    def valid_spawn_point(self, x: int, y: int) -> bool:
-        air = self.names_to_ids['air'] 
-        return all(self.tile_map[x + dx, y] != air for dx in (-1, 0, 1)) and \
-        all(self.tile_map[x + dx, y + dy] == air for dx, dy in ((-1, -1), (0, -1), (1, -1)))
-
-    def gen_world(self) -> None:
-        self.terrain_gen.run()
-        self.tree_gen.get_tree_locations()
 
     def make_save(self) -> dict[str, list | dict]:
         return {
@@ -127,8 +112,12 @@ class TerrainGen:
         } 
         for biome in self.tile_probs_max_idxs.keys():
             self.tile_probs_max_idxs[biome]['depth 3'] = len(BIOMES[biome]['tile probs']) # all biome-specific tiles are available at this level
-        self.min_lake_width = 5
+    
         self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed, self.current_biome)
+        self.place_tiles()
+        self.lake_gen = LakeGen(self.tile_map, self.height_map, self.biome_order, self.names_to_ids)
+
+        self.tree_gen = TreeGen(self.tile_map, self.names_to_ids, self.height_map, self.valid_spawn_point, self.biome_order)
 
     def gen_height_map(self) -> np.ndarray:
         height_map = np.zeros(MAP_SIZE[0], dtype=np.float32)
@@ -154,44 +143,17 @@ class TerrainGen:
         noise_params, elev_params = biome_data['height map'], biome_data['elevation']
         top, bottom = elev_params['top'], elev_params['bottom']
         elev_range = bottom - top
-        noise_array = np.array([noise.pnoise1(x / noise_params['scale'], noise_params['octaves'], noise_params['persistence'], noise_params['lacunarity'], 
-            repeat=-1, base=self.seed) for x in map_slice], dtype=np.float32)
+        noise_array = np.array([
+            noise.pnoise1(
+                x / noise_params['scale'], 
+                noise_params['octaves'], 
+                noise_params['persistence'], 
+                noise_params['lacunarity'], 
+                repeat=-1, base=self.seed
+            ) for x in map_slice
+        ], dtype=np.float32)
         half_elev = elev_range // 2
         return top + half_elev + (noise_array * half_elev)
-    
-    def gen_lakes(self) -> None:
-        for biome in (b for b in BIOMES if 'lake prob' in BIOMES[b].keys()):
-            start_x = self.biome_order[biome] * BIOME_WIDTH
-            end_x = start_x + BIOME_WIDTH
-            lake_prob = BIOMES[biome]['lake prob']
-            for x in range(start_x, end_x, self.min_lake_width):
-                elev = int(self.height_map[x])
-                if all(int(self.height_map[x + i]) == elev for i in range(1, self.min_lake_width)) and randint(0, 100) < lake_prob: # only form on flat land
-                    self.carve_lake_area(x, elev)
-    
-    def carve_lake_area(self, x: int, elev: int) -> None:
-        left_x, right_x, width = self.get_lake_borders(x, elev)
-        for i in range(width):
-            x = left_x + i
-            self.tile_map[x, int(self.height_map[x])] = self.names_to_ids['water']
-
-    def get_lake_borders(self, x: int, elev: int) -> tuple[int, int, int]: # extend the left/right borders until reaching a change in elevation
-        left_x = x
-        for i in range(x): 
-            current_elev = int(self.height_map[left_x - i])
-            if current_elev != elev:
-                if current_elev < elev:
-                    left_x += 1 # keep the previous solid tile to avoid overflowing
-                break
-            left_x -= 1
-        right_x = x + self.min_lake_width - 1
-        for i in range(MAP_SIZE[0] - right_x):
-            if int(self.height_map[right_x + i]) != elev:
-                if int(self.height_map[right_x + i]) < elev:
-                    right_x -= 1
-                break
-            right_x += 1
-        return left_x, right_x, right_x - left_x
             
     @staticmethod
     def get_biome_tile(current_biome: str) -> str:
@@ -239,7 +201,7 @@ class TerrainGen:
         for biome, idx in self.biome_order.items(): 
             biome_cols = (x_axs // BIOME_WIDTH == idx)
             for depth_idx, mask in enumerate(self.get_depth_masks(rel_depth, underground_mask)):
-                depth_mask = mask & biome_cols
+                depth_mask = mask & biome_cols 
                 if not depth_mask.any(): # doesn't represent the current depth
                     continue
                 biome_tile_probs = list(tile_probs[biome].values())
@@ -255,6 +217,7 @@ class TerrainGen:
         masks = []
         if self.current_biome not in self.cave_gen.maps.keys():
             self.cave_gen.gen_map(self.current_biome)
+
         for i, v in enumerate(self.depth_lvls):
             below_max = rel_depth < v
             above_min = rel_depth >= (0 if i == 0 else self.depth_lvls[i - 1])
@@ -262,14 +225,14 @@ class TerrainGen:
             masks.append(below_max & above_min & underground_tiles & ~cave_mask)
         return masks
 
+    def valid_spawn_point(self, x: int, y: int) -> bool:
+        air, water = self.names_to_ids['air'], self.names_to_ids['water']
+        return all(self.tile_map[x + dx, y] not in {'air', 'water'} for dx in (-1, 0, 1)) and \
+        all(self.tile_map[x + dx, y + dy] == air for dx, dy in ((-1, -1), (0, -1), (1, -1)))
+
     @staticmethod
     def scale_tile_probs(probs: list[int], biome: str, max_idx: int) -> list[float]:
         return [p / sum(probs) for p in probs] # default values increase with fewer available tiles to select from
-
-    def run(self) -> None:
-        self.gen_height_map()
-        self.place_tiles()
-        self.gen_lakes()
 
 
 class CaveGen:
@@ -319,18 +282,17 @@ class TreeGen:
         self.height_map = height_map
         self.valid_spawn_point = valid_spawn_point
         self.biome_order = biome_order
+        self.map = set()
+        self.biomes_covered = ((name, idx) for name, idx in self.biome_order.items() if 'tree probs' in BIOMES[name].keys())
+        self.get_tree_locations()
 
-        self.tree_map = set()
-        self.biomes_covered = [{'name': name, 'idx': idx} for name, idx in self.biome_order.items() if 'tree probs' in BIOMES[name].keys()]
-        
     def get_tree_locations(self) -> None:
-        for data in self.biomes_covered:
-            start_x = data['idx'] * BIOME_WIDTH
+        for name, idx in self.biomes_covered:
+            start_x = idx * BIOME_WIDTH
             for x in range(start_x, start_x + BIOME_WIDTH):
                 y = int(self.height_map[x]) # surface level
-                if self.valid_spawn_point(x, y) and not self.get_tree_neighbors(x, y, 2, True, True) and \
-                randint(0, 100) <= self.get_tree_prob(data['name'], x, y):
-                    self.tree_map.add((x, y))
+                if self.valid_spawn_point(x, y) and not self.get_tree_neighbors(x, y, 2, True, True) and randint(0, 100) <= self.get_tree_prob(name, x, y):
+                    self.map.add((x, y))
                     self.tile_map[x, y] = self.names_to_ids['tree base']
     
     def get_tree_prob(self, current_biome: str, x: int, y: int) -> int:
@@ -338,11 +300,67 @@ class TreeGen:
         scale_factor = default_prob // 10
         return default_prob + scale_factor * self.get_tree_neighbors(x, y, 10, True, False)
         
-    def get_tree_neighbors(self, x: int, y: int, sample_size: int, check_left: bool = True, check_right: bool = True) -> int:
+    def get_tree_neighbors(self, x: int, y: int, sample_size: int, check_left: bool=True, check_right: bool=True) -> int:
         num_neighbors = 0
         if check_left: # search a given number of tiles left of the starting point
-            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x - dx, y) in self.tree_map)
-
+            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x - dx, y) in self.map)
         if check_right:
-            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x + dx, y) in self.tree_map)
-        return num_neighbors 
+            num_neighbors += sum(1 for dx in range(1, sample_size + 1) if (x + dx, y) in self.map)
+        return num_neighbors
+
+
+class LakeGen:
+    def __init__(self, tile_map: np.ndarray, height_map: np.ndarray, biome_order: dict[str, int], names_to_ids: dict[str, int]):
+        self.tile_map = tile_map
+        self.height_map = height_map
+        self.biome_order = biome_order
+        self.names_to_ids = names_to_ids
+        
+        self.min_width = 5
+        self.max_depth = 10
+        self.map = []
+        self.run()
+
+    def run(self) -> None:
+        for biome in (b for b in BIOMES if 'lake prob' in BIOMES[b].keys()):
+            start_x = self.biome_order[biome] * BIOME_WIDTH
+            end_x = start_x + BIOME_WIDTH
+            lake_prob = BIOMES[biome]['lake prob']
+            for x in range(start_x, end_x, self.min_width):
+                elev = int(self.height_map[x])
+                if all(int(self.height_map[x + i]) == elev for i in range(1, self.min_width)) and randint(0, 100) < lake_prob: # only form on flat land
+                    self.carve_area(x, elev)
+
+        self.map = np.array(self.map, dtype=np.int16)
+
+    def carve_area(self, x: int, elev: int) -> None:
+        left_x, right_x, width = self.get_borders(x, elev)
+        depth = randint(1, self.max_depth)
+        for i in range(width):
+            x = left_x + i
+            self.tile_map[x, int(self.height_map[x])] = self.names_to_ids['water']
+            for j in range(depth):
+                self.tile_map[x, int(self.height_map[x]) + j] = self.names_to_ids['water']
+        
+    def get_borders(self, x: int, elev: int) -> tuple[int, int, int]: # extend the left/right borders until reaching a change in elevation
+        left_x = x
+        for i in range(x): 
+            current_elev = int(self.height_map[left_x - i])
+            if current_elev != elev:
+                if current_elev < elev:
+                    left_x += 1 # keep the previous solid tile to avoid overflowing
+                break
+            left_x -= 1
+
+        right_x = x + self.min_width - 1
+        for i in range(MAP_SIZE[0] - right_x):
+            if int(self.height_map[right_x + i]) != elev:
+                if int(self.height_map[right_x + i]) < elev:
+                    right_x -= 1
+                break
+            right_x += 1
+        
+        width = right_x - left_x
+        for i in range(width):
+            self.map.append((left_x, int(self.height_map[left_x + i])))
+        return left_x, right_x, width
