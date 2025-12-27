@@ -175,9 +175,6 @@ class SpriteManager:
     def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[pg.sprite.Group]:
         return set(group for group in self.all_groups.values() if sprite in group)
 
-    def update_oxygen_level(self, spr: pg.sprite.Sprite) -> None:
-        pass
-
     def get_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int]) -> dict[str, any]:
         tile_x, tile_y = tiles_covered if isinstance(tiles_covered, tuple) else tiles_covered[0] # only extract the topleft coordinate for multi-tile items
         params = {

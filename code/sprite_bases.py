@@ -8,7 +8,9 @@ if TYPE_CHECKING:
 import pygame as pg
 from dataclasses import dataclass, field
 
-from settings import TILE_SIZE
+from settings import TILE_SIZE, Z_LAYERS, GRAVITY, BIOME_WIDTH
+from inventory import SpriteInventory
+from alarm import Alarm
 
 class SpriteBase(pg.sprite.Sprite):
     def __init__(self, xy: tuple[int, int], image: pg.Surface, z: dict[str, int], sprite_groups: list[pg.sprite.Group]):
@@ -21,8 +23,116 @@ class SpriteBase(pg.sprite.Sprite):
         self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
 
 
+class Colonist(pg.sprite.Sprite):
+    def __init__(
+        self,
+        screen: pg.Surface,
+        xy: tuple[int, int], 
+        cam_offset: pg.Vector2,
+        frames: dict[str, pg.Surface], 
+        sprite_groups: list[pg.sprite.Group], 
+        input_manager: InputManager, 
+        tile_map: np.ndarray, 
+        current_biome: str,
+        biome_order: dict[str, int], 
+        assets: dict[str, any],
+        save_data: dict[str, any] | None
+    ):
+        super().__init__(*sprite_groups)
+        self.screen = screen
+        self.spawn_point, self.xy = xy, xy
+        self.cam_offset = cam_offset
+        self.frames = frames
+        self.sprite_groups = sprite_groups
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
+        self.tile_map = tile_map
+        self.current_biome = current_biome
+        self.biome_order = biome_order
+        self.graphics = assets['graphics']
+        self.save_data = save_data
+        
+        self.state = 'idle'
+        self.frame_idx = 0
+        self.image = self.frames[self.state][self.frame_idx]
+        self.rect = self.image.get_rect(midbottom=self.xy)
+        self.z = Z_LAYERS['main']
+        self.direction = pg.Vector2()
+        self.facing_left = save_data['facing left'] if save_data else True
+        self.speed = 225
+        self.animation_speed = {'walking': 8, 'mining': 4, 'jumping': 0}
+        self.grounded = False
+        self.default_gravity, self.gravity = GRAVITY, GRAVITY
+        self.default_jump_height, self.jump_height = 350, 350 
+        self.hearts = save_data['lives'] if save_data else 8
+        self.inventory = SpriteInventory(parent_sprite=self)
+        self.item_holding = save_data['item holding'] if save_data else None
+        self.arm_strength = 4
+        self.underwater = False
+        self.oxygen_lvl, self.max_oxygen_lvl = 8, 8
+        self.oxygen_icon = self.graphics['icons']['oxygen']
+        self.oxygen_icon_w, self.oxygen_icon_h = self.oxygen_icon.get_size()
+        self.alarms = {'lose oxygen': Alarm(1500, self.lose_oxygen, False, True)}
+    
+    def get_current_biome(self) -> None:
+        if self.direction:
+            biome_idx = (self.rect.x // TILE_SIZE) // BIOME_WIDTH
+            if self.biome_order[self.current_biome] != biome_idx:
+                for biome in self.biome_order.keys():
+                    if self.biome_order[biome] == biome_idx:
+                        self.current_biome = biome
+                        return
+
+    def update_oxygen_level(self) -> None:
+        if self.underwater:
+            if not self.alarms['lose oxygen'].running:
+                self.alarms['lose oxygen'].start()
+            else:
+                self.alarms['lose oxygen'].update()
+            self.render_oxygen_icons()
+
+    def lose_oxygen(self) -> None:
+        if self.oxygen_lvl >= 1:
+            self.oxygen_lvl -= 1
+        else:
+            self.hearts -= 1
+            if not self.hearts:
+                self.die()
+    
+    def die(self) -> None:
+        if self.z == Z_LAYERS['player']: 
+            self.respawn()
+        else:
+            self.kill()
+
+    def drop_items(self) -> None:
+        pass
+
+    def render_oxygen_icons(self) -> None:
+        x_padding = self.oxygen_icon_w * (self.oxygen_lvl // 2)
+        for i in range(self.oxygen_lvl):
+            self.screen.blit(
+                self.oxygen_icon, 
+                self.rect.midtop - self.cam_offset + pg.Vector2((self.oxygen_icon_w * i) - x_padding, -self.oxygen_icon_h)
+            ) 
+
+    def update(self, dt: float) -> None:
+        self.get_current_biome()
+        self.inventory.get_idx_selection(self.keyboard)
+        self.update_oxygen_level()
+
+    def get_save_data(self) -> dict[str, any]:
+        return {
+            'xy': self.spawn_point, 
+            'current biome': self.current_biome, 
+            'inventory data': {'contents': self.inventory.contents, 'index': self.inventory.index},
+            'facing left': self.facing_left, 
+            'lives': self.health, 
+            'item holding': self.item_holding
+        }
+
+
 @dataclass(slots=True)
-class InvSlot:
+class MachineInvSlot:
     item: str=None
     rect: pg.Rect=None
     valid_inputs: set=None
@@ -31,9 +141,9 @@ class InvSlot:
 
 
 @dataclass
-class Inventory:
+class MachineInventory:
     input_slots: dict[str, InvSlot]=None
-    output_slot: InvSlot=field(default_factory=InvSlot)
+    output_slot: InvSlot=field(default_factory=MachineInvSlot)
 
     def __iter__(self):
         if self.input_slots:
@@ -44,9 +154,24 @@ class Inventory:
 
 class MachineSpriteBase(SpriteBase):
     def __init__(
-        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
-        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any]
+        self, 
+        xy: tuple[int, int], 
+        image: dict[str, dict[str, pg.Surface]], 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        gen_outline: callable, 
+        gen_bg: callable,
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
+        save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.screen = screen
@@ -63,8 +188,20 @@ class MachineSpriteBase(SpriteBase):
         self.render_item_amount = render_item_amount
 
         _vars = vars()
-        self.ui_params = {k: _vars[k] for k in ('screen', 'cam_offset', 'mouse', 'keyboard', 'player', 'assets', 'gen_outline', 'gen_bg', 'rect_in_sprite_radius', 
-            'render_item_amount')}
+        self.ui_params = {
+            k: _vars[k] for k in (
+                'screen', 
+                'cam_offset', 
+                'mouse', 
+                'keyboard', 
+                'player', 
+                'assets', 
+                'gen_outline', 
+                'gen_bg', 
+                'rect_in_sprite_radius', 
+                'render_item_amount'
+            )
+        }
         self.active = False
         self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
         self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
@@ -76,8 +213,20 @@ class MachineSpriteBase(SpriteBase):
 
 class TransportSpriteBase(SpriteBase):
     def __init__(
-        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, save_data: dict[str, any]=None
+        self, 
+        xy: tuple[int, int], 
+        image: dict[str, dict[str, pg.Surface]], 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.image = self.image.copy() # for rotating the inserters

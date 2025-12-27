@@ -214,6 +214,7 @@ class CollisionDetection:
         else:
             spr.gravity = spr.default_gravity
             spr.jump_height = spr.default_jump_height
+            spr.oxygen_lvl = spr.max_oxygen_lvl
 
 
 class SpriteMovement:

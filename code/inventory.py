@@ -10,9 +10,9 @@ from collections import defaultdict
 
 from settings import TILES, TOOLS
 
-class Inventory:
-    def __init__(self, parent_spr: pg.sprite.Sprite, save_data: dict[str, any], default_contents: dict[str, dict[str, int]]=None):
-        self.parent_spr = parent_spr
+class SpriteInventory:
+    def __init__(self, parent_sprite: pg.sprite.Sprite, save_data: dict[str, any]=None, default_contents: dict[str, dict[str, int]]=None):
+        self.parent_sprite = parent_sprite
         if save_data:
             self.contents = save_data['contents']
             self.index = save_data['index']
@@ -45,28 +45,38 @@ class Inventory:
             if item in self.slot_capacity.keys():
                 max_amount = min(amount, self.slot_capacity['item'] - self.contents[item]['amount'])
             self.contents[item]['amount'] += max_amount
-        if not self.parent_spr.item_holding == item:
-            self.parent_spr.item_holding = item
+        if not self.parent_sprite.item_holding == item:
+            self.parent_sprite.item_holding = item
             self.index = self.contents[item]['index']
             
     def remove_item(self, item: str=None, amount: int=1) -> None:
         if item is None:
-            item = self.parent_spr.item_holding
+            item = self.parent_sprite.item_holding
         if self.contents[item]['amount'] - amount >= 1:
             self.contents[item]['amount'] -= amount
         else:
-            self.parent_spr.item_holding = None
+            self.parent_sprite.item_holding = None
             del self.contents[item]
             for i, (name, data) in enumerate(self.contents.items()):
                 data['index'] = i
 
 
-class PlayerInventory(Inventory):
-    def __init__(self, parent_spr: Player, save_data: dict[str, any]):
+class PlayerInventory(SpriteInventory):
+    def __init__(self, parent_sprite: Player, save_data: dict[str, any]):
         super().__init__(
-            parent_spr, save_data, default_contents=None if save_data else {
-            'stone': {'amount': 100}, 'wood': {'amount': 100}, 'copper': {'amount': 10}, 'stone axe': {'amount': 1}, 'stone pickaxe': {'amount': 1}, 'pipe 0': {'amount': 100}, 
-            'burner inserter': {'amount': 10}, 'burner furnace': {'amount': 10}, 'burner drill': {'amount': 10}, 'wood torch': {'amount': 99}
+            parent_sprite, 
+            save_data, 
+            default_contents=None if save_data else {
+                'stone': {'amount': 100}, 
+                'wood': {'amount': 100}, 
+                'copper': {'amount': 10}, 
+                'stone axe': {'amount': 1}, 
+                'stone pickaxe': {'amount': 1}, 
+                'pipe 0': {'amount': 100}, 
+                'burner inserter': {'amount': 10}, 
+                'burner furnace': {'amount': 10}, 
+                'burner drill': {'amount': 10}, 
+                'wood torch': {'amount': 99}
         })
          
     def get_idx_selection(self, keyboard: Keyboard) -> None:
@@ -74,5 +84,5 @@ class PlayerInventory(Inventory):
             if keyboard.pressed_keys[key]:
                 self.index = keyboard.key_map[key]
                 items = list(self.contents.keys())
-                self.parent_spr.item_holding = items[self.index] if self.index < len(items) else None
+                self.parent_sprite.item_holding = items[self.index] if self.index < len(items) else None
                 return

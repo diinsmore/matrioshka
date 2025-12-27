@@ -8,20 +8,50 @@ if TYPE_CHECKING:
 import pygame as pg
 from dataclasses import dataclass, field
 
-from sprite_bases import MachineSpriteBase, Inventory, InvSlot
+from sprite_bases import MachineSpriteBase, MachineInventory, MachineInvSlot
 from settings import MACHINES
 from furnace_ui import FurnaceUI
 from alarm import Alarm
 
 class Furnace(MachineSpriteBase):
     def __init__(
-        self, xy: pg.Vector2, image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
-        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any]
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        gen_outline: callable,
+         gen_bg: callable,
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
+        save_data: dict[str, any]
     ):
         super().__init__(
-            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg, rect_in_sprite_radius, 
-            render_item_amount, save_data
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            tile_map, 
+            obj_map, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
         )
         self.can_smelt = {
             'copper': {'speed': 3000, 'output': 'copper plate'}, 
@@ -72,14 +102,44 @@ class Furnace(MachineSpriteBase):
             
 class BurnerFurnace(Furnace):
     def __init__(
-        self, xy: pg.Vector2, image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
-        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any]
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        gen_outline: callable, 
+        gen_bg: callable,
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
+        save_data: dict[str, any]
     ):  
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
         super().__init__(
-            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg, rect_in_sprite_radius, 
-            render_item_amount, save_data
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            tile_map, 
+            obj_map, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
         )
         self.variant = 'burner'
         self.recipe = MACHINES['burner furnace']['recipe']
@@ -89,13 +149,43 @@ class BurnerFurnace(Furnace):
 
 class SteelFurnace(Furnace):
     def __init__(
-        self, xy: pg.Vector2, image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
-        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any]
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        gen_outline: callable, 
+        gen_bg: callable,
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
+        save_data: dict[str, any]
     ):  
         super().__init__(
-            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg, rect_in_sprite_radius, 
-            render_item_amount, save_data
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset,
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            tile_map, 
+            obj_map, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
         )
         self.variant = 'steel'
         self.recipe = MACHINES['steel furnace']['recipe']
@@ -112,13 +202,43 @@ class SteelFurnace(Furnace):
 
 class ElectricFurnace(Furnace):
     def __init__(
-        self, xy: pg.Vector2, image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, gen_outline: callable, gen_bg: callable,
-        rect_in_sprite_radius: callable, render_item_amount: callable, save_data: dict[str, any]
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        gen_outline: callable, 
+        gen_bg: callable,
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable, 
+        save_data: dict[str, any]
     ):  
         super().__init__(
-            xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, gen_outline, gen_bg, rect_in_sprite_radius, 
-            render_item_amount, save_data
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            mouse, 
+            keyboard, 
+            player, 
+            assets, 
+            tile_map, 
+            obj_map, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount, 
+            save_data
         )
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']

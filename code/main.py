@@ -9,7 +9,7 @@ import re
 from settings import RES, FPS, Z_LAYERS, MAP_SIZE, MAP_SIZE, TILE_SIZE
 from procgen import ProcGen
 from player import Player
-from inventory import Inventory, PlayerInventory
+from inventory import SpriteInventory, PlayerInventory
 from graphics_engine import GraphicsEngine, Camera
 from asset_manager import AssetManager
 from chunk_manager import ChunkManager
@@ -59,10 +59,9 @@ class Main:
         self.player = Player( 
             screen,
             player_xy if save_data else self.proc_gen.player_spawn_point, 
+            self.cam.offset,
             load_subfolders(join('..', 'graphics', 'player')), 
-            [getattr(self.sprite_mgr, spr_group) for spr_group in (
-                'all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites'
-            )],
+            [getattr(self.sprite_mgr, spr_group) for spr_group in ('all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites')],
             self.input_mgr, 
             self.proc_gen.tile_map, 
             self.proc_gen.current_biome, 
@@ -73,14 +72,37 @@ class Main:
         self.sprite_mgr.player = self.player
 
         self.ui = UI(
-            screen, self.cam.offset, assets, self.mouse, self.keyboard, self.player.inventory, self.sprite_mgr, self.player, self.proc_gen.tile_map, self.proc_gen.names_to_ids,
-            self.proc_gen.ids_to_names, save_data
+            screen, 
+            self.cam.offset, 
+            assets, 
+            self.mouse, 
+            self.keyboard, 
+            self.player.inventory, 
+            self.sprite_mgr, 
+            self.player, 
+            self.proc_gen.tile_map, 
+            self.proc_gen.names_to_ids,
+            self.proc_gen.ids_to_names, 
+            save_data
         )
         self.sprite_mgr.ui = self.ui
 
         self.item_placement = ItemPlacement(
-            screen, self.cam.offset, self.proc_gen.tile_map, self.proc_gen.names_to_ids, self.physics_engine.collision_map, self.sprite_mgr, self.mouse, self.keyboard, 
-            self.player, assets, self.ui.gen_outline, self.ui.gen_bg, self.sprite_mgr.rect_in_sprite_radius, self.ui.render_item_amount, self.sprite_mgr.items_init_when_placed, 
+            screen, 
+            self.cam.offset, 
+            self.proc_gen.tile_map, 
+            self.proc_gen.names_to_ids, 
+            self.physics_engine.collision_map, 
+            self.sprite_mgr, 
+            self.mouse, 
+            self.keyboard, 
+            self.player, 
+            assets, 
+            self.ui.gen_outline, 
+            self.ui.gen_bg, 
+            self.sprite_mgr.rect_in_sprite_radius, 
+            self.ui.render_item_amount, 
+            self.sprite_mgr.items_init_when_placed, 
             save_data
         )
         self.sprite_mgr.item_placement = self.item_placement
@@ -90,15 +112,29 @@ class Main:
         self.chunk_mgr = ChunkManager(self.cam.offset)
 
         self.graphics_engine = GraphicsEngine(
-            screen, self.cam, assets['graphics'], self.ui, self.sprite_mgr, self.chunk_mgr, self.keyboard.key_map, self.player, 
-            self.proc_gen.tile_map, self.proc_gen.names_to_ids, self.proc_gen.ids_to_names, self.proc_gen.current_biome, self.proc_gen.biome_order, save_data
+            screen, 
+            self.cam, 
+            assets['graphics'], 
+            self.ui, 
+            self.sprite_mgr, 
+            self.chunk_mgr, 
+            self.keyboard.key_map, 
+            self.player, 
+            self.proc_gen.tile_map, 
+            self.proc_gen.names_to_ids, 
+            self.proc_gen.ids_to_names, 
+            self.proc_gen.current_biome, 
+            self.proc_gen.biome_order, 
+            save_data
         )
 
         def make_save(self, file: str) -> None:
             visited_tiles = self.ui.mini_map.visited_tiles
             data = defaultdict(list, {
-                **self.proc_gen.make_save(), 'current biome': self.player.current_biome, 
-                'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(), 'weather': self.graphics_engine.weather.sky.make_save(), 
+                **self.proc_gen.make_save(), 
+                'current biome': self.player.current_biome, 
+                'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(), 
+                'weather': self.graphics_engine.weather.sky.make_save(), 
                 'sprites': defaultdict(list) 
             })
             self.load_sprite_data(data)

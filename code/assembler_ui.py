@@ -9,12 +9,22 @@ from math import ceil
 
 from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from machine_ui import MachineUI
-from sprite_bases import InvSlot
+from sprite_bases import MachineInvSlot
 
 class AssemblerUI(MachineUI):
     def __init__(
-        self, machine: pg.sprite.Sprite, screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, 
-        assets: dict[str, dict[str, any]], gen_outline: callable, gen_bg: callable, rect_in_sprite_radius: callable, render_item_amount: callable
+        self, 
+        machine: pg.sprite.Sprite, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        mouse: Mouse, 
+        keyboard: Keyboard, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable
     ):
         super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
         self.bg_width, self.bg_height = 200, 200
@@ -119,7 +129,7 @@ class AssemblerUI(MachineUI):
         for i, item in enumerate(self.machine.recipe):
             rect = pg.Rect(self.bg_rect.topleft + pg.Vector2((self.padding * (i + 1)) + (i * self.inv_box_len), y), (self.inv_box_len, self.inv_box_len))
             if item not in self.machine.inv.input_slots:
-                self.inv.input_slots[item] = InvSlot(item, rect, valid_inputs={item})
+                self.inv.input_slots[item] = MachineInvSlot(item, rect, valid_inputs={item})
             else:
                 self.inv.input_slots[item].rect = rect
         self.inv.output_slot.rect = pg.Rect(
