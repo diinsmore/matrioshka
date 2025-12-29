@@ -45,7 +45,7 @@ class SpriteManager:
         self.current_biome = proc_gen.current_biome
         self.names_to_ids, self.ids_to_names = proc_gen.names_to_ids, proc_gen.ids_to_names
         self.get_tile_material = proc_gen.get_tile_material
-        self.sprite_movement: callable = physics_engine.sprite_movement
+        self.sprite_movement = physics_engine.sprite_movement
         self.collision_map = physics_engine.collision_map
         self.input_manager = input_manager
         self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
@@ -155,12 +155,12 @@ class SpriteManager:
         idle_img = sprite.frames['idle'][0]
         sprite.image = idle_img if sprite.facing_left else pg.transform.flip(idle_img, True, False)
 
-    def pick_up_item(self, obj: object, name: str, rect: pg.Rect) -> None:
-        for sprite in self.get_sprites_in_radius(rect, self.human_sprites):
+    def pick_up_item(self, obj: object, name: str, amount: int=1) -> None:
+        for sprite in self.get_sprites_in_radius(obj.rect, self.human_sprites):
             inv = sprite.inventory
-            if sprite.rect.colliderect(rect) and not (name in inv.contents.keys() and inv.contents[name]['amount'] == inv.slot_capacity[name]):
-                inv.add_item(name)
-                self.ui.render_new_item_name(name, rect)
+            if sprite.rect.colliderect(obj.rect) and not (name in inv.contents.keys() and inv.contents[name]['amount'] == inv.slot_capacity[name]):
+                inv.add_item(name, amount)
+                self.ui.render_new_item_name(name, obj.rect, amount)
                 obj.kill()
                 return
 
@@ -295,7 +295,7 @@ class WoodGathering:
         self, 
         tile_map: np.ndarray, 
         names_to_ids: dict[str, int], 
-        tree_sprites: pg.sprite.Group(), 
+        tree_sprites: pg.sprite.Group, 
         tree_map: list[tuple[int, int]], 
         cam_offset: pg.Vector2,
         get_tool_strength: callable, 

@@ -75,29 +75,29 @@ class Tree(Sprite):
             axe_material = sprite.item_holding.split()[0]
             tool_strength = get_tool_strength(sprite)
             self.current_strength = max(0, self.current_strength - tool_strength)
-            
             rel_strength = self.max_strength // tool_strength
             rel_alpha = self.alpha * (1 / rel_strength)
             self.alpha = max(0, self.alpha - rel_alpha)
             self.image.set_alpha(self.alpha)
-          
             if self.current_strength == 0 and self.tree_map_xy in self.tree_map:
                 self.tree_map.remove(self.tree_map_xy)  
                 self.kill()
                 sprite.state = 'idle'
                 self.produce_wood(sprite, pick_up_item)
                 return
-
             self.delay_alarm.start()
     
     def produce_wood(self, sprite: pg.sprite.Sprite, pick_up_item: callable) -> None:
         for i in range(self.total_wood):
-            wood = Wood(
-                pg.Vector2(choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50))), self.rect.top + (self.wood_image.height * i)), 
+            wood = ItemDrop(
+                pg.Vector2(
+                    choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50))), 
+                    self.rect.top + (self.wood_image.height * i)
+                ), 
                 self.wood_image, 
                 Z_LAYERS['main'], 
-                self.wood_sprites,
-                pg.Vector2(-1 if left < self.rect.left else 1, 1), 
+                [self.all_sprites, self.active_sprites, self.wood_sprites],
+                'wood',
                 randint(15, 30), 
                 self.sprite_movement, 
                 pick_up_item
@@ -105,34 +105,3 @@ class Tree(Sprite):
     # the tree map takes care of its coordinate position
     def get_save_data(self) -> dict[str, int]:
         return {'current strength': self.current_strength}
-
-
-class Wood(ItemDrop):
-    def __init__(
-        self, 
-        xy: pg.Vector2, 
-        image: pg.Surface, 
-        z: dict[str, int],
-        sprite_groups: list[pg.sprite.Group], 
-        direction: pg.Vector2, 
-        speed: int, 
-        sprite_movement: callable,
-        pick_up_item: callable
-    ):
-        super().__init__(xy, image, z, sprite_groups)
-        self.direction = direction
-        self.speed = speed
-        self.sprite_movement = sprite_movement
-        self.pick_up_item = pick_up_item
-
-        self.gravity = GRAVITY
-
-    def update(self, dt: float) -> None:
-        self.sprite_movement.move_sprite(self, self.direction.x, dt)
-        if self.direction.x and int(self.direction.y) == 0:
-            self.direction.x = 0
-        
-        self.pick_up_item(self, 'wood', self.rect)
-
-    def get_save_data(self) -> dict[str, list]:
-        return {'xy': list(self.rect.topleft)}

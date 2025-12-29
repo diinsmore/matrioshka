@@ -34,7 +34,7 @@ class SpriteInventory:
         for tool in TOOLS.keys():
             self.slot_capacity[tool] = 99   
 
-    def add_item(self, item: str, amount: int=1) -> None:
+    def add_item(self, item: str, amount: int) -> None:
         items = self.contents.keys()
         if item not in items:
             num_slots_taken = len(items)

@@ -129,22 +129,22 @@ class CollisionDetection:
             spr.grounded = False
             spr.state = 'jumping' # the jumping graphic applies to both jumping/falling
             return
+        has_underwater_attr = hasattr(spr, 'underwater')
         for tile in tiles_near:
             if spr.rect.colliderect(tile):
                 tile_id = self.tile_map[tile.x // TILE_SIZE, tile.y // TILE_SIZE]
                 if tile_id in self.ramp_ids:
                     self.ramp_collision(spr, tile, 'left' if 'left' in self.ids_to_names[tile_id] else 'right')
-                elif tile_id in self.liquid_ids:
-                    self.check_spr_underwater(spr)
                 else:
-                    if spr.underwater:
+                    if has_underwater_attr:
                         self.check_spr_underwater(spr)
-
-                    if axis == 'x' and spr.direction.x:
-                        self.tile_collision_x(spr, tile, 'right' if spr.direction.x > 0 else 'left')
-                    elif axis == 'y' and spr.direction.y:
-                        self.tile_collision_y(spr, tile, 'up' if spr.direction.y < 0 else 'down')
- 
+                        
+                    if tile_id not in self.liquid_ids:
+                        if axis == 'x' and spr.direction.x:
+                            self.tile_collision_x(spr, tile, 'right' if spr.direction.x > 0 else 'left')
+                        elif axis == 'y' and spr.direction.y:
+                            self.tile_collision_y(spr, tile, 'up' if spr.direction.y < 0 else 'down')
+    
     def tile_collision_x(self, sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
         if not self.step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):
             if direction == 'right':
@@ -254,7 +254,6 @@ class SpriteMovement:
         sprite.direction.x = direction_x
         sprite.rect.x += sprite.direction.x * sprite.move_speed * dt
         sprite.rect.x = max(0, min(sprite.rect.x, WORLD_EDGE_RIGHT))
-
         if hasattr(sprite, 'state') and sprite.state == 'idle': # avoid overwriting an active state
             sprite.state = 'walking'
     

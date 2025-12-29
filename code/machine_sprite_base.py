@@ -46,44 +46,50 @@ class Machine(Sprite):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable,
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
-        save_data: dict[str, any]
+        gen_outline: callable=None, 
+        gen_bg: callable=None,
+        rect_in_sprite_radius: callable=None, 
+        render_item_amount: callable=None, 
+        save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.screen = screen
         self.cam_offset = cam_offset
-        self.input_manager = input_manager
+        self.keyboard = input_manager.keyboard
+        self.mouse = input_manager.mouse
         self.player = player
         self.assets = assets
+        self.graphics = assets['graphics']
         self.tile_map = tile_map
         self.obj_map = obj_map
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
-        self.rect_in_sprite_radius = rect_in_sprite_radius
-        self.render_item_amount = render_item_amount
-
-        self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
-        _vars = vars()
-        self.ui_params = {
-            k: _vars[k] for k in (
-                'screen', 
-                'cam_offset', 
-                'input_manager', 
-                'player', 
-                'assets', 
-                'gen_outline', 
-                'gen_bg', 
-                'rect_in_sprite_radius', 
-                'render_item_amount'
-            )
-        }
+        
         self.active = False
-        self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
-        self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
-        self.pipe_connections = {}
+        self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
+        if 'transport_sprites' in sprite_groups:
+            self.image = self.image.copy() # a copy for rotating the inserters
+            self.obj_connections = {}
+        else:
+            self.gen_outline = gen_outline
+            self.gen_bg = gen_bg
+            self.rect_in_sprite_radius = rect_in_sprite_radius
+            self.render_item_amount = render_item_amount
+            _vars = vars()
+            self.ui_params = {
+                k: _vars[k] for k in (
+                    'screen', 
+                    'cam_offset', 
+                    'input_manager', 
+                    'player', 
+                    'assets', 
+                    'gen_outline', 
+                    'gen_bg', 
+                    'rect_in_sprite_radius', 
+                    'render_item_amount'
+                )
+            }
+            self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
+            self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
+            self.pipe_connections = {}
 
     def init_ui(self, ui_cls: MachineUI) -> None:
         self.ui = ui_cls(machine=self, **self.ui_params) # not initializing self.ui until the machine variant (burner/electric) is determined

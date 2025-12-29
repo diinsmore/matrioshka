@@ -30,7 +30,7 @@ class UI:
     ):
         self.screen = screen
         self.cam_offset = cam_offset
-        self.assets = assets
+        self.assets, self.fonts, self.colors = assets, assets['fonts'], assets['colors']
         self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.sprite_manager = sprite_manager
         self.player, self.inventory = player, player.inventory
@@ -120,7 +120,7 @@ class UI:
             font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
             self.screen.blit(font, font.get_rect(topleft = rect.bottomleft))
 
-    def render_new_item_name(self, item_name: str, item_rect: pg.Rect) -> None:
+    def render_new_item_name(self, item_name: str, item_rect: pg.Rect, amount: int) -> None:
         color = self.assets['colors']['text']
         item_total = self.inventory.contents[item_name]['amount']
         world_coords = pg.Vector2(item_rect.midtop)
@@ -129,7 +129,7 @@ class UI:
                 item_name, 
                 color, 
                 255, 
-                self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
+                self.assets['fonts']['item label'].render(f'+{amount} {item_name} ({item_total})', True, color),
                 self.screen, 
                 self.cam_offset, 
                 world_coords, 

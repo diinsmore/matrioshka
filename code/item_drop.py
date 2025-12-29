@@ -1,29 +1,34 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from sprite_manager import SpriteManager
+
 import pygame as pg
+from random import randint, choice
 
 from sprite_base_classes import Sprite
+from settings import Z_LAYERS, GRAVITY
 
 class ItemDrop(Sprite):
     def __init__(
         self, 
         xy: pg.Vector2,
-        cam_offset: pg.Vector2,
         image: pg.Surface, 
-        screen: pg.Surface,
         z: int,
         sprite_groups: list[pg.sprite.Group], 
+        sprite_manager: SpriteManager,
+        direction: pg.Vector2,
         name: str,
-        direction: pg.Vector2, 
-        speed: int, 
-        sprite_movement: callable,
-        pick_up_item: callable
+        sprite: pg.sprite.Sprite=None
     ):
-        super().__init__(xy, cam_offset, image, screen, z, sprite_groups)
-        self.name = name
+        super().__init__(xy, image, z, sprite_groups)
+        self.sprite_movement = sprite_manager.sprite_movement
+        self.pick_up_item = sprite_manager.pick_up_item
         self.direction = direction
-        self.speed = speed
-        self.sprite_movement = sprite_movement
-        self.pick_up_item = pick_up_item
+        self.name = name
+        self.amount = sprite.inventory.contents[name]['amount'] if sprite else 1
 
+        self.move_speed = 1
         self.gravity = GRAVITY
 
     def update(self, dt: float) -> None:
@@ -31,7 +36,7 @@ class ItemDrop(Sprite):
         if self.direction.x and int(self.direction.y) == 0:
             self.direction.x = 0
         
-        self.pick_up_item(self, self.name, self.rect)
+        self.pick_up_item(obj=self, name=self.name, amount=self.amount)
 
     def get_save_data(self) -> dict[str, list]:
         return {'xy': list(self.rect.topleft)}

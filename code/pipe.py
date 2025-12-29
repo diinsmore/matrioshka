@@ -42,10 +42,10 @@ class Pipe(TransportSprite):
         pipe_data = PIPE_TRANSPORT_DIRS[self.variant_idx]
         self.obj_connections = {xy: None for xy in (pipe_data if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs])}
         x, y = self.tile_xy
-        for dx, dy in self.connections if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs]:
+        for dx, dy in self.obj_connections if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs]:
             if (0 < x + dx < MAP_SIZE[0] and 0 < y + dy < MAP_SIZE[1]) and (obj := self.obj_map[x + dx, y + dy]):
                 if isinstance(obj, Pipe):
-                    if (dx * -1, dy * -1) in obj.connections: # ensure the pipes are connected and not just adjacent
+                    if (dx * -1, dy * -1) in obj.obj_connections: # ensure the pipes are connected and not just adjacent
                         self.obj_connections[dx, dy] = obj
                 else:
                     self.obj_connections[dx, dy] = obj # machines don't have a 'facing direction' so no need to check if they're only just adjacent

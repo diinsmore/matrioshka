@@ -5,9 +5,9 @@ if TYPE_CHECKING:
     import numpy as np
 
 import pygame as pg
-from sprite_base_classes import Sprite
+from machine_sprite_base import Machine
 
-class TransportSprite(Sprite):
+class TransportSprite(Machine):
     def __init__(
         self, 
         xy: tuple[int, int], 
@@ -23,17 +23,20 @@ class TransportSprite(Sprite):
         obj_map: np.ndarray, 
         save_data: dict[str, any]=None
     ):
-        super().__init__(xy, image, z, sprite_groups)
-        self.image = self.image.copy() # a copy for rotating the inserters
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
-        self.player = player
-        self.graphics = assets['graphics']
-        self.tile_map = tile_map
-        self.obj_map = obj_map
-
-        self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
+        super().__init__(
+            xy, 
+            image, 
+            z, 
+            sprite_groups, 
+            screen, 
+            cam_offset, 
+            input_manager, 
+            player, 
+            assets, 
+            tile_map, 
+            obj_map, 
+            save_data=save_data
+        )
         self.dir_ui = self.graphics['transport dirs']
         self.item_holding = None
         self.xy_to_cardinal = {

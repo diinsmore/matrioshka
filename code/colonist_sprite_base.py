@@ -3,8 +3,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import InputManager
     import numpy as np
+    from sprite_manager import SpriteManager
 
 import pygame as pg
+from random import choice
 
 from sprite_base_classes import AnimatedSprite
 from inventory import SpriteInventory
@@ -20,8 +22,9 @@ class Colonist(AnimatedSprite):
         frames: dict[str, pg.Surface],
         assets: dict[str, any], 
         screen: pg.Surface,
+        sprite_manager: SpriteManager, 
         sprite_groups: list[pg.sprite.Group],
-        tile_map: np.ndarray,  
+        tile_map: np.ndarray, 
         z: int=Z_LAYERS['main'],
         move_speed: int=225,
         animation_speed: dict[str, int]={'walking': 8, 'mining': 4, 'jumping': 0},
@@ -29,8 +32,9 @@ class Colonist(AnimatedSprite):
         save_data: dict[str, any]=None
     ):
         super().__init__(xy, cam_offset, frames, assets, screen, sprite_groups, z, move_speed, animation_speed, gravity)
-        self.spawn_point, self.xy = xy, xy
+        self.spawn_point = xy
         self.graphics = assets['graphics']
+        self.sprite_manager = sprite_manager
         self.save_data = save_data
         
         self.facing_left = save_data['facing left'] if save_data else True
@@ -45,7 +49,7 @@ class Colonist(AnimatedSprite):
         self.oxygen_lvl, self.max_oxygen_lvl = 8, 8
         self.oxygen_icon = self.graphics['icons']['oxygen']
         self.oxygen_icon_w, self.oxygen_icon_h = self.oxygen_icon.get_size()
-        self.alarms = {'lose oxygen': Alarm(2500, self.lose_oxygen, False, True)}
+        self.alarms = {'lose oxygen': Alarm(500, self.lose_oxygen, False, True)}
     
     def get_current_biome(self) -> None:
         if self.direction:
@@ -85,7 +89,17 @@ class Colonist(AnimatedSprite):
             self.kill()
 
     def drop_inventory(self) -> None:
-        pass
+        for item_name in self.inventory.contents:
+            item = ItemDrop(
+                self.rect.center,
+                self.graphics[item_name],
+                Z_LAYERS['main'],
+                [self.sprite_manager.all_sprites, self.sprite_manager.active_sprites],
+                self.sprite_manager,
+                pg.Vector2(choice((-1, 1)), 1),
+                item_name,
+                self
+            )
 
     def update(self, dt: float) -> None:
         self.get_current_biome()

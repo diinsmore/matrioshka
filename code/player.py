@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import Keyboard
     from procgen import ProcGen
+    from sprite_manager import SpriteManager
 
 import pygame as pg
 
@@ -18,6 +19,7 @@ class Player(Colonist):
         frames: dict[str, int],
         assets: dict[str, any],
         screen: pg.Surface,
+        sprite_manager: SpriteManager,
         sprite_groups: list[pg.sprite.Sprite],
         keyboard: Keyboard, 
         save_data: dict[str, any],
@@ -27,7 +29,8 @@ class Player(Colonist):
             cam_offset, 
             frames, 
             assets,
-            screen, 
+            screen,
+            sprite_manager, 
             sprite_groups, 
             proc_gen.tile_map,  
             save_data=save_data

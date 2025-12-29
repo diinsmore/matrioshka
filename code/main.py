@@ -53,6 +53,7 @@ class Main:
             load_subfolders(join('..', 'graphics', 'player')),
             assets,
             screen,
+            self.sprite_manager,
             [getattr(self.sprite_manager, group) for group in (
                 'all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites'
             )],
