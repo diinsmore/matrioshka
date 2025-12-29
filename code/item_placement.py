@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from sprite_manager import SpriteManager
     from player import Player
+    from procgen import ProcGen
+    from ui import UI
 
 import pygame as pg
 import numpy as np
@@ -14,25 +16,32 @@ from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, 
 
 class ItemPlacement:
     def __init__(
-        self, screen: pg.Surface, cam_offset: pg.Vector2, tile_map: np.ndarray, names_to_ids: dict[str, int], collision_map: dict[tuple[int, int], pg.Rect], 
-        sprite_mgr: SpriteManager, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], gen_outline: callable, gen_bg: callable, 
-        rect_in_sprite_radius: callable, render_item_amount: callable, items_init_when_placed: dict[str, pg.sprite.Sprite], save_data: dict[str, any] | None
+        self, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        proc_gen: ProcGen,
+        collision_map: dict[tuple[int, int], pg.Rect], 
+        sprite_manager: SpriteManager, 
+        input_manager: InputManager,
+        player: Player,
+        assets: dict[str, dict[str, any]], 
+        ui: UI,
+        save_data: dict[str, any]
     ):
         self.screen = screen
         self.cam_offset = cam_offset
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
+        self.tile_map = proc_gen.tile_map
+        self.names_to_ids = proc_gen.names_to_ids
         self.collision_map = collision_map
-        self.sprite_mgr = sprite_mgr
-        self.mouse = mouse
-        self.keyboard = keyboard
+        self.sprite_manager = sprite_manager
+        self.rect_in_sprite_radius = sprite_manager.rect_in_sprite_radius
+        self.items_init_when_placed = sprite_manager.items_init_when_placed
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.player = player
         self.graphics = assets['graphics']
-        self.gen_outline = gen_outline, 
-        self.gen_bg = gen_bg, 
-        self.rect_in_sprite_radius = rect_in_sprite_radius, 
-        self.render_item_amount = render_item_amount, 
-        self.items_init_when_placed = items_init_when_placed
+        self.gen_outline = ui.gen_outline
+        self.gen_bg = ui.gen_bg
+        self.render_item_amount = ui.render_item_amount
         self.save_data = save_data
        
         self.obj_map = np.full(MAP_SIZE, None, dtype=object) # stores every tile an object overlaps with (tile_map only stores the topleft since it controls rendering)
@@ -133,6 +142,6 @@ class ItemPlacement:
 
     def init_obj(self, name: str, tiles_covered: list[tuple[int, int]]) -> None:
         obj = self.items_init_when_placed[name if 'pipe' not in name else name.split(' ')[0]]
-        obj_instance = obj(**self.sprite_mgr.get_init_params(name, tiles_covered)) # don't add the pipe index here, they all use the same Pipe class
+        obj_instance = obj(**self.sprite_manager.get_machine_init_params(name, tiles_covered)) # don't add the pipe index here, they all use the same Pipe class
         for xy in tiles_covered:
             self.obj_map[xy] = obj_instance

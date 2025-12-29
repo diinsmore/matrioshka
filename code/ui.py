@@ -2,11 +2,10 @@ from __future__ import annotations
 from typing import Sequence
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
-    from inventory import Inventory
+    from input_manager import InputManager
     from sprite_manager import SpriteManager
     from player import Player
-    import numpy as np
+    from procgen import ProcGen
 
 import pygame as pg
 from collections import defaultdict
@@ -19,37 +18,64 @@ from alarm import Alarm
 
 class UI:
     def __init__(
-        self, screen: pg.Surface, cam_offset: pg.Vector2, assets: dict[str, dict[str, any]], mouse: Mouse, keyboard: Keyboard, inventory: Inventory, 
-        sprite_manager: SpriteManager, player: Player, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], saved_data: dict[str, any] | None
+        self, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        assets: dict[str, dict[str, any]], 
+        input_manager: InputManager, 
+        sprite_manager: SpriteManager, 
+        player: Player, 
+        proc_gen: ProcGen,
+        saved_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
         self.assets = assets
-        self.mouse = mouse
-        self.keyboard = keyboard
-        self.inventory = inventory
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.sprite_manager = sprite_manager
-        self.player = player
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
+        self.player, self.inventory = player, player.inventory
         self.saved_data = saved_data
 
-        self.mini_map = MiniMap(self.screen, self.cam_offset, self.tile_map, self.names_to_ids, self.ids_to_names, self.gen_outline,
-            self.sprite_manager.mining.get_tile_material, self.saved_data
+        self.mini_map = MiniMap(
+            self.screen, 
+            self.cam_offset, 
+            proc_gen, 
+            self.gen_outline,
+            self.sprite_manager.mining.get_tile_material, 
+            self.saved_data
         )
         
         self.mouse_grid = MouseGrid(self.mouse, self.screen, self.cam_offset, self.get_grid_xy)
 
         self.inventory_ui = InventoryUI(
-            self.screen, self.cam_offset, self.assets, self.mouse, self.keyboard, self.mini_map.outline_h + self.mini_map.padding, self.player,
-            self.sprite_manager.mech_sprites, self.gen_outline, self.gen_bg, self.render_inventory_item_name, self.get_scaled_image, self.get_grid_xy,
-            self.sprite_manager.get_sprites_in_radius, self.render_item_amount
+            self.screen, 
+            self.cam_offset, 
+            self.assets, 
+            input_manager,
+            self.mini_map.outline_h + self.mini_map.padding, 
+            self.player,
+            self.sprite_manager, 
+            self.gen_outline, 
+            self.gen_bg, 
+            self.render_inventory_item_name, 
+            self.get_scaled_image, 
+            self.get_grid_xy,
+            self.render_item_amount
         )
 
         self.craft_window = CraftWindow(
-            self.mouse, self.screen, self.cam_offset, self.assets, self.inventory_ui, self.sprite_manager, self.player, self.get_craft_window_height, self.gen_outline, 
-            self.gen_bg, self.render_inventory_item_name, self.get_scaled_image
+            self.mouse, 
+            self.screen, 
+            self.cam_offset, 
+            self.assets, 
+            self.inventory_ui, 
+            self.sprite_manager, 
+            self.player, 
+            self.get_craft_window_height, 
+            self.gen_outline, 
+            self.gen_bg, 
+            self.render_inventory_item_name, 
+            self.get_scaled_image
         )
 
         self.HUD = HUD(self.screen, self.assets, self.craft_window.outline.right, self.gen_outline, self.gen_bg)
@@ -64,7 +90,14 @@ class UI:
         return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
 
     def gen_outline(
-        self, rect: pg.Rect, color: str | tuple[int, int, int]=None, width: int=1, padding: int=1, radius: int=0, draw: bool=True, return_outline: bool=False
+        self, 
+        rect: pg.Rect, 
+        color: str | tuple[int, int, int]=None, 
+        width: int=1, 
+        padding: int=1, 
+        radius: int=0, 
+        draw: bool=True, 
+        return_outline: bool=False
     ) -> None | pg.Rect:
         if color is None: # avoids evaluating 'self' prematurely when set as a default parameter
             color = self.assets['colors']['outline bg']
@@ -88,14 +121,19 @@ class UI:
             self.screen.blit(font, font.get_rect(topleft = rect.bottomleft))
 
     def render_new_item_name(self, item_name: str, item_rect: pg.Rect) -> None:
-        '''render the name of the item that was just picked up'''
         color = self.assets['colors']['text']
         item_total = self.inventory.contents[item_name]['amount']
         world_coords = pg.Vector2(item_rect.midtop)
         self.active_item_names.append(
             ItemName(
-                name = item_name, color = color, alpha = 255, font = self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
-                screen = self.screen, cam_offset = self.cam_offset, world_coords = world_coords, alarm = Alarm(length = 2000)
+                item_name, 
+                color, 
+                255, 
+                self.assets['fonts']['item label'].render(f'+1 {item_name} ({item_total})', True, color),
+                self.screen, 
+                self.cam_offset, 
+                world_coords, 
+                Alarm(2000)
             )
         )
 
@@ -115,23 +153,22 @@ class UI:
     
     def update_render_states(self) -> None:
         pressed_keys = self.keyboard.pressed_keys
-
         if pressed_keys[self.expand_inventory_ui]:
             self.inventory_ui.expand = not self.inventory_ui.expand
             self.inventory_ui.update_dimensions()
 
-        if pressed_keys[self.toggle_inventory_ui]:
-            self.inventory_ui.render = not self.inventory_ui.render
-            
-        if pressed_keys[self.toggle_craft_window_ui]:
+        elif pressed_keys[self.toggle_inventory_ui]:
+            self.inventory_ui.render = not self.inventory_ui.render 
+
+        elif pressed_keys[self.toggle_craft_window_ui]:
             self.craft_window.opened = self.inventory_ui.expand = not self.craft_window.opened
             self.inventory_ui.update_dimensions()
             self.HUD.shift_right = not self.HUD.shift_right
 
-        if pressed_keys[self.toggle_mini_map_ui]:
+        elif pressed_keys[self.toggle_mini_map_ui]:
             self.mini_map.render = not self.mini_map.render
 
-        if pressed_keys[self.toggle_HUD_ui]:
+        elif pressed_keys[self.toggle_HUD_ui]:
             self.HUD.render = not self.HUD.render
 
     def render_item_amount(self, amount: int, coords: tuple[int, int], add_x_offset: bool=True) -> None:
@@ -217,7 +254,16 @@ class HUD:
 
 
 class ItemName:
-    def __init__(self,name: str, color: str, alpha: int, font: pg.Font, screen: pg.Surface, cam_offset: pg.Vector2, world_coords: tuple[int, int], alarm: Alarm):
+    def __init__(self, 
+        name: str, 
+        color: str, 
+        alpha: int, 
+        font: pg.Font, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        world_coords: tuple[int, int], 
+        alarm: Alarm
+    ):
         self.name = name
         self.color = color
         self.alpha = alpha

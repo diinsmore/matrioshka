@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from player import Player
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from inventory import Inventory
 
 import pygame as pg
@@ -10,16 +10,27 @@ from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPOR
 
 class ItemDrag:
     def __init__(
-        self, screen: pg.Surface, cam_offset: pg.Vector2, graphics: dict[str, pg.Surface], player: Player, mouse: Mouse, keyboard: Keyboard, inventory: Inventory, 
-        outline: pg.Rect, slot_len: int, num_cols: int, num_rows: int, item_rect_base: pg.Rect, mech_sprites: pg.sprite.Group, get_grid_xy: callable,
+        self, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        graphics: dict[str, pg.Surface], 
+        player: Player, 
+        input_manager: InputManager,
+        inventory: Inventory, 
+        outline: pg.Rect, 
+        slot_len: int, 
+        num_cols: int, 
+        num_rows: int, 
+        item_rect_base: pg.Rect, 
+        mech_sprites: pg.sprite.Group,
+        get_grid_xy: callable,
         get_sprites_in_radius: callable
     ):
         self.screen = screen
         self.cam_offset = cam_offset
         self.graphics = graphics
         self.player = player
-        self.mouse = mouse
-        self.keyboard = keyboard
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.inventory = inventory
         self.outline = outline
         self.slot_len = slot_len

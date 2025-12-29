@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
     from inserter import Inserter
 
@@ -9,10 +9,10 @@ import pygame as pg
 import numpy as np
 
 from settings import MAP_SIZE, TILE_SIZE, PIPE_TRANSPORT_DIRS
-from sprite_bases import SpriteBase, TransportSpriteBase
+from transport_sprite_base import TransportSprite
 from alarm import Alarm
 
-class Pipe(TransportSpriteBase):
+class Pipe(TransportSprite):
     def __init__(
         self, 
         xy: tuple[int, int], 
@@ -21,8 +21,7 @@ class Pipe(TransportSpriteBase):
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
         cam_offset: pg.Vector2,
-        mouse: Mouse,
-        keyboard: Keyboard,
+        input_manager: InputManager,
         player: Player,
         assets: dict[str, dict[str, any]],
         tile_map: np.ndarray,
@@ -30,29 +29,28 @@ class Pipe(TransportSpriteBase):
         names_to_ids: dict[str, int],
         variant_idx: int
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map)
         self.names_to_ids = names_to_ids
         self.variant_idx = variant_idx
         
         self.speed_factor = 1
         self.alarms = {'move item': Alarm(length=2000 / self.speed_factor, fn=self.transport, auto=True, loop=True)}
-        self.connections = {}
         self.transport_dir = None
         self.get_connected_objs()
 
     def get_connected_objs(self) -> None:
         pipe_data = PIPE_TRANSPORT_DIRS[self.variant_idx]
-        self.connections = {xy: None for xy in (pipe_data if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs])}
+        self.obj_connections = {xy: None for xy in (pipe_data if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs])}
         x, y = self.tile_xy
         for dx, dy in self.connections if self.variant_idx <= 5 else [xy for dirs in pipe_data.values() for xy in dirs]:
             if (0 < x + dx < MAP_SIZE[0] and 0 < y + dy < MAP_SIZE[1]) and (obj := self.obj_map[x + dx, y + dy]):
                 if isinstance(obj, Pipe):
                     if (dx * -1, dy * -1) in obj.connections: # ensure the pipes are connected and not just adjacent
-                        self.connections[dx, dy] = obj
+                        self.obj_connections[dx, dy] = obj
                 else:
-                    self.connections[dx, dy] = obj # machines don't have a 'facing direction' so no need to check if they're only just adjacent
+                    self.obj_connections[dx, dy] = obj # machines don't have a 'facing direction' so no need to check if they're only just adjacent
         
-        self.transport_dir = list(self.connections.keys())[0] if self.variant_idx <= 5 else {
+        self.transport_dir = list(self.obj_connections.keys())[0] if self.variant_idx <= 5 else {
             'horizontal': pipe_data['horizontal'][0], 'vertical': pipe_data['vertical'][0] # default to the 1st index
         } 
 
@@ -64,9 +62,9 @@ class Pipe(TransportSpriteBase):
             self.get_connected_objs()
 
     def transport(self) -> None:
-        for dxy in [xy for xy in self.connections if self.connections[xy] is not None]:
+        for dxy in [xy for xy in self.obj_connections if self.obj_connections[xy] is not None]:
             transport_dir = self.transport_dir if self.variant_idx <= 5 else self.transport_dir['horizontal' if dxy[0] != 0 else 'vertical']
-            if obj := self.connections[dxy]:                         
+            if obj := self.obj_connections[dxy]:                         
                 if self.item_holding:
                     if dxy == transport_dir: 
                         if isinstance(obj, Pipe):

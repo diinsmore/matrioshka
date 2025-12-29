@@ -8,11 +8,10 @@ from helper_functions import load_image
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
 class ProcGen:
-    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any] | None, player_xy: list[int, int] | None):
+    def __init__(self, screen: pg.Surface, cam_offset: pg.Vector2, saved_data: dict[str, any]):
         self.screen = screen
         self.cam_offset = cam_offset
         self.saved_data = saved_data
-        self.player_xy = player_xy
         
         self.names_to_ids = self.get_tile_ids()
         self.ids_to_names = {v: k for k, v in self.names_to_ids.items()}
@@ -33,7 +32,6 @@ class ProcGen:
         self.cave_maps = self.saved_data['cave maps']
         self.item_transport_map = self.saved_data['item transport map']
         self.biome_order = self.saved_data['biome order']
-        self.player_spawn_point = self.player_xy
         self.current_biome = self.saved_data['current biome']
 
     @staticmethod
@@ -71,7 +69,7 @@ class ProcGen:
             valid_coords = []
             for x in range(1, MAP_SIZE[0] - 1):
                 xy = (x, int(self.height_map[x]))
-                if self.valid_spawn_point(*xy):
+                if self.terrain_gen.valid_spawn_point(*xy):
                     valid_coords.append(xy)
             if valid_coords:
                 spawn_point = min(valid_coords, key=lambda coord: abs(coord[0] - center_x)) # take the closest coordinate to the map center
@@ -116,7 +114,6 @@ class TerrainGen:
         self.cave_gen = CaveGen(self.tile_map, self.height_map, self.seed, self.current_biome)
         self.place_tiles()
         self.lake_gen = LakeGen(self.tile_map, self.height_map, self.biome_order, self.names_to_ids)
-
         self.tree_gen = TreeGen(self.tile_map, self.names_to_ids, self.height_map, self.valid_spawn_point, self.biome_order)
 
     def gen_height_map(self) -> np.ndarray:
@@ -226,9 +223,9 @@ class TerrainGen:
         return masks
 
     def valid_spawn_point(self, x: int, y: int) -> bool:
-        air, water = self.names_to_ids['air'], self.names_to_ids['water']
-        return all(self.tile_map[x + dx, y] not in {'air', 'water'} for dx in (-1, 0, 1)) and \
-        all(self.tile_map[x + dx, y + dy] == air for dx, dy in ((-1, -1), (0, -1), (1, -1)))
+        air_id, water_id = self.names_to_ids['air'], self.names_to_ids['water']
+        return all(self.tile_map[x + dx, y] not in {air_id, water_id} for dx in (-1, 0, 1)) and \
+        all(self.tile_map[x + dx, y + dy] == air_id for dx, dy in ((-1, -1), (0, -1), (1, -1)))
 
     @staticmethod
     def scale_tile_probs(probs: list[int], biome: str, max_idx: int) -> list[float]:

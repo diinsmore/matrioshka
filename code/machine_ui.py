@@ -1,21 +1,29 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
 
 import pygame as pg
 
 class MachineUI:
     def __init__(
-        self, machine: pg.sprite.Sprite, screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]],
-        gen_outline: callable, gen_bg: callable, rect_in_sprite_radius: callable, render_item_amount: callable
+        self, 
+        machine: pg.sprite.Sprite, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        input_manager: InputManager,
+        player: Player, 
+        assets: dict[str, dict[str, any]],
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable
     ):
         self.machine = machine
         self.screen = screen
         self.cam_offset = cam_offset
-        self.mouse = mouse
-        self.keyboard = keyboard
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.player = player
         self.graphics, self.fonts, self.colors = assets['graphics'], assets['fonts'], assets['colors']
         self.gen_outline = gen_outline

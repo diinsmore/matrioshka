@@ -8,12 +8,12 @@ if TYPE_CHECKING:
 import pygame as pg
 from dataclasses import dataclass, field
 
-from sprite_bases import MachineSpriteBase, MachineInventory, MachineInvSlot
+from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
 from settings import MACHINES
 from furnace_ui import FurnaceUI
 from alarm import Alarm
 
-class Furnace(MachineSpriteBase):
+class Furnace(Machine):
     def __init__(
         self, 
         xy: pg.Vector2, 
@@ -29,7 +29,7 @@ class Furnace(MachineSpriteBase):
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
         gen_outline: callable,
-         gen_bg: callable,
+        gen_bg: callable,
         rect_in_sprite_radius: callable, 
         render_item_amount: callable, 
         save_data: dict[str, any]

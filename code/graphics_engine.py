@@ -19,9 +19,17 @@ from weather import Weather
 
 class GraphicsEngine:
     def __init__(
-        self, screen: pg.Surface, cam: Camera, graphics: dict[str, list[pg.Surface]], ui: UI, sprite_manager: SpriteManager, chunk_manager: ChunkManager, 
-        key_map: dict[int, int], player: Player, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], current_biome: str,
-        biome_order: dict[str, int], save_data: dict[str, any]
+        self, 
+        screen: pg.Surface, 
+        cam: Camera, 
+        graphics: dict[str, list[pg.Surface]], 
+        ui: UI, 
+        sprite_manager: SpriteManager, 
+        chunk_manager: ChunkManager, 
+        key_map: dict[int, int], 
+        player: Player, 
+        proc_gen: ProcGen,
+        save_data: dict[str, any]
     ):
         self.screen = screen
         self.cam = cam
@@ -31,15 +39,18 @@ class GraphicsEngine:
         self.chunk_manager = chunk_manager
         self.key_map = key_map
         self.player = player
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
-        self.current_biome = current_biome
-        self.biome_order = biome_order
+        self.tile_map = proc_gen.tile_map
+        self.names_to_ids, self.ids_to_names = proc_gen.names_to_ids, proc_gen.ids_to_names
+        self.current_biome, self.biome_order = proc_gen.current_biome, proc_gen.biome_order
         
         self.terrain = Terrain(
-            self.screen, self.graphics, self.cam.offset, self.chunk_manager, self.tile_map, self.names_to_ids, self.ids_to_names, self.sprite_manager.mining.mining_map,
-            self.current_biome, self.biome_order, self.player
+            self.screen, 
+            self.graphics, 
+            self.cam.offset, 
+            self.chunk_manager, 
+            proc_gen,
+            self.sprite_manager.mining.mining_map,
+            self.player
         )
 
         self.tool_animation = ToolAnimation(self.screen, self.render_item_held)
@@ -96,7 +107,6 @@ class GraphicsEngine:
 
     @staticmethod
     def get_item_category(sprite: pg.sprite.Sprite) -> str:
-        '''removes the material name from the item_holding variable if applicable'''
         return sprite.item_holding.split()[-1] if ' ' in sprite.item_holding else None
 
     def get_item_animation(self, sprite: pg.sprite.Sprite, category: str, image: pg.Surface, dt: float) -> pg.Surface:
@@ -116,10 +126,10 @@ class GraphicsEngine:
             case 'axe':
                 return pg.Vector2(2 if facing_left else -2, -4)
 
-    def update(self, current_biome: str, dt: float) -> None:
+    def update(self, dt: float) -> None:
         self.cam.update(pg.Vector2(self.player.rect.center))
         self.weather.update() # update the weather before the terrain to keep the sky behind the rest of the world
-        self.terrain.update(current_biome)
+        self.terrain.update(self.player.current_biome)
         self.render_sprites(dt)
         self.ui.update()
         
@@ -138,21 +148,24 @@ class Camera:
 
 class Terrain:
     def __init__(
-        self, screen: pg.Surface, graphics: dict[str, list[pg.Surface]], cam_offset: pg.Vector2, chunk_manager: ChunkManager, tile_map: np.ndarray, names_to_ids: dict[str, int],
-        ids_to_names: dict[int, str], mining_map: dict[tuple[int, int], dict[str, int]], current_biome: str, biome_order: dict[str, int], player: Player
+        self, 
+        screen: pg.Surface, 
+        graphics: dict[str, list[pg.Surface]], 
+        cam_offset: pg.Vector2, 
+        chunk_manager: ChunkManager, 
+        proc_gen: ProcGen,
+        mining_map: dict[tuple[int, int], dict[str, int]],  
+        player: Player
     ):
         self.screen = screen
         self.graphics = graphics
         self.cam_offset = cam_offset
         self.chunk_manager = chunk_manager
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
+        self.tile_map = proc_gen.tile_map
+        self.names_to_ids, self.ids_to_names = proc_gen.names_to_ids, proc_gen.ids_to_names
+        self.current_biome, self.biome_order = proc_gen.current_biome, proc_gen.biome_order 
         self.mining_map = mining_map
-        self.current_biome = current_biome
-        self.biome_order = biome_order 
         self.player = player
-
         self.biome_x_offsets = {biome: self.biome_order[biome] * BIOME_WIDTH * TILE_SIZE for biome in self.biome_order.keys()}
         self.biome_transition = BiomeTransition(self.graphics, self.render_bg_imgs)
         self.elev_data = self.get_elevation_data()

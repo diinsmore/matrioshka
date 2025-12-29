@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import procgen as ProcGen
+    from input_manager import Keyboard
     
 import pygame as pg
 from math import ceil
@@ -10,11 +11,13 @@ from collections import defaultdict
 from settings import MAP_SIZE, TILE_SIZE, CELL_SIZE, WORLD_EDGE_RIGHT, WORLD_EDGE_BOTTOM
 
 class PhysicsEngine:
-    def __init__(self, proc_gen: ProcGen, cam_offset: pg.Vector2, key_bindings: dict[str, int]):
+    def __init__(self, proc_gen: ProcGen, cam_offset: pg.Vector2, keyboard: Keyboard):
         self.tile_map: np.ndarray = proc_gen.tile_map
         self.names_to_ids: dict[str, int] = proc_gen.names_to_ids
         self.ids_to_names: dict[int, str] = proc_gen.ids_to_names
-        self.key_bindings = key_bindings
+        self.keyboard = keyboard
+        self.key_bindings, self.held_keys, self.pressed_keys = keyboard.key_bindings, keyboard.held_keys, keyboard.pressed_keys
+        
         self.cam_offset = cam_offset
         
         self.collision_map = CollisionMap(self.tile_map, self.names_to_ids)
@@ -34,7 +37,6 @@ class PhysicsEngine:
         )
 
     def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
-        '''determine if the sprite can step over the colliding tile'''
         if sprite.direction.y == 0:
             above_tiles = []
             for i in range(1, ceil(sprite.rect.height / TILE_SIZE)): # check if the number of air tiles above the given tile is at least equal to the sprite's height
@@ -43,8 +45,8 @@ class PhysicsEngine:
             return all(tile_id == self.names_to_ids['air'] for tile_id in above_tiles)
         return False
 
-    def update(self, player: pg.sprite.Sprite, held_keys: Sequence[bool], pressed_keys: Sequence[bool], dt: float) -> None:
-        self.sprite_movement.update(player, held_keys, pressed_keys, dt)
+    def update(self, player: pg.sprite.Sprite, dt: float) -> None:
+        self.sprite_movement.update(player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
 
 
 class CollisionMap:
@@ -206,7 +208,7 @@ class CollisionDetection:
             for x in range(int(spr_w)) for y in range(int(spr_h))
         )
         if spr.underwater:
-            spr.direction.x = 1.5
+            spr.direction.x = 1.2
             if spr.gravity == spr.default_gravity:
                 spr.gravity //= 10
             if spr.jump_height == spr.default_jump_height:
@@ -250,7 +252,7 @@ class SpriteMovement:
     @staticmethod
     def update_movement_x(sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
         sprite.direction.x = direction_x
-        sprite.rect.x += sprite.direction.x * sprite.speed * dt
+        sprite.rect.x += sprite.direction.x * sprite.move_speed * dt
         sprite.rect.x = max(0, min(sprite.rect.x, WORLD_EDGE_RIGHT))
 
         if hasattr(sprite, 'state') and sprite.state == 'idle': # avoid overwriting an active state

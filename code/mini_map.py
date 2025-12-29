@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from procgen import ProcGen
+
 import pygame as pg
 import numpy as np
 
@@ -5,21 +10,24 @@ from settings import MAP_SIZE, TILE_SIZE, TILES
 
 class MiniMap:
     def __init__(
-        self, screen: pg.Surface, cam_offset: pg.Vector2, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], gen_outline: callable,
-        get_tile_material: callable, saved_data: dict[str, any] | None
+        self, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        proc_gen: ProcGen,
+        gen_outline: callable,
+        get_tile_material: callable, 
+        saved_data: dict[str, any]
     ):
         self.screen = screen
         self.cam_offset = cam_offset
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
+        self.tile_map = proc_gen.tile_map
+        self.names_to_ids, self.ids_to_names = proc_gen.names_to_ids, proc_gen.ids_to_names
         self.gen_outline = gen_outline
         self.get_tile_material = get_tile_material
         self.saved_data = saved_data
         
         self.visited_tiles = np.array(self.saved_data['visited tiles']) if self.saved_data else np.full(MAP_SIZE, False, dtype = bool)
         self.update_radius = 6
-
         self.tiles_x, self.tiles_y = 80, 80
         self.tile_px_w, self.tile_px_h = 2, 2
         self.outline_w = self.tiles_x * self.tile_px_w
@@ -29,13 +37,11 @@ class MiniMap:
         self.padding = 5
         self.topleft = pg.Vector2(self.padding, self.padding)
         self.render = True
-
         self.terrain_tiles = TILES.keys()
         self.non_tiles = {
             'air': {'rgb': (178, 211, 236)}, 
             'tree base': {'rgb': (74, 54, 47)},
         }
-
         self.tree_px_height = 8
         self.branch_y = self.tree_px_height // 2
 

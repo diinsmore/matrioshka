@@ -12,13 +12,14 @@ class AssetManager:
                 'consumables': load_subfolders(join('..', 'graphics', 'consumables')), 
                 'decor': load_subfolders(join('..', 'graphics', 'decor')), 
                 'icons': load_folder(join('..', 'graphics', 'ui', 'icons')), 
-                'minerals': load_subfolders(join('..', 'graphics', 'minerals')), 
+                'minerals': load_subfolders(join('..', 'graphics', 'minerals')),
+                'player frames': load_subfolders(join('..', 'graphics', 'player')),
                 'ramps': load_folder(join('..', 'graphics', 'terrain', 'tiles', 'ramps')), 
                 'research': load_folder(join('..', 'graphics', 'research')), 
                 'storage': load_folder(join('..', 'graphics', 'storage')), 
                 'tools': load_folder(join('..', 'graphics', 'tools')), 
-                'ui': load_folder(join('..', 'graphics', 'ui')), 
-                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport directions')) 
+                'transport dirs': load_folder(join('..', 'graphics', 'ui', 'transport directions')), 
+                'ui': load_folder(join('..', 'graphics', 'ui'))
             },
             'fonts': {
                 'default': pg.font.Font(join('..', 'graphics', 'fonts', 'Good Old DOS.ttf')), 

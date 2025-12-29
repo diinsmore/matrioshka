@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
 
 import pygame as pg
@@ -11,10 +11,10 @@ from random import choice
 
 from alarm import Alarm
 from drill_ui import DrillUI
-from sprite_bases import MachineSpriteBase, MachineInventory, MachineInvSlot
+from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
 from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES
 
-class Drill(MachineSpriteBase):
+class Drill(Machine):
     def __init__(
         self, 
         xy: tuple[int, int], 
@@ -23,8 +23,7 @@ class Drill(MachineSpriteBase):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2, 
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -44,8 +43,7 @@ class Drill(MachineSpriteBase):
             sprite_groups, 
             screen, 
             cam_offset, 
-            mouse, 
-            keyboard, 
+            input_manager,
             player, 
             assets, 
             tile_map, 
@@ -60,7 +58,7 @@ class Drill(MachineSpriteBase):
         self.names_to_ids = names_to_ids
         self.ids_to_names = ids_to_names
 
-        self.inv = Inventory(input_slots=None) # only burners have an input slot (for fuel)
+        self.inv = MachineInventory(input_slots=None) # only burners have an input slot (for fuel)
         min_x, max_x = self.rect.left // TILE_SIZE, self.rect.right // TILE_SIZE
         min_y = self.rect.bottom // TILE_SIZE
         max_y = min_y + min(MAP_SIZE[1] - min_y, RES[1] // 4)
@@ -111,10 +109,13 @@ class Drill(MachineSpriteBase):
         dirs = [(0, -1), (1, 0), (0, 1), (-1, 0)]
         if not self.ore_row > 1:
             dirs.remove((0, -1))
+            
         if tile_xy[0] == 0:
             dirs.remove((-1, 0))
+
         if tile_xy[0] == MAP_SIZE[0] - 1:
             dirs.remove((1, 0))
+
         if tile_xy[1] == MAP_SIZE[1] - 1:
             dirs.remove((0, 1))
         return dirs
@@ -164,8 +165,7 @@ class BurnerDrill(Drill):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -186,8 +186,7 @@ class BurnerDrill(Drill):
             sprite_groups, 
             screen, 
             cam_offset,
-            mouse, 
-            keyboard, 
+            input_manager,
             player, 
             assets, 
             tile_map, 
@@ -203,7 +202,7 @@ class BurnerDrill(Drill):
         self.variant = 'burner'
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
         self.max_capacity = {'fuel': 50, 'output': 99}
-        self.inv.input_slots = {'fuel': InvSlot(valid_inputs=self.fuel_sources.keys(), max_capacity=self.max_capacity['fuel'])}
+        self.inv.input_slots = {'fuel': MachineInventorySlot(valid_inputs=self.fuel_sources.keys(), max_capacity=self.max_capacity['fuel'])}
         self.alarms['burn fuel'] = Alarm(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.burn_fuel, loop=True, track_pct=True)
         self.init_ui(DrillUI)
 
@@ -221,8 +220,7 @@ class ElectricDrill(Drill):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -243,8 +241,7 @@ class ElectricDrill(Drill):
             sprite_groups, 
             screen, 
             cam_offset, 
-            mouse, 
-            keyboard, 
+            input_manager,
             player, 
             assets, 
             tile_map, 

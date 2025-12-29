@@ -75,7 +75,7 @@ class PlayerInventory(SpriteInventory):
                 'pipe 0': {'amount': 100}, 
                 'burner inserter': {'amount': 10}, 
                 'burner furnace': {'amount': 10}, 
-                'burner drill': {'amount': 10}, 
+                'assembler': {'amount': 10}, 
                 'wood torch': {'amount': 99}
         })
          

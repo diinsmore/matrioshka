@@ -34,97 +34,64 @@ class Main:
             player_xy = player_data['xy']
 
         self.cam = Camera(center=player_xy if save_data else (pg.Vector2(MAP_SIZE) * TILE_SIZE) // 2)
-        
-        self.input_mgr = InputManager()
-        self.mouse, self.keyboard = self.input_mgr.mouse, self.input_mgr.keyboard
+        offset = self.cam.offset
 
-        self.proc_gen = ProcGen(screen, self.cam.offset, save_data, player_xy if save_data else None)
-        
-        self.asset_mgr = AssetManager()
-        assets = self.asset_mgr.assets
+        self.input_manager = InputManager()
 
-        self.physics_engine = PhysicsEngine(self.proc_gen, self.cam.offset, self.keyboard.key_bindings)
+        self.proc_gen = ProcGen(screen, self.cam.offset, save_data)
         
-        self.sprite_mgr = SpriteManager(
-            screen, 
-            self.cam.offset, 
-            assets, 
-            self.proc_gen,
-            self.physics_engine.sprite_movement, 
-            self.physics_engine.collision_map,
-            self.mouse, 
-            self.keyboard, 
-            save_data
-        )
+        self.asset_manager = AssetManager()
+        assets = self.asset_manager.assets
+
+        self.physics_engine = PhysicsEngine(self.proc_gen, self.cam.offset, self.input_manager.keyboard)
+        
+        self.sprite_manager = SpriteManager(screen, offset, assets, self.proc_gen, self.physics_engine, self.input_manager, save_data)
+
         self.player = Player( 
-            screen,
-            player_xy if save_data else self.proc_gen.player_spawn_point, 
-            self.cam.offset,
-            load_subfolders(join('..', 'graphics', 'player')), 
-            [getattr(self.sprite_mgr, spr_group) for spr_group in ('all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites')],
-            self.input_mgr, 
-            self.proc_gen.tile_map, 
-            self.proc_gen.current_biome, 
-            self.proc_gen.biome_order, 
+            self.proc_gen,
+            offset,
+            load_subfolders(join('..', 'graphics', 'player')),
             assets,
-            save_data=player_data if save_data else None
+            screen,
+            [getattr(self.sprite_manager, group) for group in (
+                'all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites'
+            )],
+            self.input_manager.keyboard,
+            player_data if save_data else None
         )
-        self.sprite_mgr.player = self.player
+        self.sprite_manager.player = self.player
 
-        self.ui = UI(
-            screen, 
-            self.cam.offset, 
-            assets, 
-            self.mouse, 
-            self.keyboard, 
-            self.player.inventory, 
-            self.sprite_mgr, 
-            self.player, 
-            self.proc_gen.tile_map, 
-            self.proc_gen.names_to_ids,
-            self.proc_gen.ids_to_names, 
-            save_data
-        )
-        self.sprite_mgr.ui = self.ui
+        self.ui = UI(screen, offset, assets, self.input_manager, self.sprite_manager, self.player, self.proc_gen, save_data)
+        self.sprite_manager.ui = self.ui
 
         self.item_placement = ItemPlacement(
             screen, 
-            self.cam.offset, 
-            self.proc_gen.tile_map, 
-            self.proc_gen.names_to_ids, 
+            offset, 
+            self.proc_gen,
             self.physics_engine.collision_map, 
-            self.sprite_mgr, 
-            self.mouse, 
-            self.keyboard, 
+            self.sprite_manager, 
+            self.input_manager,
             self.player, 
             assets, 
-            self.ui.gen_outline, 
-            self.ui.gen_bg, 
-            self.sprite_mgr.rect_in_sprite_radius, 
-            self.ui.render_item_amount, 
-            self.sprite_mgr.items_init_when_placed, 
+            self.ui,
             save_data
         )
-        self.sprite_mgr.item_placement = self.item_placement
+        self.sprite_manager.item_placement = self.item_placement
         self.ui.inventory_ui.item_placement = self.item_placement
         self.ui.inventory_ui.item_drag.item_placement = self.item_placement
 
-        self.chunk_mgr = ChunkManager(self.cam.offset)
+        self.chunk_manager = ChunkManager(self.cam.offset)
 
         self.graphics_engine = GraphicsEngine(
             screen, 
             self.cam, 
             assets['graphics'], 
             self.ui, 
-            self.sprite_mgr, 
-            self.chunk_mgr, 
-            self.keyboard.key_map, 
+            self.sprite_manager, 
+            self.chunk_manager, 
+            self.input_manager.keyboard.key_map, 
             self.player, 
-            self.proc_gen.tile_map, 
-            self.proc_gen.names_to_ids, 
-            self.proc_gen.ids_to_names, 
-            self.proc_gen.current_biome, 
-            self.proc_gen.biome_order, 
+            self.proc_gen,
             save_data
         )
 
@@ -153,10 +120,10 @@ class Main:
         return data
     
     def update(self, dt: float) -> None:
-        self.input_mgr.update(self.cam.offset)
-        self.physics_engine.update(self.player, self.keyboard.held_keys, self.keyboard.pressed_keys, dt)
-        self.graphics_engine.update(self.player.current_biome, dt) 
-        self.sprite_mgr.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
+        self.input_manager.update(self.cam.offset)
+        self.physics_engine.update(self.player, dt)
+        self.graphics_engine.update(dt) 
+        self.sprite_manager.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
         self.graphics_engine.terrain.render_water()
 
     def run(self) -> None:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
+    from sprite_manager import SpriteManager
     
 import pygame as pg
 
@@ -11,25 +12,35 @@ from item_drag import ItemDrag
 
 class InventoryUI:
     def __init__(
-        self, screen: pg.Surface, cam_offset: pg.Vector2, assets: dict[str, dict[str, any]], mouse: Mouse, keyboard: Keyboard, top: int, player: Player, 
-        mech_sprites: pg.sprite.Group, gen_outline: callable, gen_bg: callable, render_inv_item_name: callable, get_scaled_img: callable, get_grid_xy: callable,
-        get_sprites_in_radius: callable, render_item_amount: callable
+        self, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        assets: dict[str, dict[str, any]], 
+        input_manager: InputManager,
+        top: int, 
+        player: Player, 
+        sprite_manager: SpriteManager,
+        gen_outline: callable, 
+        gen_bg: callable, 
+        render_inv_item_name: callable, 
+        get_scaled_img: callable, 
+        get_grid_xy: callable,
+        render_item_amount: callable
     ):  
         self.screen = screen
         self.cam_offset = cam_offset
         self.assets = assets
-        self.mouse = mouse
-        self.keyboard = keyboard
+        self.input_manager = input_manager
         self.padding = 5
         self.top = top + self.padding
         self.player = player
-        self.mech_sprites = mech_sprites
+        self.mech_sprites = sprite_manager.mech_sprites
+        self.get_sprites_in_radius = sprite_manager.get_sprites_in_radius
         self.gen_outline = gen_outline
         self.gen_bg = gen_bg
         self.render_inv_item_name = render_inv_item_name
         self.get_scaled_img = get_scaled_img
         self.get_grid_xy = get_grid_xy
-        self.get_sprites_in_radius = get_sprites_in_radius
         self.render_item_amount = render_item_amount
         
         self.graphics, self.fonts, self.colors = self.assets['graphics'], self.assets['fonts'], self.assets['colors']
@@ -42,8 +53,20 @@ class InventoryUI:
         self.render = True
         self.expand = False
         self.item_drag = ItemDrag(
-            screen, cam_offset, self.graphics, player, mouse, keyboard, self.player.inventory, self.outline, self.slot_len, self.num_cols, self.num_rows, 
-            pg.Rect(self.icon_padding, self.icon_size), self.mech_sprites, self.get_grid_xy, self.get_sprites_in_radius
+            screen, 
+            cam_offset, 
+            self.graphics, 
+            player, 
+            input_manager, 
+            self.player.inventory, 
+            self.outline, 
+            self.slot_len, 
+            self.num_cols, 
+            self.num_rows, 
+            pg.Rect(self.icon_padding, self.icon_size), 
+            self.mech_sprites, 
+            self.get_grid_xy, 
+            self.get_sprites_in_radius
         )
         self.item_placement = None # not initialized yet
 

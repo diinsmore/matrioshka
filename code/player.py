@@ -1,34 +1,43 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    import numpy as np
-    from input_manager import InputManager
+    from input_manager import Keyboard
+    from procgen import ProcGen
 
 import pygame as pg
-import numpy as np
 
 from settings import Z_LAYERS, RES
-from sprite_bases import Colonist
+from colonist_sprite_base import Colonist
 from inventory import PlayerInventory
 
 class Player(Colonist):
     def __init__(
         self, 
-        screen: pg.Surface,
-        xy: tuple[int, int],
+        proc_gen: ProcGen,
         cam_offset: pg.Vector2, 
-        frames: dict[str, pg.Surface], 
-        sprite_groups: list[pg.sprite.Group], 
-        input_manager: InputManager, 
-        tile_map: np.ndarray, 
-        current_biome: str,
-        biome_order: dict[str, int], 
+        frames: dict[str, int],
         assets: dict[str, any],
-        save_data: dict[str, any] | None
+        screen: pg.Surface,
+        sprite_groups: list[pg.sprite.Sprite],
+        keyboard: Keyboard, 
+        save_data: dict[str, any],
     ):
-        super().__init__(screen, xy, cam_offset, frames, sprite_groups, input_manager, tile_map, current_biome, biome_order, assets, save_data)
+        super().__init__(
+            save_data['xy'] if save_data else proc_gen.player_spawn_point, 
+            cam_offset, 
+            frames, 
+            assets,
+            screen, 
+            sprite_groups, 
+            proc_gen.tile_map,  
+            save_data=save_data
+        )
+        self.keyboard = keyboard
+        self.current_biome = proc_gen.current_biome
+        self.biome_order = proc_gen.biome_order
         self.z = Z_LAYERS['player']
         self.inventory = PlayerInventory(parent_sprite=self, save_data=save_data)
+
         self.heart_surf = self.graphics['icons']['heart']
         self.heart_width = self.heart_surf.get_width()
     
@@ -37,8 +46,18 @@ class Player(Colonist):
             self.screen.blit(self.heart_surf, (RES[0] - (5 + self.heart_width + (25 * i)), 5))
 
     def respawn(self) -> None:
-        pass
-
+        self.hearts = self.max_hearts
+        self.oxygen_lvl = self.max_oxygen_lvl
+        self.underwater = False
+        self.alarms['lose oxygen'].running = False
+        self.rect.center = self.spawn_point
+        self.frame_idx = 0
+        self.direction = pg.Vector2()
+        self.grounded = True
+        self.gravity = self.default_gravity
+        self.inventory.contents.clear()
+        self.item_holding = None
+    
     def update(self, dt: float) -> None:
         self.get_current_biome()
         self.inventory.get_idx_selection(self.keyboard)

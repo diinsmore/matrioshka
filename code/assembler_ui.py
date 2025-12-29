@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
 
 import pygame as pg
@@ -9,7 +9,7 @@ from math import ceil
 
 from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from machine_ui import MachineUI
-from sprite_bases import MachineInvSlot
+from machine_sprite_base import MachineInventorySlot
 
 class AssemblerUI(MachineUI):
     def __init__(
@@ -17,8 +17,7 @@ class AssemblerUI(MachineUI):
         machine: pg.sprite.Sprite, 
         screen: pg.Surface, 
         cam_offset: pg.Vector2, 
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         gen_outline: callable, 
@@ -26,7 +25,18 @@ class AssemblerUI(MachineUI):
         rect_in_sprite_radius: callable, 
         render_item_amount: callable
     ):
-        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
+        super().__init__(
+            machine, 
+            screen, 
+            cam_offset, 
+            input_manager,
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount
+        )
         self.bg_width, self.bg_height = 200, 200
         self.category_names = list(self.machine.item_category_data.keys())
         self.category_cols = 3
@@ -38,6 +48,7 @@ class AssemblerUI(MachineUI):
         self.category_icons = self.get_icons(self.graphics['icons'], self.category_names)
         self.machine_icons, self.item_surf = None, None
         self.inv_box_len = 40
+        self.inv = self.machine.inv
         self.update_bg_dimensions()
 
     def get_icons(self, folder: dict[str, pg.Surface], keys: list[str], scale: int=None) -> dict[str, pg.Surface]:
@@ -129,7 +140,7 @@ class AssemblerUI(MachineUI):
         for i, item in enumerate(self.machine.recipe):
             rect = pg.Rect(self.bg_rect.topleft + pg.Vector2((self.padding * (i + 1)) + (i * self.inv_box_len), y), (self.inv_box_len, self.inv_box_len))
             if item not in self.machine.inv.input_slots:
-                self.inv.input_slots[item] = MachineInvSlot(item, rect, valid_inputs={item})
+                self.inv.input_slots[item] = MachineInventorySlot(item, rect, valid_inputs={item})
             else:
                 self.inv.input_slots[item].rect = rect
         self.inv.output_slot.rect = pg.Rect(
@@ -149,6 +160,12 @@ class AssemblerUI(MachineUI):
             self.render_item_categories()
             self.undo_selection()
             for slot in [s for s in [*self.inv.input_slots.values(), self.inv.output_slot] if s.rect]:
-                self.render_progress_bar(slot.rect, self.machine.alarms[next(iter(slot.valid_inputs))].pct, self.inv_box_len, pg.Vector2(0, 2), self.colors['progress bar'])
+                self.render_progress_bar(
+                    slot.rect, 
+                    self.machine.alarms[next(iter(slot.valid_inputs))].pct, 
+                    self.inv_box_len, 
+                    pg.Vector2(0, 2), 
+                    self.colors['progress bar']
+                )
         else:
             self.render = False

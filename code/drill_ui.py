@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from drills import BurnerDrill, ElectricDrill
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
 
 import pygame as pg
@@ -22,10 +22,30 @@ class OreSelectUI:
 
 class DrillUI(MachineUI):
     def __init__(
-        self, machine: BurnerDrill | ElectricDrill, screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, 
-        assets: dict[str, dict[str, any]], gen_outline: callable, gen_bg: callable, rect_in_sprite_radius: callable, render_item_amount: callable
+        self, 
+        machine: BurnerDrill | ElectricDrill, 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        input_manager: InputManager, 
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        gen_outline: callable, 
+        gen_bg: callable, 
+        rect_in_sprite_radius: callable, 
+        render_item_amount: callable
     ):
-        super().__init__(machine, screen, cam_offset, mouse, keyboard, player, assets, gen_outline, gen_bg, rect_in_sprite_radius, render_item_amount)
+        super().__init__(
+            machine, 
+            screen, 
+            cam_offset, 
+            input_manager, 
+            player, 
+            assets, 
+            gen_outline, 
+            gen_bg, 
+            rect_in_sprite_radius, 
+            render_item_amount
+        )
         self.bg_width, self.bg_height = 200, 150
         self.box_len = 40
         self.ore_names = list(self.machine.ore_data.keys())

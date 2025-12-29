@@ -1,17 +1,17 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
 
 import pygame as pg
 
-from sprite_bases import MachineSpriteBase, MachineInventory, MachineInvSlot
+from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
 from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from assembler_ui import AssemblerUI
 from alarm import Alarm
 
-class Assembler(MachineSpriteBase):
+class Assembler(Machine):
     def __init__(
         self, 
         xy: tuple[int, int], 
@@ -20,8 +20,7 @@ class Assembler(MachineSpriteBase):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2, 
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -39,21 +38,27 @@ class Assembler(MachineSpriteBase):
             sprite_groups, 
             screen, 
             cam_offset, 
-            mouse, 
-            keyboard, 
+            input_manager, 
             player, 
             assets, 
             tile_map, 
             obj_map, 
             gen_outline,
-             gen_bg, 
-             rect_in_sprite_radius, 
+            gen_bg, 
+            rect_in_sprite_radius, 
             render_item_amount, 
             save_data
         )
         self.inv = MachineInventory(input_slots={})
         self.item_category, self.item, self.recipe = None, None, None
-        self.item_category_data = {'machines': MACHINES, 'logistics': LOGISTICS, 'electricity': ELECTRICITY, 'materials': MATERIALS, 'storage': STORAGE, 'research': RESEARCH}
+        self.item_category_data = {
+            'machines': MACHINES, 
+            'logistics': LOGISTICS, 
+            'electricity': ELECTRICITY, 
+            'materials': MATERIALS, 
+            'storage': STORAGE, 
+            'research': RESEARCH
+        }
         self.assemble_progress = {}
         self.alarms = {}
         self.init_ui(AssemblerUI)
@@ -67,7 +72,7 @@ class Assembler(MachineSpriteBase):
             dct.clear()
         for item in self.recipe:
             self.assemble_progress[item] = 0
-            self.inv.input_slots[item] = InvSlot(item, valid_inputs={item}) # assigning the rect in the ui class
+            self.inv.input_slots[item] = MachineInventorySlot(item, valid_inputs={item}) # assigning the rect in the ui class
             self.alarms[item] = Alarm(2500, self.update_slot, loop=True, track_pct=True, slot=self.inv.input_slots[item]) # TODO: have alarm length vary by material
         self.alarms[self.item] = Alarm(max(self.recipe.values()) * 2500, loop=True, track_pct=True, slot=self.inv.output_slot)
     

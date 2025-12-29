@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
     from player import Player
-    from physics_engine import CollisionMap
-    from input_manager import Mouse, Keyboard
+    from physics_engine import PhysicsEngine
+    from input_manager import InputManager
     from sprite_base import SpriteBase
     from procgen import ProcGen
 
@@ -32,26 +32,23 @@ class SpriteManager:
         cam_offset: pg.Vector2, 
         assets: dict[str, dict[str, any]], 
         proc_gen: ProcGen,
-        sprite_movement: callable, 
-        collision_map: CollisionMap,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        physics_engine: PhysicsEngine,
+        input_manager: InputManager,
         save_data: dict[str, any] | None
     ):
         self.screen = screen
         self.cam_offset = cam_offset
-        self.assets = assets
+        self.assets, self.graphics = assets, assets['graphics']
         self.tile_map = proc_gen.tile_map
-        self.names_to_ids = proc_gen.names_to_ids
-        self.ids_to_names = proc_gen.ids_to_names
         self.tree_map = proc_gen.tree_map
         self.height_map = proc_gen.height_map
         self.current_biome = proc_gen.current_biome
+        self.names_to_ids, self.ids_to_names = proc_gen.names_to_ids, proc_gen.ids_to_names
         self.get_tile_material = proc_gen.get_tile_material
-        self.sprite_movement = sprite_movement
-        self.collision_map = collision_map
-        self.mouse = mouse
-        self.keyboard = keyboard
+        self.sprite_movement: callable = physics_engine.sprite_movement
+        self.collision_map = physics_engine.collision_map
+        self.input_manager = input_manager
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.save_data = save_data
 
         self.all_sprites = pg.sprite.Group()
@@ -60,6 +57,7 @@ class SpriteManager:
         self.player_sprite = pg.sprite.GroupSingle()
         self.human_sprites = pg.sprite.Group()
         self.mech_sprites = pg.sprite.Group()
+        self.transport_sprites = pg.sprite.Group()
         self.nature_sprites = pg.sprite.Group()
         self.cloud_sprites = pg.sprite.Group()
         self.tree_sprites = pg.sprite.Group()
@@ -97,14 +95,19 @@ class SpriteManager:
     
     def init_trees(self) -> None:
         if self.current_biome in TREE_BIOMES:
-            image_folder = self.assets['graphics'][self.current_biome]['trees']
+            image_folder = self.graphics[self.current_biome]['trees']
             tree_map = self.tree_map if not self.save_data else self.save_data['tree map']
             for i, xy in enumerate(tree_map): 
                 Tree(
-                    xy=(pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, image=choice(image_folder), z=Z_LAYERS['bg'], 
-                    sprite_groups=[self.all_sprites, self.nature_sprites, self.tree_sprites], tree_map=self.tree_map, tree_map_xy=xy,
-                    sprite_movement=self.sprite_movement, wood_image=self.assets['graphics']['wood'], 
-                    wood_sprites=[self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites],
+                    (pg.Vector2(xy) * TILE_SIZE) - self.cam_offset, 
+                    choice(image_folder), 
+                    Z_LAYERS['bg'], 
+                    [self.all_sprites, self.nature_sprites, self.tree_sprites], 
+                    self.tree_map, 
+                    xy,
+                    self.graphics['wood'], 
+                    [self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites],
+                    self.sprite_movement,
                     save_data=self.save_data['sprites']['tree'][i] if self.save_data else None
                 )
         self.wood_gathering = WoodGathering(
@@ -122,16 +125,16 @@ class SpriteManager:
         if not self.cloud_sprites:
             surface_lvl = self.height_map[player.rect.x // TILE_SIZE]
             if player.rect.y // TILE_SIZE < surface_lvl:
-                img_folder = self.assets['graphics']['clouds']
+                img_folder = self.graphics['clouds']
                 for i in range(randint(10, 15)):
                     Cloud(
-                        coords=pg.Vector2(player.rect.x + RES[0] + (50 * (i + 1)), surface_lvl + randint(-2000, -1500)),
-                        image=img_folder[randint(0, len(img_folder) - 1)],
-                        z=Z_LAYERS['clouds'],
-                        sprite_groups=[self.all_sprites, self.nature_sprites, self.cloud_sprites],
-                        speed=randint(1, 3),
-                        player=player,
-                        rect_in_sprite_radius=self.rect_in_sprite_radius
+                        pg.Vector2(player.rect.x + RES[0] + (50 * (i + 1)), surface_lvl + randint(-2000, -1500)),
+                        img_folder[randint(0, len(img_folder) - 1)],
+                        Z_LAYERS['clouds'],
+                        [self.all_sprites, self.nature_sprites, self.cloud_sprites],
+                        randint(1, 3),
+                        player,
+                        self.rect_in_sprite_radius
                     )
 
    # def init_placed_items(self) -> None:
@@ -148,7 +151,6 @@ class SpriteManager:
     
     @staticmethod
     def end_action(sprite: pg.sprite.Sprite) -> None:
-        '''return a sprite to an idle state and update its graphic'''
         sprite.state = 'idle'
         idle_img = sprite.frames['idle'][0]
         sprite.image = idle_img if sprite.facing_left else pg.transform.flip(idle_img, True, False)
@@ -166,7 +168,13 @@ class SpriteManager:
         return [spr for spr in group if self.rect_in_sprite_radius(spr, rect, x_dist, y_dist)]
     
     def rect_in_sprite_radius(
-        self, spr: pg.sprite.Sprite, rect: pg.Rect, x_dist: int=(RES[0] // 2), y_dist: int=(RES[1] // 2), spr_world_space: bool=True, rect_world_space: bool=True
+        self, 
+        spr: pg.sprite.Sprite, 
+        rect: pg.Rect, 
+        x_dist: int=(RES[0] // 2), 
+        y_dist: int=(RES[1] // 2), 
+        spr_world_space: bool=True, 
+        rect_world_space: bool=True
     ) -> bool:
         spr_xy = spr.rect.center if spr_world_space else spr.rect.center + self.cam_offset
         rect_xy = rect.center if rect_world_space else rect.center + self.cam_offset
@@ -175,21 +183,31 @@ class SpriteManager:
     def get_sprite_groups(self, sprite: pg.sprite.Sprite) -> set[pg.sprite.Group]:
         return set(group for group in self.all_groups.values() if sprite in group)
 
-    def get_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int]) -> dict[str, any]:
+    def get_machine_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int], save_idx: int=None) -> dict[str, any]:
         tile_x, tile_y = tiles_covered if isinstance(tiles_covered, tuple) else tiles_covered[0] # only extract the topleft coordinate for multi-tile items
         params = {
-            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE), 'image': self.assets['graphics'][name], 'z': Z_LAYERS['main'], 
-            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites], 'screen': self.screen, 'cam_offset': self.cam_offset, 'mouse': self.mouse,
-            'keyboard': self.keyboard, 'player': self.player, 'assets': self.assets, 'tile_map': self.tile_map, 'obj_map': self.item_placement.obj_map,
-            'gen_outline': self.ui.gen_outline, 'gen_bg': self.ui.gen_bg, 'rect_in_sprite_radius': self.rect_in_sprite_radius, 'render_item_amount': self.ui.render_item_amount,
+            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE), 'image': self.assets['graphics'][name], 
+            'z': Z_LAYERS['main'], 
+            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites], 'screen': self.screen, 
+            'cam_offset': self.cam_offset, 
+            'input_manager': self.input_manager,
+            'player': self.player, 
+            'assets': self.assets, 
+            'tile_map': self.tile_map, 
+            'obj_map': self.item_placement.obj_map,
+            'gen_outline': self.ui.gen_outline, 
+            'gen_bg': self.ui.gen_bg, 
+            'rect_in_sprite_radius': self.rect_in_sprite_radius, 
+            'render_item_amount': self.ui.render_item_amount,
             'save_data': self.save_data['sprites'][name][save_idx] if self.save_data else None
         }
         if 'drill' in name:
             params.update([('names_to_ids', self.names_to_ids), ('ids_to_names', self.ids_to_names)])
         elif 'pipe' in name or 'inserter' in name:
-            params = dict(islice(params.items(), 12))
+            params = dict(islice(params.items(), 11))
             if 'pipe' in name:
                 params.update([('names_to_ids', self.names_to_ids), ('variant_idx', int(name[-1]))])
+                params['sprite_groups'].append(self.transport_sprites)
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:
@@ -202,8 +220,16 @@ class SpriteManager:
 
 class Mining:
     def __init__(
-        self, tile_map: np.ndarray, names_to_ids: dict[str, int], ids_to_names: dict[int, str], key_mine: int, update_map: callable, get_tool_strength: callable,
-        pick_up_item: callable, get_tile_material: callable, end_action: callable
+        self, 
+        tile_map: np.ndarray, 
+        names_to_ids: dict[str, int], 
+        ids_to_names: dict[int, str], 
+        key_mine: int, 
+        update_map: callable, 
+        get_tool_strength: callable,
+        pick_up_item: callable, 
+        get_tile_material: callable, 
+        end_action: callable
     ):
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids
@@ -266,8 +292,15 @@ class Crafting:
 
 class WoodGathering:
     def __init__(
-        self, tile_map: np.ndarray, names_to_ids: dict[str, int], tree_sprites: pg.sprite.Group(), tree_map: list[tuple[int, int]], cam_offset: pg.Vector2,
-        get_tool_strength: callable, pick_up_item: callable, rect_in_sprite_radius: callable
+        self, 
+        tile_map: np.ndarray, 
+        names_to_ids: dict[str, int], 
+        tree_sprites: pg.sprite.Group(), 
+        tree_map: list[tuple[int, int]], 
+        cam_offset: pg.Vector2,
+        get_tool_strength: callable, 
+        pick_up_item: callable, 
+        rect_in_sprite_radius: callable
     ):
         self.tile_map = tile_map
         self.names_to_ids = names_to_ids

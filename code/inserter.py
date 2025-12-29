@@ -1,24 +1,35 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
 
 import pygame as pg
 import math
 
 from settings import TILE_SIZE, MAP_SIZE, INSERTER_TRANSPORT_DIRS
-from sprite_bases import TransportSpriteBase
+from transport_sprite_base import TransportSprite
 from pipe import Pipe
 from furnaces import Furnace
 from alarm import Alarm
 
-class Inserter(TransportSpriteBase):
+class Inserter(TransportSprite):
     def __init__(
-        self, xy: tuple[int, int], image: pg.Surface, z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2, mouse: Mouse,
-        keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray, speed_factor: int=1
+        self, 
+        xy: tuple[int, int], 
+        image: pg.Surface, 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2, 
+        input_manager: InputManager,
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray, 
+        speed_factor: int=1
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map)
         self.speed_factor = speed_factor
 
         self.tile_borders = {
@@ -119,29 +130,59 @@ class Inserter(TransportSpriteBase):
 
 class BurnerInserter(Inserter):
     def __init__(
-        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface, cam_offset: pg.Vector2,
-        mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray
+        self, 
+        xy: tuple[int, int], 
+        image: dict[str, dict[str, pg.Surface]], 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface, 
+        cam_offset: pg.Vector2,
+        input_manager: InputManager,
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map)
         self.tile_reach_radius = 1
         self.fuel_sources = {'coal': {'capacity': 50, 'burn speed': 6000}}
 
 
 class ElectricInserter(Inserter):
     def __init__(
-        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface,
-        cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray
+        self, 
+        xy: tuple[int, int], 
+        image: dict[str, dict[str, pg.Surface]], 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface,
+        cam_offset: pg.Vector2, 
+        input_manager: InputManager,
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray
     ):
         speed_factor = 1.5
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, speed_factor)
+        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, speed_factor)
         self.tile_reach_radius = 1
         self.fuel_sources = {'electricity': {}}
 
 
 class LongHandedInserter(Inserter):
     def __init__(
-        self, xy: tuple[int, int], image: dict[str, dict[str, pg.Surface]], z: dict[str, int], sprite_groups: list[pg.sprite.Group], screen: pg.Surface,
-        cam_offset: pg.Vector2, mouse: Mouse, keyboard: Keyboard, player: Player, assets: dict[str, dict[str, any]], tile_map: np.ndarray, obj_map: np.ndarray
+        self, 
+        xy: tuple[int, int], 
+        image: dict[str, dict[str, pg.Surface]], 
+        z: dict[str, int], 
+        sprite_groups: list[pg.sprite.Group], 
+        screen: pg.Surface,
+        cam_offset: pg.Vector2, 
+        input_manager: InputManager,
+        player: Player, 
+        assets: dict[str, dict[str, any]], 
+        tile_map: np.ndarray, 
+        obj_map: np.ndarray
     ):
         speed_factor = 1.25
         super().__init__(xy, image, z, sprite_groups, screen, cam_offset, mouse, keyboard, player, assets, tile_map, obj_map, speed_factor)

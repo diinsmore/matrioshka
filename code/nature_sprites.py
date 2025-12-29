@@ -9,15 +9,23 @@ from random import randint, choice
 from math import sin, ceil
 
 from settings import RES, TOOLS, Z_LAYERS, GRAVITY
-from sprite_bases import SpriteBase
+from sprite_base_classes import Sprite
+from item_drop import ItemDrop
 from alarm import Alarm
 from ui import UI
 
-class Cloud(SpriteBase):
+class Cloud(Sprite):
     def __init__(
-        self, coords: pg.Vector2, image: dict[str, pg.Surface], z: int, sprite_groups: list[pg.sprite.Group], speed: int, player: Player, rect_in_sprite_radius: callable
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: int, 
+        sprite_groups: list[pg.sprite.Group], 
+        speed: int, 
+        player: Player, 
+        rect_in_sprite_radius: callable
     ):
-        super().__init__(coords, image, z, sprite_groups)
+        super().__init__(xy, image, z, sprite_groups)
         self.speed = speed
         self.player = player
         self.rect_in_sprite_radius = rect_in_sprite_radius
@@ -31,10 +39,19 @@ class Cloud(SpriteBase):
         self.move(dt)
 
 
-class Tree(SpriteBase):
+class Tree(Sprite):
     def __init__(
-        self, xy: pg.Vector2, image: pg.Surface, z: dict[str, int], sprite_groups: list[pg.sprite.Group], tree_map: list[tuple[int, int]], 
-        tree_map_xy: tuple[int, int] | list[int, int], wood_image: pg.Surface, wood_sprites: list[pg.sprite.Group], sprite_movement: callable, save_data: dict[str, any]
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: int, 
+        sprite_groups: list[pg.sprite.Group], 
+        tree_map: list[tuple[int, int]], 
+        tree_map_xy: tuple[int, int] | list[int, int], 
+        wood_image: pg.Surface, 
+        wood_sprites: list[pg.sprite.Group], 
+        sprite_movement: callable, 
+        save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.image = self.image.copy()
@@ -75,19 +92,31 @@ class Tree(SpriteBase):
     
     def produce_wood(self, sprite: pg.sprite.Sprite, pick_up_item: callable) -> None:
         for i in range(self.total_wood):
-            left = choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50)))
             wood = Wood(
-                xy = pg.Vector2(left, self.rect.top + (self.wood_image.height * i)), image = self.wood_image, z = Z_LAYERS['main'], sprite_groups = self.wood_sprites,
-                direction = pg.Vector2(-1 if left < self.rect.left else 1, 1), speed = randint(15, 30), sprite_movement = self.sprite_movement, pick_up_item = pick_up_item
+                pg.Vector2(choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50))), self.rect.top + (self.wood_image.height * i)), 
+                self.wood_image, 
+                Z_LAYERS['main'], 
+                self.wood_sprites,
+                pg.Vector2(-1 if left < self.rect.left else 1, 1), 
+                randint(15, 30), 
+                self.sprite_movement, 
+                pick_up_item
             )
     # the tree map takes care of its coordinate position
     def get_save_data(self) -> dict[str, int]:
         return {'current strength': self.current_strength}
 
 
-class Wood(SpriteBase):
+class Wood(ItemDrop):
     def __init__(
-        self, xy: pg.Vector2, image: pg.Surface, z: dict[str, int], sprite_groups: list[pg.sprite.Group], direction: pg.Vector2, speed: int, sprite_movement: callable,
+        self, 
+        xy: pg.Vector2, 
+        image: pg.Surface, 
+        z: dict[str, int],
+        sprite_groups: list[pg.sprite.Group], 
+        direction: pg.Vector2, 
+        speed: int, 
+        sprite_movement: callable,
         pick_up_item: callable
     ):
         super().__init__(xy, image, z, sprite_groups)
