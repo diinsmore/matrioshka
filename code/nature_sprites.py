@@ -46,21 +46,23 @@ class Tree(Sprite):
         image: pg.Surface, 
         z: int, 
         sprite_groups: list[pg.sprite.Group], 
-        tree_map: list[tuple[int, int]], 
         tree_map_xy: tuple[int, int] | list[int, int], 
         wood_image: pg.Surface, 
-        wood_sprites: list[pg.sprite.Group], 
-        sprite_movement: callable, 
+        sprite_manager: SpriteManager,
         save_data: dict[str, any]
     ):
         super().__init__(xy, image, z, sprite_groups)
         self.image = self.image.copy()
         self.rect = self.image.get_rect(midbottom=self.xy) # SpriteBase uses the topleft
-        self.tree_map = tree_map
         self.tree_map_xy = tree_map_xy if type(tree_map_xy) == tuple else tuple(tree_map_xy)
         self.wood_image = wood_image
-        self.wood_sprites = wood_sprites
-        self.sprite_movement = sprite_movement
+        self.sprite_manager = sprite_manager
+        self.tree_obj_map = sprite_manager.tree_map
+        self.wood_sprite_groups = [getattr(sprite_manager, group) for group in (
+            'all_sprites', 'active_sprites', 'nature_sprites', 'item_sprites'
+        )],
+        self.sprite_movement = sprite_manager.sprite_movement
+        self.save_data = save_data
 
         self.max_strength = 50
         self.current_strength = save_data['current strength'] if save_data else self.max_strength
@@ -79,8 +81,8 @@ class Tree(Sprite):
             rel_alpha = self.alpha * (1 / rel_strength)
             self.alpha = max(0, self.alpha - rel_alpha)
             self.image.set_alpha(self.alpha)
-            if self.current_strength == 0 and self.tree_map_xy in self.tree_map:
-                self.tree_map.remove(self.tree_map_xy)  
+            if self.current_strength == 0 and self.tree_map_xy in self.tree_obj_map:
+                self.tree_obj_map.remove(self.tree_map_xy)  
                 self.kill()
                 sprite.state = 'idle'
                 self.produce_wood(sprite, pick_up_item)
@@ -91,16 +93,15 @@ class Tree(Sprite):
         for i in range(self.total_wood):
             wood = ItemDrop(
                 pg.Vector2(
-                    choice((self.rect.left - randint(5, 50), self.rect.right + randint(5, 50))), 
+                    choice((self.rect.left - randint(5, 15), self.rect.right + randint(5, 15))), 
                     self.rect.top + (self.wood_image.height * i)
                 ), 
                 self.wood_image, 
                 Z_LAYERS['main'], 
-                [self.all_sprites, self.active_sprites, self.wood_sprites],
-                'wood',
-                randint(15, 30), 
-                self.sprite_movement, 
-                pick_up_item
+                self.wood_sprite_groups,
+                self.sprite_manager,
+                pg.Vector2(randint(-1, 1), 1),
+                'wood'
             )
     # the tree map takes care of its coordinate position
     def get_save_data(self) -> dict[str, int]:

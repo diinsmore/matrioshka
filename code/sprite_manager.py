@@ -103,11 +103,9 @@ class SpriteManager:
                     choice(image_folder), 
                     Z_LAYERS['bg'], 
                     [self.all_sprites, self.nature_sprites, self.tree_sprites], 
-                    self.tree_map, 
                     xy,
                     self.graphics['wood'], 
-                    [self.all_sprites, self.active_sprites, self.nature_sprites, self.item_sprites],
-                    self.sprite_movement,
+                    self,
                     save_data=self.save_data['sprites']['tree'][i] if self.save_data else None
                 )
         self.wood_gathering = WoodGathering(

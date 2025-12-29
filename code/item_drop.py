@@ -29,7 +29,7 @@ class ItemDrop(Sprite):
         self.amount = sprite.inventory.contents[name]['amount'] if sprite else 1
 
         self.move_speed = 1
-        self.gravity = GRAVITY
+        self.gravity = GRAVITY // 3
 
     def update(self, dt: float) -> None:
         self.sprite_movement.move_sprite(self, self.direction.x, dt)
