@@ -1,8 +1,9 @@
 import pygame as pg
+from abc import ABC
 
 from settings import TILE_SIZE
 
-class Sprite(pg.sprite.Sprite):
+class Sprite(pg.sprite.Sprite, ABC):
     def __init__(
         self, 
         xy: tuple[int, int], 
@@ -17,7 +18,7 @@ class Sprite(pg.sprite.Sprite):
         self.z = z # layer to render on
 
 
-class AnimatedSprite(pg.sprite.Sprite):
+class AnimatedSprite(pg.sprite.Sprite, ABC):
     def __init__(
         self, 
         xy: tuple[int, int], 

@@ -48,7 +48,7 @@ class Main:
         self.sprite_manager = SpriteManager(screen, offset, assets, self.proc_gen, self.physics_engine, self.input_manager, save_data)
 
         self.player = Player( 
-            self.proc_gen,
+            player_xy if save_data else self.proc_gen.player_spawn_point,
             offset,
             load_subfolders(join('..', 'graphics', 'player')),
             assets,
@@ -57,6 +57,7 @@ class Main:
             [getattr(self.sprite_manager, group) for group in (
                 'all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites'
             )],
+            self.proc_gen,
             self.input_manager.keyboard,
             player_data if save_data else None
         )

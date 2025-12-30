@@ -82,13 +82,14 @@ class ItemDrag:
         self.update_item_data(item_name, click_type, add=True)
 
     def end_drag(self) -> None: 
-        if self.player.item_holding in (self.material_names | self.tile_names | self.machine_recipes) and \
-        not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
-            self.place_item_in_machine()
-        else:
-            self.item_placement.place_item(self.player, self.mouse.tile_xy, self.old_pipe_idx)
-        if self.player.item_holding not in self.player.inventory.contents: # placed the last of its kind
-            self.update_item_data(remove=True)
+        if self.player.item_holding: # prevents a KeyError from trying to place an item immediately before dying and having item_holding set to None
+            if self.player.item_holding in (self.material_names | self.tile_names | self.machine_recipes) and \
+            not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
+                self.place_item_in_machine()
+            else:
+                self.item_placement.place_item(self.player, self.mouse.tile_xy, self.old_pipe_idx)
+            if self.player.item_holding not in self.player.inventory.contents: # placed the last of its kind
+                self.update_item_data(remove=True)
 
     def update_item_data(self, item_name: str=None, click_type: str=None, add: bool=False, remove: bool=False) -> None:
         if add:

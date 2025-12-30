@@ -41,6 +41,7 @@ class MiniMap:
         self.non_tiles = {
             'air': {'rgb': (178, 211, 236)}, 
             'tree base': {'rgb': (74, 54, 47)},
+            'water': {'rgb': (41, 80, 140)}
         }
         self.tree_px_height = 8
         self.branch_y = self.tree_px_height // 2

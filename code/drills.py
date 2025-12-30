@@ -8,13 +8,14 @@ import pygame as pg
 import numpy as np
 from collections import Counter
 from random import choice
+from abc import ABC
 
 from alarm import Alarm
 from drill_ui import DrillUI
 from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
 from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES
 
-class Drill(Machine):
+class Drill(Machine, ABC):
     def __init__(
         self, 
         xy: tuple[int, int], 

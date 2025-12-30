@@ -7,13 +7,14 @@ if TYPE_CHECKING:
     
 import pygame as pg
 from dataclasses import dataclass, field
+from abc import ABC
 
 from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
 from settings import MACHINES
 from furnace_ui import FurnaceUI
 from alarm import Alarm
 
-class Furnace(Machine):
+class Furnace(Machine, ABC):
     def __init__(
         self, 
         xy: pg.Vector2, 
@@ -62,17 +63,31 @@ class Furnace(Machine):
         self.alarms = {}
 
     def update_active_state(self) -> None:
-        self.active = self.inv.input_slots['smelt'].item and self.inv.input_slots['fuel'].item and self.inv.output_slot.amount < self.inv.output_slot.max_capacity
+        self.active = self.inv.input_slots['smelt'].item and self.inv.input_slots['fuel'].item and \
+        self.inv.output_slot.amount < self.inv.output_slot.max_capacity
         if not self.active:
             self.alarms.clear()
     
     def smelt(self) -> None:
         if not self.alarms:
-            self.alarms['smelt'] = Alarm(self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, self.update_inv_slot, True, True, True, smelt=True)
+            self.alarms['smelt'] = Alarm(
+                length=self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, 
+                fn=self.update_inv_slot, 
+                auto=True, 
+                loop=True, 
+                track_pct=True, 
+                smelt=True
+            )
             self.alarms['smelt'].start()
             if self.variant == 'burner':
                 self.alarms['fuel'] = Alarm(
-                    self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, self.update_inv_slot, True, True, True, smelt=True, fuel=True
+                    length=self.can_smelt[self.inv.input_slots['smelt'].item]['speed'] // self.speed_factor, 
+                    fn=self.update_inv_slot, 
+                    auto=True, 
+                    loop=True, 
+                    track_pct=True, 
+                    smelt=True, 
+                    fuel=True
                 )
                 self.alarms['fuel'].start()
         for alarm in self.alarms.values():

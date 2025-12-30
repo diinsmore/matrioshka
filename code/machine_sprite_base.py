@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 from dataclasses import dataclass, field
+from abc import ABC
 
 from settings import Z_LAYERS, GRAVITY, TILE_SIZE, BIOME_WIDTH, TILE_SIZE
 from sprite_base_classes import Sprite
@@ -32,7 +33,7 @@ class MachineInventory:
         yield self.output_slot
 
 
-class Machine(Sprite):
+class Machine(Sprite, ABC):
     def __init__(
         self, 
         xy: tuple[int, int], 

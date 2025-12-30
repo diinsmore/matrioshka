@@ -8,31 +8,32 @@ if TYPE_CHECKING:
 import pygame as pg
 
 from settings import Z_LAYERS, RES
-from colonist_sprite_base import Colonist
+from colonist import Colonist
 from inventory import PlayerInventory
 
 class Player(Colonist):
     def __init__(
         self, 
-        proc_gen: ProcGen,
+        xy: pg.Vector2,
         cam_offset: pg.Vector2, 
         frames: dict[str, int],
         assets: dict[str, any],
         screen: pg.Surface,
         sprite_manager: SpriteManager,
         sprite_groups: list[pg.sprite.Sprite],
+        proc_gen: ProcGen,
         keyboard: Keyboard, 
         save_data: dict[str, any],
     ):
         super().__init__(
-            save_data['xy'] if save_data else proc_gen.player_spawn_point, 
+            xy, 
             cam_offset, 
             frames, 
             assets,
             screen,
             sprite_manager, 
             sprite_groups, 
-            proc_gen.tile_map,  
+            proc_gen,  
             save_data=save_data
         )
         self.keyboard = keyboard
@@ -45,11 +46,11 @@ class Player(Colonist):
         self.heart_width = self.heart_surf.get_width()
     
     def render_hearts(self) -> None:
-        for i in range(self.hearts):
+        for i in range(self.hp):
             self.screen.blit(self.heart_surf, (RES[0] - (5 + self.heart_width + (25 * i)), 5))
 
     def respawn(self) -> None:
-        self.hearts = self.max_hearts
+        self.hp = self.max_hp
         self.oxygen_lvl = self.max_oxygen_lvl
         self.underwater = False
         self.alarms['lose oxygen'].running = False
@@ -65,4 +66,6 @@ class Player(Colonist):
         self.get_current_biome()
         self.inventory.get_idx_selection(self.keyboard)
         self.render_hearts()
-        self.update_oxygen_level()
+        self.check_oxygen_level()
+        self.check_hp_level()
+        self.update_alarms()

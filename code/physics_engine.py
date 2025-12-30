@@ -202,13 +202,14 @@ class CollisionDetection:
     
     def check_spr_underwater(self, spr: pg.sprite.Sprite) -> None:
         spr_w, spr_h = spr.rect.width // TILE_SIZE, spr.rect.height // TILE_SIZE
-        spr_tile_x, spr_tile_y = spr.rect.left // TILE_SIZE, spr.rect.top // TILE_SIZE
+        spr_midtop = spr.rect.midtop
+        spr_tile_x, spr_tile_y = spr_midtop[0] // TILE_SIZE, spr_midtop[1] // TILE_SIZE
+        water_id = self.names_to_ids['water'] 
         spr.underwater = all(
-            self.tile_map[int(spr_tile_x) + x, int(spr_tile_y) + y] == self.names_to_ids['water'] 
-            for x in range(int(spr_w)) for y in range(int(spr_h))
+            self.tile_map[spr_tile_x + x, spr_tile_y + y] == water_id
+            for x in range(int(spr_w)) for y in range(int(spr_h) - 1)
         )
         if spr.underwater:
-            spr.direction.x = 1.2
             if spr.gravity == spr.default_gravity:
                 spr.gravity //= 10
             if spr.jump_height == spr.default_jump_height:
@@ -238,6 +239,8 @@ class SpriteMovement:
 
     def move_sprite(self, sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
         if direction_x:
+            if hasattr(sprite, 'underwater') and sprite.underwater:
+                direction_x = 0.5 if direction_x > 0 else -0.5
             self.update_movement_x(sprite, direction_x, dt)  
         else:
             sprite.direction.x = 0

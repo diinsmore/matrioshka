@@ -5,9 +5,11 @@ if TYPE_CHECKING:
     import numpy as np
 
 import pygame as pg
+from abc import ABC
+
 from machine_sprite_base import Machine
 
-class TransportSprite(Machine):
+class TransportSprite(Machine, ABC):
     def __init__(
         self, 
         xy: tuple[int, int], 
