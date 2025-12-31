@@ -136,14 +136,13 @@ class CollisionDetection:
                 if tile_id in self.ramp_ids:
                     self.ramp_collision(spr, tile, 'left' if 'left' in self.ids_to_names[tile_id] else 'right')
                 else:
-                    if has_underwater_attr:
-                        self.check_spr_underwater(spr)
-                        
                     if tile_id not in self.liquid_ids:
                         if axis == 'x' and spr.direction.x:
                             self.tile_collision_x(spr, tile, 'right' if spr.direction.x > 0 else 'left')
                         elif axis == 'y' and spr.direction.y:
                             self.tile_collision_y(spr, tile, 'up' if spr.direction.y < 0 else 'down')
+                if has_underwater_attr:
+                        self.check_spr_underwater(spr)
     
     def tile_collision_x(self, sprite: pg.sprite.Sprite, tile: pg.Rect, direction: str) -> None:
         if not self.step_over_tile(sprite, tile.x // TILE_SIZE, tile.y // TILE_SIZE):

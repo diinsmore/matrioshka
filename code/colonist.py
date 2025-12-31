@@ -51,8 +51,8 @@ class Colonist(AnimatedSprite):
         self.oxygen_icon = self.graphics['icons']['oxygen']
         self.oxygen_icon_w, self.oxygen_icon_h = self.oxygen_icon.get_size()
         self.alarms = {
-            'lose oxygen': Alarm(length=500, fn=self.lose_oxygen),
-            'regen hp': Alarm(length=1000, fn=self.regen_hp)
+            'lose oxygen': Alarm(length=2500, fn=self.lose_oxygen),
+            'regen hp': Alarm(length=10000, fn=self.regen_hp)
         }
     
     def get_current_biome(self) -> str:
