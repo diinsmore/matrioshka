@@ -35,9 +35,10 @@ class Colonist(AnimatedSprite):
         self.spawn_point = xy
         self.graphics = assets['graphics']
         self.sprite_manager = sprite_manager
+        self.biome_order, self.biome_idxs_to_names = proc_gen.biome_order, proc_gen.biome_idxs_to_names
         self.save_data = save_data
         
-        self.current_biome = None
+        self.current_biome = proc_gen.current_biome
         self.facing_left = save_data['facing left'] if save_data else True
         self.grounded = False
         self.default_gravity = self.gravity
@@ -55,13 +56,11 @@ class Colonist(AnimatedSprite):
             'regen hp': Alarm(length=10000, fn=self.regen_hp)
         }
     
-    def get_current_biome(self) -> str:
+    def update_current_biome(self) -> None:
         if self.direction:
-            biome_idx = (self.rect.x // TILE_SIZE) // BIOME_WIDTH
-            if self.biome_order[self.current_biome] != biome_idx:
-                for biome in self.biome_order.keys():
-                    if self.biome_order[biome] == biome_idx:
-                        return biome
+            biome = self.biome_idxs_to_names[(self.rect.x // TILE_SIZE) // BIOME_WIDTH]
+            if not self.current_biome or self.current_biome != biome:
+                self.current_biome = biome
                         
     def check_oxygen_level(self) -> None:
         if self.underwater:
@@ -117,7 +116,7 @@ class Colonist(AnimatedSprite):
             alarm.update()
 
     def update(self, dt: float) -> None:
-        self.get_current_biome()
+        self.update_current_biome()
         self.check_oxygen_level()
         self.check_hp_level()
         self.update_alarms()

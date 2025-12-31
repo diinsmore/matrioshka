@@ -37,8 +37,6 @@ class Player(Colonist):
             save_data=save_data
         )
         self.keyboard = keyboard
-        self.current_biome = proc_gen.current_biome
-        self.biome_order = proc_gen.biome_order
         self.z = Z_LAYERS['player']
         self.inventory = PlayerInventory(parent_sprite=self, save_data=save_data)
 
@@ -63,9 +61,6 @@ class Player(Colonist):
         self.item_holding = None
     
     def update(self, dt: float) -> None:
-        self.get_current_biome()
+        super().update(dt)
         self.inventory.get_idx_selection(self.keyboard)
         self.render_hearts()
-        self.check_oxygen_level()
-        self.check_hp_level()
-        self.update_alarms()

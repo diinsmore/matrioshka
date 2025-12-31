@@ -20,6 +20,7 @@ class ProcGen:
             self.load_saved_data()
         else:
             self.biome_order = self.order_biomes()
+            self.biome_idxs_to_names = {i: biome for biome, i in self.biome_order.items()}
             self.current_biome = 'forest'
             self.terrain_gen = TerrainGen(self.names_to_ids, self.biome_order, self.current_biome)
             self.tile_map, self.height_map, self.tree_map = self.terrain_gen.tile_map, self.terrain_gen.height_map, self.terrain_gen.tree_gen.map

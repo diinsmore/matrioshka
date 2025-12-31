@@ -212,7 +212,7 @@ class CollisionDetection:
             if spr.gravity == spr.default_gravity:
                 spr.gravity //= 10
             if spr.jump_height == spr.default_jump_height:
-                spr.jump_height = int(spr.jump_height / 1.5)
+                spr.jump_height = int(spr.jump_height / 1.25)
         else:
             spr.gravity = spr.default_gravity
             spr.jump_height = spr.default_jump_height

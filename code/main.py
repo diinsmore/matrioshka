@@ -127,6 +127,7 @@ class Main:
         self.graphics_engine.update(dt) 
         self.sprite_manager.update(self.player, dt) # keep below the graphics engine otherwise the ui for machines will be rendered over
         self.graphics_engine.terrain.render_water()
+        self.proc_gen.current_biome = self.player.current_biome
 
     def run(self) -> None:
         while self.running:
