@@ -35,7 +35,7 @@ class Colonist(AnimatedSprite):
         self.spawn_point = xy
         self.graphics = assets['graphics']
         self.sprite_manager = sprite_manager
-        self.biome_order, self.biome_idxs_to_names = proc_gen.biome_order, proc_gen.biome_idxs_to_names
+        self.biome_order, self.idxs_to_biomes = proc_gen.biome_order, proc_gen.idxs_to_biomes
         self.save_data = save_data
         
         self.current_biome = proc_gen.current_biome
@@ -58,7 +58,7 @@ class Colonist(AnimatedSprite):
     
     def update_current_biome(self) -> None:
         if self.direction:
-            biome = self.biome_idxs_to_names[(self.rect.x // TILE_SIZE) // BIOME_WIDTH]
+            biome = self.idxs_to_biomes[(self.rect.x // TILE_SIZE) // BIOME_WIDTH]
             if not self.current_biome or self.current_biome != biome:
                 self.current_biome = biome
                         

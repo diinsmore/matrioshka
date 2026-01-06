@@ -5,8 +5,10 @@ TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
 MAP_SIZE = (3000, 200)
-# since pygame's coordinate system starts in the topleft, higher elevation values = lower in the world
-BIOMES = { # TODO: the highlands & snow noise parameters are especially in need of fine-tuning
+WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
+WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
+
+BIOMES = { 
     'highlands': {
         'height map': {'scale': 325, 'octaves': 5, 'persistence': 1.6, 'lacunarity': 2.1},
         'cave map': {'scale': 30.0, 'octaves': 5, 'persistence': 2.0, 'lacunarity': 2.3, 'threshold': 0.4},
@@ -28,7 +30,7 @@ BIOMES = { # TODO: the highlands & snow noise parameters are especially in need 
         'tile probs': {'dirt': 35, 'stone': 25, 'clay': 7, 'tin': 5, 'coal': 9, 'iron': 11, 'copper': 8},
         'liquid probs': {'water': 7, 'lava': 2},
         'tree probs': 30,
-        'lake prob': 10
+        'lake threshold': 0.45
     },
     'taiga': {
         'height map': {'scale': 375, 'octaves': 4, 'persistence': 1.3, 'lacunarity': 1.6},
@@ -37,7 +39,7 @@ BIOMES = { # TODO: the highlands & snow noise parameters are especially in need 
         'tile probs': {'stone': 35, 'dirt': 25, 'clay': 4, 'ice': 15, 'coal': 13, 'iron': 8},
         'liquid probs': {'water': 5},
         'tree probs': 20,
-        'lake prob': 5
+        'lake threshold': 0.41
     },
     'tundra': {
         'height map': {'scale': 450, 'octaves': 3, 'persistence': 1.2, 'lacunarity': 1.5},
@@ -54,16 +56,8 @@ BIOMES = { # TODO: the highlands & snow noise parameters are especially in need 
         'liquid probs': {'oil': 6, 'lava': 9},
     },  
 }
-
 BIOME_WIDTH = MAP_SIZE[0] // (len(BIOMES) - 1) # -1 since the underworld spans the entire map
-TREE_BIOMES = ['forest', 'taiga']
-
-WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
-WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
-
-GRAVITY = 1200
-
-Z_LAYERS = {'clouds': 0, 'bg': 1, 'main': 2, 'player': 3}
+TREE_BIOMES = {'forest', 'taiga'}
 
 TILES = {
     'dirt': {'hardness': 100, 'rgb': (82, 71, 69)},
@@ -83,15 +77,16 @@ TILES = {
     'hellstone': {'hardness': 950, 'rgb': (132, 34, 34)},
     'obsidian': {'hardness': 1000, 'rgb': (32, 23, 43)},
 }
-
-ramp_materials = ['dirt', 'sand', 'stone', 'ice']
 RAMP_TILES = []
-for m in ramp_materials:
-    RAMP_TILES.append(f'{m} ramp right')
-    RAMP_TILES.append(f'{m} ramp left')
-
+for material in ['dirt', 'sand', 'stone', 'ice']:
+    RAMP_TILES.append(f'{material} ramp right')
+    RAMP_TILES.append(f'{material} ramp left')
 TILE_REACH_RADIUS = 5
 TILE_ORE_RATIO = 50 # amount of ore 1 tile is worth
+
+GRAVITY = 1200
+
+Z_LAYERS = {'clouds': 0, 'bg': 1, 'main': 2, 'player': 3}
 
 # 'producers' specifies who/what can craft a given item
 TOOLS = {
