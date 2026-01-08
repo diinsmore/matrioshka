@@ -58,7 +58,7 @@ class ProcGen:
 
     def get_tile_material(self, tile_id: int) -> str:
         name = self.ids_to_names[tile_id]
-        return name.split(' ')[0] if tile_id in self.ramp_ids else tile_name
+        return name.split(' ')[0] if tile_id in self.ramp_ids else name
 
     @staticmethod
     def order_biomes() -> tuple[dict[str, int], dict[int, str]]:
@@ -271,24 +271,24 @@ class CaveGen:
 
 class LakeGen:
     def __init__(self, terrain: TerrainGen, proc_gen: ProcGen):
-        self.height_map = terrain.height_map
+        self.tile_map, self.height_map = terrain.tile_map, terrain.height_map
         self.seed = terrain.seed
-        self.biome_order = proc_gen.biome_order
+        self.biome_order, self.idxs_to_biomes = proc_gen.biome_order, proc_gen.idxs_to_biomes
         
         self.map = np.zeros((MAP_SIZE), dtype=np.uint8)
-        self.min_width, self.max_width = 4, 16
-        self.min_depth, self.max_depth = 2, 8 
+        self.min_width, self.max_width = 4, (RES[0] // 2) // TILE_SIZE
+        self.min_depth, self.max_depth = 4, 16
         self.lake_biomes = [b for b in self.biome_order if 'lake threshold' in BIOMES[b]]
         self.lake_borders = []
-        self.water_id = proc_gen.names_to_ids['water']
+        self.water_id, self.air_id = proc_gen.names_to_ids['water'], proc_gen.names_to_ids['air']
         self.gen_map()
-        terrain.tile_map[self.map == self.water_id] = self.water_id
+        self.tile_map[self.map == self.water_id] = self.water_id
 
     def gen_map(self) -> None:
         for biome in self.lake_biomes:
             biome_data = BIOMES[biome]
             noise_params, lake_threshold = biome_data['height map'], biome_data['lake threshold']
-            scale = noise_params['scale'] * 0.6 
+            scale = noise_params['scale'] * 0.3
             start_x = self.biome_order[biome] * BIOME_WIDTH
             for x in range(start_x, start_x + BIOME_WIDTH):
                 surface_lvl = int(self.height_map[x])
@@ -306,21 +306,41 @@ class LakeGen:
                     if (n + 1.0) / 2.0 < lake_threshold:
                         self.map[x, surface_lvl + y] = self.water_id
                     if y == 0:
-                        self.update_lake_borders(x, y, surface_lvl, valid_tile=self.map[x, surface_lvl + y] == self.water_id)
+                        self.update_lake_borders(x, surface_lvl, valid_tile=self.map[x, surface_lvl] == self.water_id)
+        self.refine_shape()
 
-        self.refine_elevation()
-
-    def update_lake_borders(self, x: int, y: int, surface_lvl: int, valid_tile: bool) -> None:
+    def update_lake_borders(self, x: int, surface_lvl: int, valid_tile: bool) -> None:
         if valid_tile: # check if it marks the left border of a new lake
-            if self.map[x - 1, int(self.height_map[x - 1])] != self.water_id and (x, surface_lvl) not in self.lake_borders:
-                self.lake_borders.append((x, surface_lvl)) # left border
+            if x == 0 or self.map[x - 1, int(self.height_map[x - 1])] != self.water_id:
+                self.lake_borders.append([x, surface_lvl])
         else: # check if the previous tile is the end of an existing lake
-            prev_surface_tile = (x - 1, int(self.height_map[x - 1]))
-            if self.map[prev_surface_tile] == self.water_id and prev_surface_tile not in self.lake_borders:
-                self.lake_borders.append(prev_surface_tile) # right border
+            if x > 0 and self.lake_borders is not None:
+                surface_tile_left = [x - 1, int(self.height_map[x - 1])]
+                if self.map[tuple(surface_tile_left)] == self.water_id:
+                    self.lake_borders[-1].extend(surface_tile_left) 
+    
+    def refine_shape(self) -> None: # TODO: add mud tiles around the edges
+        for coords in self.lake_borders: 
+            if len(coords) < 4:
+                coords = self.add_end_coords(coords)
+            x0, y0, x1, y1 = coords
+            if abs(x1 - x0) < self.min_width:
+                self.map[x0:x1 + 1, :] = self.air_id
+                continue
+            lowest_elev = max(y0, y1)
+            for x in range(x0, x1 + 1):
+                surface_lvl = int(self.height_map[x]) 
+                if surface_lvl < lowest_elev:
+                    self.map[x:x1 + 1, :] = self.air_id
+                    break
 
-    def refine_elevation(self) -> None:
-       pass
+    def add_end_coords(self, coords: list[int, int]) -> list[int, int, int, int]:
+        x0 = coords[0]
+        biome_end = ((x0 // BIOME_WIDTH) * BIOME_WIDTH) + BIOME_WIDTH - 1
+        end_x = min(x0 + self.max_width, biome_end)
+        end_y = int(self.height_map[end_x])
+        coords.extend([end_x, end_y])
+        return coords
 
 
 class TreeGen:
