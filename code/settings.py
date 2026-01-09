@@ -201,8 +201,8 @@ DECOR = {
 }
 
 PLACEABLE_ITEMS = [
-    *TILES, *MACHINES, *[l for l in LOGISTICS if l != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
-    *[f'{m} chest' for m in STORAGE['chest']['materials']], 'glass', 'lab'
+    *TILES, *MACHINES, *[item for item in LOGISTICS if item != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
+    *[f'{material} chest' for material in STORAGE['chest']['materials']], 'glass', 'lab', 'wood torch'
 ]
 
 OBJ_ITEMS = [item for item in PLACEABLE_ITEMS if item not in {*TILES, 'glass'}] # has a class to instantiate after placement

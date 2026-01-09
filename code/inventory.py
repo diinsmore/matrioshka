@@ -45,7 +45,7 @@ class SpriteInventory:
             if item in self.slot_capacity.keys():
                 max_amount = min(amount, self.slot_capacity['item'] - self.contents[item]['amount'])
             self.contents[item]['amount'] += max_amount
-        if not self.parent_sprite.item_holding == item:
+        if not self.parent_sprite.item_holding:
             self.parent_sprite.item_holding = item
             self.index = self.contents[item]['index']
             

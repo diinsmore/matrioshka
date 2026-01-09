@@ -26,7 +26,9 @@ class Keyboard:
             'toggle craft window ui': pg.K_c,
             'toggle mini map ui': pg.K_m,
             'toggle HUD ui': pg.K_RSHIFT, # don't use h, reserved for rotating a pipe's transport direction horizontally
-            'close ui window': pg.K_u,       
+            'close ui window': pg.K_u,
+            'stop holding item': pg.K_q,
+            'drop item': pg.K_z
         }
 
     def update(self) -> None:

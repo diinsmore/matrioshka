@@ -33,7 +33,7 @@ class InventoryUI:
         self.input_manager = input_manager
         self.padding = 5
         self.top = top + self.padding
-        self.player = player
+        self.player, self.inventory = player, player.inventory
         self.mech_sprites = sprite_manager.mech_sprites
         self.get_sprites_in_radius = sprite_manager.get_sprites_in_radius
         self.gen_outline = gen_outline
@@ -45,6 +45,7 @@ class InventoryUI:
         
         self.graphics, self.fonts, self.colors = self.assets['graphics'], self.assets['fonts'], self.assets['colors']
         self.num_cols, self.num_rows = 5, 2
+        self.max_idx = (self.num_cols * self.num_rows) - 1
         self.slot_len = TILE_SIZE * 2
         self.outline_width, self.outline_height = self.slot_len * self.num_cols, self.slot_len * self.num_rows
         self.icon_size = pg.Vector2(TILE_SIZE, TILE_SIZE)
@@ -58,7 +59,6 @@ class InventoryUI:
             self.graphics, 
             player, 
             input_manager, 
-            self.player.inventory, 
             self.outline, 
             self.slot_len, 
             self.num_cols, 
@@ -71,7 +71,7 @@ class InventoryUI:
         self.item_placement = None # not initialized yet
 
     def update_dimensions(self) -> None:
-        self.num_rows = 2 if not self.expand else (self.player.inventory.num_slots // self.num_cols)
+        self.num_rows = 2 if not self.expand else (self.inventory.num_slots // self.num_cols)
         self.outline_height = self.slot_len * self.num_rows
         self.outline = pg.Rect(self.padding, self.top, self.outline_width, self.outline_height)
 
@@ -80,7 +80,7 @@ class InventoryUI:
         self.gen_outline(self.outline)
 
     def render_slots(self) -> None:
-        selected_idx = self.player.inventory.index
+        selected_idx = self.inventory.index
         for x in range(self.num_cols):
             for y in range(self.num_rows):
                 box = pg.Rect((self.padding, self.top) + pg.Vector2(x * self.slot_len, y * self.slot_len), (self.slot_len - 1, self.slot_len - 1))
@@ -96,8 +96,10 @@ class InventoryUI:
         self.screen.blit(hl_surf, hl_rect)
         
     def render_icons(self) -> None:
-        for item_name, item_data in list(self.player.inventory.contents.items()): # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
+        for item_name, item_data in list(self.inventory.contents.items()): # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
             try:
+                if not self.expand and item_data['index'] > self.max_idx:
+                    return
                 surf = self.get_item_surf(item_name)
                 row, col = divmod(item_data['index'], self.num_cols) # determine the slot an item corresponds to
                 topleft = self.outline.topleft + pg.Vector2(col * self.slot_len, row * self.slot_len)
