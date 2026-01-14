@@ -46,6 +46,7 @@ class ItemDrag:
         self.amount = None
         self.material_names, self.tile_names = set(MATERIALS.keys()), set(TILES.keys())
         self.machine_recipes = {item for machine in MACHINES.values() for item in machine['recipe']}
+        self.machine_inputs = (self.material_names | self.tile_names | self.machine_recipes)
         self.old_pipe_idx = None # storing the original pipe index if it gets rotated while being dragged
         self.item_placement = None # not initialized yet
 
@@ -88,13 +89,14 @@ class ItemDrag:
         self.update_item_data(item_name, click_type, add=True)
 
     def end_drag(self) -> None: 
-        if self.player.item_holding: # prevents a KeyError from trying to place an item immediately before dying and having item_holding set to None
-            if self.player.item_holding in (self.material_names | self.tile_names | self.machine_recipes) and \
-            not self.item_placement.valid_placement(self.mouse.tile_xy, self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
+        if item := self.player.item_holding: # prevents a KeyError from trying to place an item immediately before dying and having item_holding set to None
+            if item in self.machine_inputs and \
+            not self.item_placement.valid_placement(self.item_placement.get_tiles_covered(self.mouse.tile_xy, self.graphics[item]), self.player): # calling valid_placement to distinguish between placing e.g a copper block in the smelt compartment vs on the ground
                 self.place_item_in_machine()
             else:
-                if self.player.item_holding in PLACEABLE_ITEMS:
+                if item in PLACEABLE_ITEMS:
                     self.item_placement.place_item(self.player, self.mouse.tile_xy, self.old_pipe_idx)
+                    
             if self.player.item_holding not in self.inventory.contents: # placed the last of its kind
                 self.update_item_data(remove=True)
 

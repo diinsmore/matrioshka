@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 
 import pygame as pg
 import numpy as np
-from math import ceil
 from collections import defaultdict
 
 from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, MACHINES, PIPE_TRANSPORT_DIRS
@@ -30,65 +29,62 @@ class ItemPlacement:
     ):
         self.screen = screen
         self.cam_offset = cam_offset
-        self.tile_map = proc_gen.tile_map
-        self.names_to_ids = proc_gen.names_to_ids
+        self.tile_map, self.names_to_ids = proc_gen.tile_map, proc_gen.names_to_ids
         self.collision_map = collision_map
         self.sprite_manager = sprite_manager
-        self.rect_in_sprite_radius = sprite_manager.rect_in_sprite_radius
-        self.items_init_when_placed = sprite_manager.items_init_when_placed
+        self.rect_in_sprite_radius, self.items_init_when_placed = sprite_manager.rect_in_sprite_radius, sprite_manager.items_init_when_placed
         self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.player = player
         self.graphics = assets['graphics']
-        self.gen_outline = ui.gen_outline
-        self.gen_bg = ui.gen_bg
-        self.render_item_amount = ui.render_item_amount
+        self.gen_outline, self.gen_bg, self.render_item_amount = ui.gen_outline, ui.gen_bg, ui.render_item_amount
         self.save_data = save_data
        
         self.obj_map = np.full(MAP_SIZE, None, dtype=object) # stores every tile an object overlaps with (tile_map only stores the topleft since it controls rendering)
         self.machine_ids = {self.names_to_ids[m] for m in MACHINES if 'pipe' not in m} | {self.names_to_ids['item extended']}
         self.pipe_ids = {self.names_to_ids[f'pipe {i}'] for i in range(len(PIPE_TRANSPORT_DIRS))}
+        self.tile_ids = {self.names_to_ids[name] for name in TILES}
+        self.ramp_ids = {self.names_to_ids[name] for name in RAMP_TILES}
+        self.solid_tile_ids = self.tile_ids | self.ramp_ids
+        self.tiles_can_place_over = {self.names_to_ids['air'], self.names_to_ids['water']}
 
-    def place_item(self, sprite: pg.sprite.Sprite, tile_xy: tuple[int, int], old_pipe_idx: int=None) -> None:
+    def place_item(self, sprite: pg.sprite.Sprite, xy: tuple[int, int], old_pipe_idx: int=None) -> None:
         surf = self.graphics[sprite.item_holding]
         if surf.size[0] <= TILE_SIZE and surf.size[1] <= TILE_SIZE:
-            if self.valid_placement(tile_xy, sprite):
-                self.place_single_tile_item(tile_xy, sprite, old_pipe_idx)
+            if self.valid_placement(xy, sprite):
+                self.place_single_tile_item(xy, sprite, old_pipe_idx)
         else:
-            tile_xy_list = self.get_tile_xy_list(tile_xy, surf)
-            if self.valid_placement(tile_xy_list, sprite):
-                self.place_multi_tile_item(tile_xy_list, surf, sprite)
-    
-    def valid_placement(self, tile_xy: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
-        if isinstance(tile_xy, tuple):
-            x, y = tile_xy
-            valid = all((
-                self.can_reach_tile(x, y, sprite.rect.center),
-                self.tile_map[x, y] in {self.names_to_ids['air'], self.names_to_ids['water']},
-                self.valid_item_border(x, y, single_tile=True) if 'pipe' not in sprite.item_holding else self.valid_pipe_border(x, y, int(sprite.item_holding[-1]))
-            ))
-        else:
-            grounded = all((self.valid_item_border(*xy, multi_tile=True) for xy in self.get_ground_coords(tile_xy)))
-            valid = grounded and all((self.can_reach_tile(*xy, sprite.rect.center) and self.tile_map[xy] == self.names_to_ids['air'] for xy in tile_xy))
-        return valid
+            tiles_covered = self.get_tiles_covered(xy, surf)
+            if self.valid_placement(tiles_covered, sprite):
+                print('true')
+                self.place_multi_tile_item(tiles_covered, surf, sprite)
+            else:
+                print('false')
+
+    def valid_placement(self, tiles_covered: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
+        if isinstance(tiles_covered, tuple):
+            return self.tile_map[*tiles_covered] in self.tiles_can_place_over and self.can_reach_tile(*tiles_covered, sprite.rect.center) and \
+            self.valid_item_border(sprite.item_holding, tiles_covered)
+        
+        return self.valid_item_border(sprite.item_holding, self.get_ground_tiles(tiles_covered)) and \
+        self.can_reach_tile(*tiles_covered[0], sprite.rect.center) and all(self.tile_map[xy] in self.tiles_can_place_over for xy in tiles_covered)
         
     def can_reach_tile(self, x: int, y: int, sprite_xy_world: tuple[int, int]) -> bool:
         sprite_tile_xy = pg.Vector2(sprite_xy_world) // TILE_SIZE
         return abs(x - sprite_tile_xy.x) <= TILE_REACH_RADIUS and abs(y - sprite_tile_xy.y) <= TILE_REACH_RADIUS 
     
     @staticmethod
-    def get_ground_coords(tile_xy: tuple[int, int]) -> list[tuple[int, int]]:
-        max_y = max([xy[1] for xy in tile_xy])
-        return [xy for xy in tile_xy if xy[1] == max_y]
+    def get_ground_tiles(tiles_covered: tuple[int, int]) -> list[tuple[int, int]]:
+        max_y = max([xy[1] for xy in tiles_covered])
+        return [xy for xy in tiles_covered if xy[1] == max_y]
 
-    def valid_item_border(self, x: int, y: int, single_tile: bool=False, multi_tile: bool=False) -> bool:
-        tile_ids = {self.names_to_ids[name] for name in list(TILES.keys())}
-        if single_tile:
-            for name in RAMP_TILES:
-                tile_ids.add(name)
-            return any(self.tile_map[xy] in tile_ids for xy in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]) # TODO: update the ramp tile checks to prevent placing tiles that only attach to the slanted side
-        else:
-            return self.tile_map[x, y + 1] in tile_ids
-
+    def valid_item_border(self, item: str, tiles_covered: tuple[int, int] | list[tuple[int, int]]) -> bool:
+        if isinstance(tiles_covered, tuple):
+            x, y = tiles_covered
+            if 'pipe' not in item:
+                return any(self.tile_map[xy] in self.solid_tile_ids for xy in [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]) # TODO: update the ramp tile checks to prevent placing tiles that only attach to the slanted side
+            return self.valid_pipe_border(x, y, int(item[-1]))
+        return all(self.tile_map[xy[0], xy[1] + 1] in self.tile_ids for xy in tiles_covered) # tiles_covered here only refers to the tiles directly above the surface
+        
     def valid_pipe_border(self, x: int, y: int, pipe_idx: int) -> bool:
         pipe_data = PIPE_TRANSPORT_DIRS[pipe_idx]
         for dx, dy in pipe_data if pipe_idx <= 5 else (pipe_data['horizontal'] + pipe_data['vertical']):
@@ -103,40 +99,30 @@ class ItemPlacement:
         if sprite.item_holding in OBJ_ITEMS:
             self.init_obj(sprite.item_holding, [tile_xy])  
 
-    def place_multi_tile_item(self, tile_xy_list: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
+    def place_multi_tile_item(self, tiles_covered: list[tuple[int, int]], surf: pg.Surface, sprite: pg.sprite.Sprite) -> None:
         obj = sprite.item_holding in OBJ_ITEMS
-        for i, xy in enumerate(tile_xy_list):
+        for i, xy in enumerate(tiles_covered):
             if i == 0:
                 self.tile_map[xy] = self.names_to_ids[sprite.item_holding] # only store the topleft as the item ID to avoid rendering multiple surfaces
                 if obj:
-                    self.init_obj(sprite.item_holding, tile_xy_list)
+                    self.init_obj(sprite.item_holding, tiles_covered)
             else:
                 self.tile_map[xy] = self.names_to_ids['item extended'] 
             self.collision_map.update_map(xy, add_tile=True)
         sprite.inventory.remove_item(sprite.item_holding)
-        sprite.item_holding = None
 
-    def get_tile_xy_list(self, tile_xy: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
-        '''return a list of tile map coordinates to update when placing items that cover >1 tile'''
-        coords = []
-        tile_span_x = ceil(image.get_width() / TILE_SIZE)
-        tile_span_y = ceil(image.get_height() / TILE_SIZE)
-        for x in range(tile_span_x):
-            for y in range(tile_span_y):
-                coords.append((tile_xy[0] + x, tile_xy[1] + y))
-        return coords
+    @staticmethod
+    def get_tiles_covered(xy: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
+        tiles = [] 
+        x, y = xy
+        for tx in range(int(image.get_width() / TILE_SIZE)):
+            for ty in range(int(image.get_height() / TILE_SIZE)):
+                tiles.append((x + tx, y + ty))
+        return tiles
 
-    def render_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, tile_xy: tuple[int, int], player: Player) -> None:
-        '''add a slight tinge of color to the image to signal whether it can be placed at the current location'''
-        tiles_covered = ceil(icon_image.width / TILE_SIZE)
-        if tiles_covered == 1:
-            valid = self.valid_placement(tile_xy, player)
-        else:
-            coords_list = self.get_tile_xy_list(tile_xy, icon_image)
-            valid = self.valid_placement(coords_list, player)
-      
+    def render_ui(self, icon_image: pg.Surface, icon_rect: pg.Rect, xy: tuple[int, int], player: Player) -> None:
         tint_image = pg.Surface(icon_image.get_size())
-        tint_image.fill('green' if valid else 'red')
+        tint_image.fill('green' if self.valid_placement(self.get_tiles_covered(xy, icon_image), player) else 'red')
         tint_image.set_alpha(25)
         self.screen.blit(tint_image, tint_image.get_rect(topleft=icon_rect.topleft))
 

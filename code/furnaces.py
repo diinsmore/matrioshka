@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse, Keyboard
+    from input_manager import InputManager
     from player import Player
     import numpy as np
     
@@ -23,8 +23,7 @@ class Furnace(Machine, ABC):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -42,8 +41,7 @@ class Furnace(Machine, ABC):
             sprite_groups, 
             screen, 
             cam_offset, 
-            mouse, 
-            keyboard, 
+            input_manager, 
             player, 
             assets, 
             tile_map, 
@@ -59,7 +57,12 @@ class Furnace(Machine, ABC):
             'iron': {'speed': 5000, 'output': 'iron plate'},
             'iron plate': {'speed': 7000, 'output': 'steel plate'},
         }
-        self.inv = Inventory(input_slots={'fuel': InvSlot(valid_inputs=self.fuel_sources.keys()), 'smelt': InvSlot(valid_inputs=self.can_smelt.keys())})
+        self.inv = MachineInventory(
+            input_slots={
+                'fuel': MachineInventorySlot(valid_inputs=self.fuel_sources.keys()), 
+                'smelt': MachineInventorySlot(valid_inputs=self.can_smelt.keys())
+            }
+        )
         self.alarms = {}
 
     def update_active_state(self) -> None:
@@ -124,8 +127,7 @@ class BurnerFurnace(Furnace):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -144,8 +146,7 @@ class BurnerFurnace(Furnace):
             sprite_groups, 
             screen, 
             cam_offset, 
-            mouse, 
-            keyboard, 
+            input_manager, 
             player, 
             assets, 
             tile_map, 
@@ -171,8 +172,7 @@ class SteelFurnace(Furnace):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -190,8 +190,7 @@ class SteelFurnace(Furnace):
             sprite_groups, 
             screen, 
             cam_offset,
-            mouse, 
-            keyboard, 
+            input_manager, 
             player, 
             assets, 
             tile_map, 
@@ -224,8 +223,7 @@ class ElectricFurnace(Furnace):
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        mouse: Mouse, 
-        keyboard: Keyboard, 
+        input_manager: InputManager, 
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
@@ -243,8 +241,7 @@ class ElectricFurnace(Furnace):
             sprite_groups, 
             screen, 
             cam_offset, 
-            mouse, 
-            keyboard, 
+            input_manager, 
             player, 
             assets, 
             tile_map, 
