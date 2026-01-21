@@ -2,6 +2,7 @@ import pygame as pg
 import numpy as np
 import noise
 from random import randint, choice
+from dataclasses import dataclass
 
 from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE, PIPE_TRANSPORT_DIRS
 from helper_functions import load_image
@@ -269,50 +270,56 @@ class CaveGen:
         self.maps[biome] = cave_map
 
 
+@dataclass(slots=True)
+class MapSlice:
+    start_x: int
+    start_y: int
+    end_x: int
+    end_y: int
+
 class LakeGen:
     def __init__(self, terrain: TerrainGen, proc_gen: ProcGen):
-        self.tile_map, self.height_map, self.seed = terrain.tile_map, terrain.height_map, terrain.seed
-        self.biome_order, self.idxs_to_biomes = proc_gen.biome_order, proc_gen.idxs_to_biomes
-        self.water_id, self.air_id = proc_gen.names_to_ids['water'], proc_gen.names_to_ids['air']
-
+        self.tile_map, self.surface_lvls, self.seed = terrain.tile_map, terrain.surface_lvls, terrain.seed
+        self.biome_order, self.idxs_to_biomes, self.names_to_ids = proc_gen.biome_order, proc_gen.idxs_to_biomes, proc_gen.names_to_ids
+        self.ramp_ids = {self.names_to_ids[k] for k in self.names_to_ids if 'ramp' in k}
         self.map = np.zeros(MAP_SIZE, dtype=bool)
-        self.min_width, self.max_width = 4, (RES[0] // 2) // TILE_SIZE
+        
+        self.min_width, self.max_width = 8, (RES[0] // TILE_SIZE) // 2 
         self.min_depth, self.max_depth = 4, 16
-        self.lake_biomes = (b for b in self.biome_order if 'lake prob' in BIOMES[b])
+        self.lake_biomes = [b for b in self.biome_order if 'lake prob' in BIOMES[b]]
         self.gen_map()
-        self.tile_map[self.map == True] = self.water_id
+        self.tile_map[self.map == True] = self.names_to_ids['water']
 
     def gen_map(self) -> None:
-        for start_xy, end_xy in self.get_valleys():
-            biome = self.idxs_to_biomes[start_xy[0] // BIOME_WIDTH]
-            if randint(0, 100) < BIOMES[biome]['lake prob']:
-                fill_peak = max(start_xy[1], end_xy[1]) # only fill up to the lowest edge
-                floor = fill_peak + randint(self.min_depth, self.max_depth)
-                for x in range(start_xy[0] + 1, end_xy[0]):
-                    self.map[x, fill_peak:floor] = True     
+        for map_slice in self.get_valley_locations():
+            fill_peak = max(map_slice.start_y, map_slice.end_y)
+            if self.tile_map[map_slice.start_x if fill_peak == map_slice.start_y else map_slice.end_x, fill_peak] in self.ramp_ids: 
+                fill_peak += 1  # only fill the lake up to the next highest tile
+            floor = fill_peak + randint(self.min_depth, self.max_depth)
+            for x in range(map_slice.start_x, map_slice.end_x):
+                self.map[x, fill_peak:floor] = True  
+                self.tile_map[x, :fill_peak] = self.names_to_ids['air']
 
-    def get_valleys(self) -> list[list[tuple]]:
+    def get_valley_locations(self) -> list[MapSlice]:
         valleys = []
         for biome in self.lake_biomes:
             start_x = self.biome_order[biome] * BIOME_WIDTH
             end_x = start_x + BIOME_WIDTH
-            start_y = int(self.height_map[start_x])
-            valley_span = [(start_x, start_y)]
+            start_y = self.surface_lvls[start_x]
             for x in range(start_x + 1, end_x):
-                y = int(self.height_map[x])
-                if x - valley_span[0][0] > self.max_width:
-                    start_y = y
-                    valley_span = [(x, y)] 
+                y = self.surface_lvls[x]
+                if x - start_x > self.max_width:
+                    start_x, start_y = x, y # skip the valley, too wide
                     continue
                 if y < start_y: 
-                    if x - valley_span[0][0] >= self.min_width:
-                        valley_span.append((x, y))
-                        valleys.append(valley_span)
-                    start_y = y
-                    valley_span = [(x, y)] 
+                    if x - start_x >= self.min_width and randint(0, 100) < BIOMES[biome]['lake prob']:
+                        prev_val = None if not valleys else valleys[-1]
+                        if prev_val is None or start_x - prev_val.end_x >= prev_val.end_x - prev_val.start_x: # small lakes can be close together but larger lakes get spaced out
+                            valleys.append(MapSlice(start_x, start_y, x, y))
+                    start_x, start_y = x, y
                     continue
-        return valleys          
-
+        return valleys
+            
 
 class TreeGen:
     def __init__(self, terrain: TerrainGen, proc_gen: ProcGen):
