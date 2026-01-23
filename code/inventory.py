@@ -14,6 +14,7 @@ class SpriteInventory:
     def __init__(self, parent_sprite: pg.sprite.Sprite, save_data: dict[str, any]=None, default_contents: dict[str, dict[str, int]]=None):
         self.parent_sprite = parent_sprite
         if save_data:
+            print(save_data)
             self.contents = save_data['contents']
             self.index = save_data['index']
         else:

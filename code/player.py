@@ -38,7 +38,7 @@ class Player(Colonist):
         )
         self.keyboard = keyboard
         self.z = Z_LAYERS['player']
-        self.inventory = PlayerInventory(parent_sprite=self, save_data=save_data)
+        self.inventory = PlayerInventory(self, None if not save_data else save_data['inventory data'])
 
         self.heart_surf = self.graphics['icons']['heart']
         self.heart_width = self.heart_surf.get_width()

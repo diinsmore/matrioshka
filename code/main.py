@@ -97,21 +97,21 @@ class Main:
             save_data
         )
 
-        def make_save(self, file: str) -> None:
-            visited_tiles = self.ui.mini_map.visited_tiles
-            data = defaultdict(list, {
-                **self.proc_gen.make_save(), 
-                'current biome': self.player.current_biome, 
-                'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(), 
-                'weather': self.graphics_engine.weather.sky.make_save(), 
-                'sprites': defaultdict(list) 
-            })
-            self.load_sprite_data(data)
-            with open(file, 'w') as f:
-                json.dump(data, f)
+    def make_save(self, file: str) -> None:
+        visited_tiles = self.ui.mini_map.visited_tiles
+        data = defaultdict(list, {
+            **self.proc_gen.make_save(), 
+            'current biome': self.player.current_biome, 
+            'visited tiles': visited_tiles if isinstance(visited_tiles, list) else visited_tiles.tolist(), 
+            'weather': self.graphics_engine.weather.sky.make_save(), 
+            'sprites': defaultdict(list) 
+        })
+        self.load_sprite_data(data)
+        with open(file, 'w') as f:
+            json.dump(data, f)
 
     def load_sprite_data(self, data: dict[str, list]) -> None:
-        for sprite in [s for s in self.sprite_mgr.all_sprites if hasattr(s, 'get_save_data')]:
+        for sprite in [s for s in self.sprite_manager.all_sprites if hasattr(s, 'get_save_data')]:
             data['sprites'][cls_name_to_str(sprite)].append(sprite.get_save_data())
 
     def get_save_data(self) -> dict[str, list|dict] | None:
@@ -133,7 +133,7 @@ class Main:
         while self.running:
             for event in pg.event.get():
                 if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
-                 #   self.make_save('save.json')
+                    self.make_save('save.json')
                     pg.quit()
                     sys.exit()
             self.update(self.clock.tick(FPS) / 1000)

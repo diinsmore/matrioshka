@@ -184,9 +184,11 @@ class SpriteManager:
     def get_machine_init_params(self, name: str, tiles_covered: list[tuple[int, int]] | tuple[int, int], save_idx: int=None) -> dict[str, any]:
         tile_x, tile_y = tiles_covered if isinstance(tiles_covered, tuple) else tiles_covered[0] # only extract the topleft coordinate for multi-tile items
         params = {
-            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE), 'image': self.assets['graphics'][name], 
+            'xy': (tile_x * TILE_SIZE, tile_y * TILE_SIZE), 
+            'image': self.assets['graphics'][name], 
             'z': Z_LAYERS['main'], 
-            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites], 'screen': self.screen, 
+            'sprite_groups': [self.all_sprites, self.active_sprites, self.mech_sprites], 
+            'screen': self.screen, 
             'cam_offset': self.cam_offset, 
             'input_manager': self.input_manager,
             'player': self.player, 

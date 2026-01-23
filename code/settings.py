@@ -4,7 +4,7 @@ FPS = 60
 TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
-MAP_SIZE = (3000, 200)
+MAP_SIZE = (3000, 400)
 WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
 WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
 

@@ -29,7 +29,6 @@ class ProcGen:
         self.height_map = np.array(self.saved_data['height map'], dtype=np.float32)
         self.tree_map = self.saved_data['tree map']
         self.cave_maps = self.saved_data['cave maps']
-        self.item_transport_map = self.saved_data['item transport map']
         self.biome_order = self.saved_data['biome order']
         self.current_biome = self.saved_data['current biome']
         
@@ -90,16 +89,17 @@ class ProcGen:
             'tile map': self.tile_map.tolist(),
             'height map': self.height_map.tolist(),
             'tree map': [list(xy) for xy in self.tree_map],
-            'cave maps': {biome: arr if isinstance(arr, list) else arr.tolist() for biome, arr in self.cave_maps.items()},
-            'item transport map': self.item_transport_map.tolist(),
+            'cave maps': {biome: arr if isinstance(arr, list) else arr.tolist() for biome, arr in self.terrain.cave_gen.maps.items()},
             'biome order': self.biome_order,
         }
 
 
 class TerrainGen:
     def __init__(self, proc_gen: ProcGen):
-        self.names_to_ids = proc_gen.names_to_ids
-        self.biome_order, self.idxs_to_biomes, self.current_biome = proc_gen.biome_order, proc_gen.idxs_to_biomes, proc_gen.current_biome
+        self.names_to_ids: dict[str, int] = proc_gen.names_to_ids
+        self.biome_order: dict[str, int] = proc_gen.biome_order 
+        self.idxs_to_biomes: dict[int, str] = proc_gen.idxs_to_biomes
+        self.current_biome: str = proc_gen.current_biome
         
         self.biome_names = list(self.biome_order.keys())
         self.seed = 2285 # TODO: add the option to enter a custom seed

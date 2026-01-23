@@ -44,7 +44,7 @@ class Colonist(AnimatedSprite):
         self.default_gravity = self.gravity
         self.default_jump_height, self.jump_height = 350, 350 
         self.hp, self.max_hp = save_data['hp'] if save_data else 8, 8
-        self.inventory = SpriteInventory(parent_sprite=self)
+        self.inventory = SpriteInventory(self, None if not save_data else save_data['inventory data'])
         self.item_holding = save_data['item holding'] if save_data else None
         self.arm_strength = 4
         self.underwater = False

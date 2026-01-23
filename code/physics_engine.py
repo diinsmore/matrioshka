@@ -15,26 +15,14 @@ class PhysicsEngine:
         self.tile_map: np.ndarray = proc_gen.tile_map
         self.names_to_ids: dict[str, int] = proc_gen.names_to_ids
         self.ids_to_names: dict[int, str] = proc_gen.ids_to_names
-        self.keyboard = keyboard
-        self.key_bindings, self.held_keys, self.pressed_keys = keyboard.key_bindings, keyboard.held_keys, keyboard.pressed_keys
-        
         self.cam_offset = cam_offset
-        
-        self.collision_map = CollisionMap(self.tile_map, self.names_to_ids)
-        self.collision_detection = CollisionDetection(
-            self.collision_map, 
-            self.tile_map, 
-            self.names_to_ids, 
-            self.ids_to_names, 
-            self.cam_offset, 
-            self.step_over_tile
-        )
-        self.sprite_movement = SpriteMovement(
-            self.tile_map, 
-            self.names_to_ids, 
-            self.collision_detection.tile_collision_update, 
-            self.key_bindings
-        )
+        self.keyboard = keyboard
+        self.key_bindings: dict[str, int] = keyboard.key_bindings
+        self.held_keys: Sequence[bool] = keyboard.held_keys
+        self.pressed_keys: Sequence[bool] = keyboard.pressed_keys
+        self.collision_map = CollisionMap(self)
+        self.collision_detection = CollisionDetection(self)
+        self.sprite_movement = SpriteMovement(self)
 
     def step_over_tile(self, sprite, tile_x, tile_y) -> bool:
         if sprite.direction.y == 0:
@@ -50,9 +38,9 @@ class PhysicsEngine:
 
 
 class CollisionMap:
-    def __init__(self, tile_map: np.ndarray, names_to_ids: dict[str, int]):
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
+    def __init__(self, physics_engine: PhysicsEngine):
+        self.tile_map: np.ndarray = physics_engine.tile_map
+        self.names_to_ids: dict[str, int] = physics_engine.names_to_ids
 
         self.map = defaultdict(list)
         self.generate_map()
@@ -104,24 +92,16 @@ class CollisionMap:
         
 
 class CollisionDetection:
-    def __init__(
-        self, 
-        collision_map: CollisionMap, 
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int], 
-        ids_to_names: dict[int, str], 
-        cam_offset: pg.Vector2,
-        step_over_tile: callable
-    ):
-        self.collision_map = collision_map
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.ids_to_names = ids_to_names
-        self.cam_offset = cam_offset
-        self.step_over_tile = step_over_tile
+    def __init__(self, physics_engine: PhysicsEngine):
+        self.collision_map: CollisionMap = physics_engine.collision_map
+        self.tile_map: np.ndarray = physics_engine.tile_map
+        self.names_to_ids: dict[str, int] = physics_engine.names_to_ids
+        self.ids_to_names: dict[int, str] = physics_engine.ids_to_names
+        self.cam_offset: pg.Vector2 = physics_engine.cam_offset
+        self.step_over_tile: callable = physics_engine.step_over_tile
 
         self.ramp_ids = {self.names_to_ids[tile] for tile in self.names_to_ids if 'ramp' in tile}
-        self.liquid_ids = {self.names_to_ids['water']} # TODO: add water
+        self.liquid_ids = {self.names_to_ids['water']} # TODO: add lava
 
     def tile_collision_update(self, spr: pg.sprite.Sprite, axis: str) -> None:
         tiles_near = self.collision_map.search_map(spr)
@@ -220,21 +200,16 @@ class CollisionDetection:
 
 
 class SpriteMovement:
-    def __init__(
-        self, 
-        tile_map: np.ndarray, 
-        names_to_ids: dict[str, int], 
-        tile_collision_update: callable, 
-        key_bindings: dict[str, int]
-    ): 
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
-        self.tile_collision_update = tile_collision_update
-        self.key_move_left = key_bindings['move left']
-        self.key_move_right = key_bindings['move right']
-        self.key_jump = key_bindings['jump']
+    def __init__(self, physics_engine: PhysicsEngine):
+        self.tile_map: np.ndarray = physics_engine.tile_map
+        self.names_to_ids: dict[str, int] = physics_engine.names_to_ids
+        self.tile_collision_update: callable = physics_engine.collision_detection.tile_collision_update
+        key_bindings: dict[str, int] = physics_engine.key_bindings
+        self.key_move_left: int = key_bindings['move left']
+        self.key_move_right: int = key_bindings['move right']
+        self.key_jump: int = key_bindings['jump']
 
-        self.active_states = {'jumping', 'mining', 'chopping'} # TODO: revisit this line in case more relevant states are added
+        self.active_states: set[str] = {'jumping', 'mining', 'chopping'} # TODO: revisit this line in case more relevant states are added
 
     def move_sprite(self, sprite: pg.sprite.Sprite, direction_x: int, dt: float) -> None:
         if direction_x:
@@ -278,3 +253,11 @@ class SpriteMovement:
     def update(self, player: pg.sprite.Sprite, held_keys: Sequence[bool], pressed_keys: Sequence[bool], dt: float):
         self.move_sprite(player, held_keys[self.key_move_right] - held_keys[self.key_move_left], dt)
         self.jump(player, pressed_keys)
+
+
+class WaterFlow:
+    def __init__(self, physics_engine: PhysicsEngine):
+        self.tile_map: np.ndarray = physics_engine.tile_map
+        self.names_to_ids: dict[str, int] = physics_engine.names_to_ids
+        self.ids_to_names: dict[int, str] = physics_engine.ids_to_names
+        
