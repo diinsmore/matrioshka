@@ -1,10 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from input_manager import Mouse
-    from inventory_ui import InventoryUI
+    from ui import UI
     from sprite_manager import SpriteManager
-    from player import Player
+    from crafting import Crafting
 
 import pygame as pg
 from math import ceil
@@ -12,102 +11,66 @@ from math import ceil
 from settings import TILE_SIZE, TOOLS, MATERIALS, ELECTRICITY, PRODUCTION, LOGISTICS, RESEARCH, STORAGE, DECOR
 
 class CraftWindow:
-    def __init__(
-        self, 
-        mouse: Mouse,
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2,
-        assets: dict[str, dict[str, any]], 
-        inventory_ui: InventoryUI,
-        sprite_manager: SpriteManager,
-        player: Player,
-        get_height: callable,
-        gen_outline: callable,
-        gen_bg: callable,
-        render_inv_item_name: callable,
-        get_scaled_img: callable
-    ):
-        self.mouse = mouse
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.assets = assets
-        self.inventory_ui = inventory_ui
+    def __init__(self, ui: UI, sprite_manager: SpriteManager):
+        self.screen = ui.screen
+        self.cam_offset = ui.cam_offset
+        self.mouse = ui.mouse
+        self.player = ui.player
+        self.inventory_ui = ui.inventory_ui
+        self.gen_outline = ui.gen_outline
+        self.gen_bg = ui.gen_bg
+        self.render_inv_item_name = ui.render_inv_item_name
+        self.get_scaled_image = ui.get_scaled_image
         self.sprite_manager = sprite_manager
-        self.player = player
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
-        self.render_inv_item_name = render_inv_item_name
-        self.get_scaled_img = get_scaled_img
 
-        self.graphics, self.fonts, self.colors = self.assets['graphics'], self.assets['fonts'], self.assets['colors']
-        
-        self.height = get_height()
-        self.width = int(self.inventory_ui.outline.width * 1.3)
+        self.graphics = ui.assets['graphics']
+        self.fonts = ui.assets['fonts']
+        self.colors = ui.assets['colors']
+        self.height = ui.get_craft_window_height()
+        self.width = int(self.inventory_ui.outline_width * 1.3)
         self.padding = 5
-        # defining the outline as a class attribute to allow the HUD and potentially other ui elements to access its location
-        self.outline = pg.Rect(self.inventory_ui.outline.right + self.padding, self.padding, self.width, self.height)
-
+        self.outline_rect = pg.Rect(
+            self.inventory_ui.outline_rect_closed.right + self.padding, self.padding, self.width, self.height # the right side is the same with either outline rect
+        )
         self.opened = False
-
         self.cell_height = self.cell_width = TILE_SIZE * 2 # for the grid of items comprising a given category
-
-        self.category_grid = CategoryGrid(self.mouse, self.screen, self.cam_offset, self.outline, self.assets, self.padding, self.gen_outline, self.gen_bg)
-
+        self.category_grid = CategoryGrid(self)
         self.item_grid = ItemGrid(
-            self.mouse,
-            self.screen, 
-            self.graphics,
-            self.outline, 
-            self.outline.top + (self.category_grid.row_height * self.category_grid.num_rows) + self.padding,
-            self.category_grid.categories, 
-            self.category_grid.selected_category,
-            self.sprite_manager,
-            self.player,
-            self.gen_outline, 
-            self.render_inv_item_name,
-            self.get_scaled_img
+            self, self.outline_rect.top + (self.category_grid.row_height * self.category_grid.num_rows) + self.padding, 
+            sprite_manager.crafting.craft_item
         )
 
     def render(self) -> None:
-        self.gen_outline(self.outline, color='black')
-        self.gen_bg(pg.Rect(self.outline.topleft, self.outline.size), transparent=True)
+        self.gen_outline(self.outline_rect, color='black')
+        self.gen_bg(pg.Rect(self.outline_rect.topleft, self.outline_rect.size), transparent=True)
 
     def update(self) -> None:
         if self.opened:
             self.render()
-
             self.category_grid.opened = self.opened
             self.category_grid.update()
-            
             self.item_grid.selected_category = self.category_grid.selected_category
             self.item_grid.update()
 
 
 class CategoryGrid:
-    def __init__(
-        self, 
-        mouse: Mouse,
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2,
-        window_outline: pg.Rect, 
-        assets: dict[str, dict[str, any]], 
-        padding: int,
-        gen_outline: callable, 
-        gen_bg: callable
-    ):  
-        self.mouse = mouse
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.window_outline = window_outline
-        self.graphics, self.fonts, self.colors = assets['graphics'], assets['fonts'], assets['colors']
-        self.padding = padding
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
+    def __init__(self, craft_window: CraftWindow):
+        self.mouse = craft_window.mouse
+        self.screen = craft_window.screen
+        self.cam_offset = craft_window.cam_offset
+        self.window_outline_rect = craft_window.outline_rect
+        self.graphics = craft_window.graphics
+        self.fonts = craft_window.fonts
+        self.colors = craft_window.colors
+        self.padding = craft_window.padding
+        self.gen_outline = craft_window.gen_outline
+        self.gen_bg = craft_window.gen_bg
+        self.inv_ui = craft_window.inventory_ui
 
         self.opened = False
         self.categories = {
             'tools': {**TOOLS},
-            'materials': {**MATERIALS},
+            'materials': {k: v for k, v in MATERIALS.items() if v['recipe'] is not None}, # ignore items like wood that can't be crafted 
             'electricity': {**ELECTRICITY},
             'production': {**PRODUCTION},
             'logistics': {**LOGISTICS},
@@ -119,68 +82,70 @@ class CategoryGrid:
         self.open_subcategory = False
         self.category_keys = list(self.categories.keys())
         self.num_categories = len(self.category_keys)
-
         self.num_cols = 2
+        self.col_width = self.window_outline_rect.width // self.num_cols
         self.num_rows = self.num_categories // self.num_cols
-        self.col_width = self.window_outline.width // self.num_cols
-        self.row_height = (self.window_outline.height // 2) // self.num_rows
+        self.row_height = (self.window_outline_rect.height // 2) // self.num_rows
+        self.image_padding = 10
+        self.outline_padding = 2
+        self.borders = self.precompute_borders()
 
-        self.borders = {'x': [], 'y': []}
-        self.precompute_borders()
-
-    def precompute_borders(self) -> None:
-        '''store the coordinates of each column/row to reference when searching for the current cell being hovered over'''
+    def precompute_borders(self) -> dict[str, list[tuple[int, int]]]:
+        borders = {'x': [], 'y': []}
+        padding = 2 # account for the outline width
         for col in range(1, self.num_cols + 1):
-            padding = 2 # without this offset, an error is thrown when you move within the menu's borders from the topleft side, presumably due to the outline
-            self.borders['x'].append((self.window_outline.left, self.window_outline.left + (self.col_width * col) + padding))
-        
+            borders['x'].append((
+                self.window_outline_rect.left, 
+                self.window_outline_rect.left + (self.col_width * col) + self.outline_padding
+            ))
         for row in range(1, self.num_rows + 1):
-            self.borders['y'].append((self.window_outline.top, self.window_outline.top + (self.row_height * row) + padding))
+            borders['y'].append((
+                self.window_outline_rect.top, 
+                self.window_outline_rect.top + (self.row_height * row) + self.outline_padding
+            ))
+        return borders
 
-    def make_grid(self) -> None:
+    def render_grid(self) -> None:
         for col in range(self.num_cols):
-            left = self.window_outline.left + (self.col_width * col)
-            col_rect = pg.Rect(left, self.window_outline.top, self.col_width, self.row_height * self.num_rows)
+            left = self.window_outline_rect.left + (self.col_width * col)
+            col_rect = pg.Rect(left, self.window_outline_rect.top, self.col_width, self.row_height * self.num_rows)
             self.gen_outline(col_rect)
             pg.draw.rect(self.screen, 'black', col_rect, 1)
-
             for row in range(self.num_rows):
-                top = self.window_outline.top + (self.row_height * row)
-                row_rect = pg.Rect(self.window_outline.left, top, self.window_outline.width - 2, self.row_height)
+                top = self.window_outline_rect.top + (self.row_height * row)
+                row_rect = pg.Rect(
+                    self.window_outline_rect.left, top, 
+                    self.window_outline_rect.width - self.outline_padding, self.row_height
+                )
                 pg.draw.rect(self.screen, 'black', row_rect, 1)
-                
-                category_index = col + (row * self.num_cols)
-                category = self.category_keys[category_index]
+                category = self.category_keys[col + (row * self.num_cols)]
                 self.render_category_images(category, col, row)
                 self.render_category_names((left, top), category)
 
     def render_category_images(self, category: str, col: int, row: int) -> None:
-        '''render a graphic relating to a given crafting category'''
-        image = self.graphics['icons'][category].copy() # updating the alpha when clicked only works with a copy
+        image = self.graphics['icons'][category].copy()
         if category != self.selected_category:
             image.set_alpha(150)
-        
         # get the space between the border of the image and the cell containing it
         padding_x = self.col_width - image.get_width()
         padding_y = self.row_height - image.get_height()
-
         # center the image within a given cell
-        category_padding = 10 # account for the category label at the top 
         offset = pg.Vector2(
             (col * self.col_width) + (padding_x // 2), 
-            (row * self.row_height) + (padding_y // 2) + category_padding
+            (row * self.row_height) + (padding_y // 2) + self.image_padding
         ) 
-        
-        image_rect = image.get_rect(topleft = self.window_outline.topleft + offset)
+        image_rect = image.get_rect(topleft = self.window_outline_rect.topleft + offset)
         self.screen.blit(image, image_rect)
 
     def render_category_names(self, topleft: tuple[int, int], category: str) -> None:
-        padding = 2
         text = self.fonts['craft menu category'].render(category, True, self.colors['text'])
-        border = pg.Rect(topleft + pg.Vector2(padding, padding), text.size + pg.Vector2(padding * 2, padding * 2))
+        border = pg.Rect(
+            topleft + pg.Vector2(self.outline_padding, self.outline_padding), 
+            text.size + pg.Vector2(self.outline_padding * 2, self.outline_padding * 2)
+        )
         self.gen_bg(border, transparent=True)
-        self.gen_outline(border, color = 'black')
-        text_rect = text.get_rect(topleft = topleft + pg.Vector2(padding * 2, padding * 2))
+        self.gen_outline(border, color='black')
+        text_rect = text.get_rect(topleft=topleft + pg.Vector2(self.outline_padding * 2, self.outline_padding * 2))
         self.screen.blit(text, text_rect)
 
     def select_category(self) -> None:
@@ -193,74 +158,50 @@ class CategoryGrid:
 
     def mouse_on_grid(self) -> bool:
         x, y = self.mouse.screen_xy
-        return self.window_outline.left < x < self.window_outline.right and \
-                self.window_outline.top < y < self.window_outline.top + (self.num_rows * self.row_height)
+        return self.window_outline_rect.left < x < self.window_outline_rect.right and \
+        self.window_outline_rect.top < y < self.window_outline_rect.top + (self.num_rows * self.row_height)
 
-    def get_category_overlap(self) -> int:
-        '''determine which category is being hovered over by the mouse'''
-        cell_coords = []
+    def get_category_overlap(self) -> list[int]:
         x, y = self.mouse.screen_xy
-        for index, x_range in enumerate(self.borders['x']):
-            if x in range(x_range[0], x_range[1]):
-                cell_coords.append(index)
-                break
-        
-        for index, y_range in enumerate(self.borders['y']):
-            if y in range(y_range[0], y_range[1]):
-                cell_coords.append(index)
-                return cell_coords
+        return [
+            next((i for i, (x0, x1) in enumerate(self.borders['x']) if x0 <= x < x1), None),
+            next((i for i, (y0, y1) in enumerate(self.borders['y']) if y0 <= y < y1), None)
+        ]
 
     def update(self) -> None:
-        self.make_grid()
+        self.render_grid()
         self.select_category()
 
 
 class ItemGrid:
-    def __init__(
-        self, 
-        mouse: Mouse,
-        screen: pg.Surface, 
-        graphics: dict[str, dict[str, any]],
-        window_outline: pg.Surface,
-        top: int, 
-        categories: dict[str, list[str]],
-        selected_category: str,
-        sprite_manager: SpriteManager,
-        player: Player,
-        gen_outline: callable,
-        render_item_name: callable,
-        get_scaled_image: callable,
-    ):  
-        self.mouse = mouse
-        self.screen = screen
-        self.graphics = graphics
-        self.window_outline = window_outline
-        self.top = top
-        self.categories = categories
-        self.selected_category = selected_category
-        self.sprite_manager = sprite_manager
-        self.player = player
-        self.gen_outline = gen_outline
-        self.render_item_name = render_item_name
-        self.get_scaled_image = get_scaled_image
+    def __init__(self, craft_window: CraftWindow, top_pt: int, craft_item: callable):
+        self.craft_window = craft_window
+        self.mouse = craft_window.mouse
+        self.screen = craft_window.screen
+        self.graphics = craft_window.graphics
+        self.window_outline_rect = craft_window.outline_rect
+        self.categories = craft_window.category_grid.categories
+        self.player = craft_window.player
+        self.gen_outline = craft_window.gen_outline
+        self.render_inv_item_name = craft_window.render_inv_item_name
+        self.get_scaled_image = craft_window.get_scaled_image
+        self.craft_item = craft_item
+        self.top_pt = top_pt
         
         self.cell_width = self.cell_height = TILE_SIZE * 2
-        self.x_cells = self.window_outline.width // self.cell_width
-        self.left_padding = (self.window_outline.width - (self.x_cells * self.cell_width)) // 2
-        self.left = self.window_outline.left + self.left_padding
+        self.x_cells = self.window_outline_rect.width // self.cell_width
+        self.left_padding = (self.window_outline_rect.width - (self.x_cells * self.cell_width)) // 2
+        self.left = self.window_outline_rect.left + self.left_padding
 
-    def render_item_slots(self) -> None:
-        # not defining these in __init__ since they rely on the selected category
+    def render_item_slots(self) -> None: # not defining these in __init__ since they rely on the selected category
         self.num_slots = len(self.categories[self.selected_category])
         for x in range(self.x_cells):
             for y in range(ceil(self.num_slots / self.x_cells)):
                 index = x + (y * self.x_cells)
                 if index < self.num_slots:
                     cell = pg.Rect(
-                        self.left + (self.cell_width * x), 
-                        self.top + (self.cell_height * y), 
-                        self.cell_width - 1, 
-                        self.cell_height - 1
+                        self.left + (self.cell_width * x), self.top_pt + (self.cell_height * y), 
+                        self.cell_width - 1, self.cell_height - 1
                     )
                     rect = pg.draw.rect(self.screen, 'black', cell, 1)
                     self.render_item_images(index, x, y)
@@ -276,11 +217,10 @@ class ItemGrid:
                 scaled_image = self.get_scaled_image(image, item_name, self.cell_width, self.cell_height, padding)
                 rect = scaled_image.get_rect(center = (
                     self.left + (self.cell_width * x) + (self.cell_width // 2), 
-                    self.top + (self.cell_height * y) + (self.cell_height // 2)
+                    self.top_pt + (self.cell_height * y) + (self.cell_height // 2)
                 ))
                 self.screen.blit(scaled_image, rect)
-
-                self.render_item_name(rect, item_name)
+                self.render_inv_item_name(rect, item_name)
                 self.get_selected_item(rect, item_name)
         except KeyError:
             pass
@@ -288,7 +228,7 @@ class ItemGrid:
     def get_selected_item(self, rect: pg.Rect, item_name: str) -> None:
         if rect.collidepoint(self.mouse.screen_xy) and self.mouse.buttons_pressed['left']:
             item_data = self.categories[self.selected_category][item_name]
-            self.sprite_manager.crafting.craft_item(item_name, item_data['recipe'], self.player)
+            self.craft_item(item_name, item_data['recipe'], self.player)
 
     def update(self) -> None:
         if self.selected_category:

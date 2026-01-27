@@ -4,80 +4,77 @@ if TYPE_CHECKING:
     from input_manager import InputManager
     from player import Player
     from sprite_manager import SpriteManager
+    from ui import UI
     
 import pygame as pg
+from dataclasses import dataclass
 
 from settings import TILE_SIZE
 from item_drag import ItemDrag
 
+@dataclass(slots=True)
+class InventoryDimensions:
+    outline_rect_expanded: pg.Rect
+    outline_rect_closed: pg.Rect
+    item_rect_base: pg.Rect
+    slot_len: int
+    num_cols: int
+    num_rows: int
+
+
 class InventoryUI:
-    def __init__(
-        self, 
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2, 
-        assets: dict[str, dict[str, any]], 
-        input_manager: InputManager,
-        top: int, 
-        player: Player, 
-        sprite_manager: SpriteManager,
-        gen_outline: callable, 
-        gen_bg: callable, 
-        render_inv_item_name: callable, 
-        get_scaled_img: callable, 
-        get_grid_xy: callable,
-        render_item_amount: callable
-    ):  
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.assets = assets
-        self.input_manager = input_manager
-        self.padding = 5
-        self.top = top + self.padding
-        self.player, self.inventory = player, player.inventory
+    def __init__(self, ui: UI, input_manager: InputManager, sprite_manager: SpriteManager):  
+        self.screen = ui.screen
+        self.cam_offset = ui.cam_offset
+        self.top = ui.mini_map.outline_h + ui.mini_map.padding
+        self.player = ui.player
+        self.inventory = ui.player.inventory
+        self.gen_outline = ui.gen_outline
+        self.gen_bg = ui.gen_bg
+        self.render_inv_item_name = ui.render_inv_item_name
+        self.get_scaled_image = ui.get_scaled_image
+        self.get_grid_xy = ui.get_grid_xy
+        self.render_item_amount = ui.render_item_amount
         self.mech_sprites = sprite_manager.mech_sprites
         self.get_sprites_in_radius = sprite_manager.get_sprites_in_radius
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
-        self.render_inv_item_name = render_inv_item_name
-        self.get_scaled_img = get_scaled_img
-        self.get_grid_xy = get_grid_xy
-        self.render_item_amount = render_item_amount
         
-        self.graphics, self.fonts, self.colors = self.assets['graphics'], self.assets['fonts'], self.assets['colors']
-        self.num_cols, self.num_rows = 5, 2
-        self.max_idx = (self.num_cols * self.num_rows) - 1
+        self.graphics = ui.assets['graphics']
+        self.fonts = ui.assets['fonts']
+        self.colors = ui.assets['colors']
+        self.expand = False
+        self.num_slots = ui.inventory.num_slots
+        self.num_cols = 5
+        self.num_rows_expanded = self.num_slots // self.num_cols
+        self.num_rows_closed = 2
+        self.num_rows = self.num_rows_closed
+        self.max_idx_closed = (self.num_cols * self.num_rows_closed)
         self.slot_len = TILE_SIZE * 2
-        self.outline_width, self.outline_height = self.slot_len * self.num_cols, self.slot_len * self.num_rows
+        self.padding = 5
+        self.outline_width = self.slot_len * self.num_cols
+        self.outline_rect_expanded = pg.Rect(self.padding, self.top, self.outline_width, self.slot_len * self.num_rows_expanded)
+        self.outline_rect_closed = pg.Rect(self.padding, self.top, self.outline_width, self.slot_len * self.num_rows_closed)
+        self.outline_rect = self.outline_rect_closed
         self.icon_size = pg.Vector2(TILE_SIZE, TILE_SIZE)
         self.icon_padding = ((self.slot_len, self.slot_len) - self.icon_size) // 2
-        self.outline = pg.Rect(self.padding, self.top, self.outline_width, self.outline_height)
         self.render = True
-        self.expand = False
-        self.item_drag = ItemDrag(
-            screen, 
-            cam_offset, 
-            self.graphics, 
-            player, 
-            input_manager, 
-            self.outline, 
-            self.slot_len, 
-            self.num_cols, 
-            self.num_rows, 
-            pg.Rect(self.icon_padding, self.icon_size), 
-            self.mech_sprites, 
-            self.get_grid_xy, 
-            self.get_sprites_in_radius
+        inv_dims = InventoryDimensions(
+            self.outline_rect_expanded, self.outline_rect_closed, pg.Rect(self.icon_padding, self.icon_size), 
+            self.slot_len, self.num_cols, self.num_rows
         )
+        self.item_drag = ItemDrag(ui, self, inv_dims, sprite_manager, input_manager)
         self.item_placement = None # not initialized yet
 
     def update_dimensions(self) -> None:
-        self.num_rows = 2 if not self.expand else (self.inventory.num_slots // self.num_cols)
-        self.outline_height = self.slot_len * self.num_rows
-        self.outline = pg.Rect(self.padding, self.top, self.outline_width, self.outline_height)
+        if self.expand:
+            self.num_rows = self.num_rows_expanded
+            self.outline_rect = self.outline_rect_expanded
+        else:
+            self.num_rows = self.num_rows_closed
+            self.outline_rect = self.outline_rect_closed
 
     def render_bg(self) -> None:
-        self.gen_bg(self.outline, transparent=True)
-        self.gen_outline(self.outline)
+        self.gen_bg(self.outline_rect, transparent=True)
+        self.gen_outline(self.outline_rect)
 
     def render_slots(self) -> None:
         selected_idx = self.inventory.index
@@ -96,13 +93,12 @@ class InventoryUI:
         self.screen.blit(hl_surf, hl_rect)
         
     def render_icons(self) -> None:
-        for item_name, item_data in list(self.inventory.contents.items()): # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
+        inv_contents = list(self.inventory.contents.items()) # storing in a list to avoid the 'dictionary size changed during iteration' error when removing placed items
+        for item_name, item_data in inv_contents if self.expand else inv_contents[:self.max_idx_closed]:
             try:
-                if not self.expand and item_data['index'] > self.max_idx:
-                    return
                 surf = self.get_item_surf(item_name)
                 row, col = divmod(item_data['index'], self.num_cols) # determine the slot an item corresponds to
-                topleft = self.outline.topleft + pg.Vector2(col * self.slot_len, row * self.slot_len)
+                topleft = self.outline_rect.topleft + pg.Vector2(col * self.slot_len, row * self.slot_len)
                 padding = (pg.Vector2(self.slot_len, self.slot_len) - surf.get_size()) // 2
                 rect = surf.get_rect(topleft=topleft + padding)
                 self.screen.blit(surf, rect)
@@ -113,7 +109,7 @@ class InventoryUI:
 
     def get_item_surf(self, name: str) -> pg.Surface:
         surf = self.graphics[name]
-        return surf if surf.get_size() == self.icon_size else self.get_scaled_img(surf, name, *self.icon_size)
+        return surf if surf.get_size() == self.icon_size else self.get_scaled_image(surf, name, *self.icon_size)
 
     def update(self) -> None:
         if self.render:

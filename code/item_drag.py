@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from player import Player
+    from ui import UI
+    from inventory_ui import InventoryUI, InventoryDimensions
+    from sprite_manager import SpriteManager
     from input_manager import InputManager
-    from inventory import Inventory
 
 import pygame as pg
 
@@ -12,45 +13,45 @@ from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPOR
 class ItemDrag:
     def __init__(
         self, 
-        screen: pg.Surface, 
-        cam_offset: pg.Vector2, 
-        graphics: dict[str, pg.Surface], 
-        player: Player, 
-        input_manager: InputManager,
-        outline: pg.Rect, 
-        slot_len: int, 
-        num_cols: int, 
-        num_rows: int, 
-        rect_base: pg.Rect, 
-        mech_sprites: pg.sprite.Group,
-        get_grid_xy: callable,
-        get_sprites_in_radius: callable
+        ui: UI, 
+        inv_ui: InventoryUI, 
+        inv_dims: InventoryDimensions, 
+        sprite_manager: SpriteManager, 
+        input_manager: InputManager
     ):
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.graphics = graphics
-        self.player = player
-        self.inventory = player.inventory
-        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
-        self.outline = outline
-        self.slot_len = slot_len
-        self.num_cols, self.num_rows = num_cols, num_rows
-        self.rect_base = rect_base
-        self.mech_sprites = mech_sprites
-        self.get_grid_xy = get_grid_xy
-        self.get_sprites_in_radius = get_sprites_in_radius
+        self.screen = ui.screen
+        self.cam_offset = ui.cam_offset
+        self.graphics = ui.assets['graphics']
+        self.player = ui.player
+        self.inventory = ui.inventory
+        self.get_grid_xy = ui.get_grid_xy
+        self.inv_ui = inv_ui
+        self.outline_rect = None
+        self.outline_rect_expanded = inv_dims.outline_rect_expanded
+        self.outline_rect_closed = inv_dims.outline_rect_closed
+        self.item_rect_base = inv_dims.item_rect_base
+        self.slot_len = inv_dims.slot_len
+        self.num_cols = inv_dims.num_cols
+        self.num_rows = inv_dims.num_rows
+        self.get_sprites_in_radius = sprite_manager.get_sprites_in_radius
+        self.mech_sprites = sprite_manager.mech_sprites
+        self.keyboard = input_manager.keyboard
+        self.mouse = input_manager.mouse
 
         self.active = False
-        self.image, self.rect = None, None
+        self.image = None 
+        self.rect = None
         self.item_name = None
         self.amount = None
-        self.material_names, self.tile_names = set(MATERIALS.keys()), set(TILES.keys())
+        self.material_names = set(MATERIALS.keys()) 
+        self.tile_names = set(TILES.keys())
         self.machine_recipes = {item for machine in PRODUCTION.values() for item in machine['recipe']}
         self.machine_inputs = (self.material_names | self.tile_names | self.machine_recipes)
         self.old_pipe_idx = None # storing the original pipe index if it gets rotated while being dragged
         self.item_placement = None # not initialized yet
 
     def check_drag(self) -> None:
+        self.outline_rect = self.outline_rect_expanded if self.inv_ui.expand else self.outline_rect_closed
         l_click, r_click = self.mouse.buttons_pressed.values()
         if l_click or r_click:
             self.handle_click(l_click, r_click)
@@ -67,7 +68,7 @@ class ItemDrag:
             else:
                 self.end_drag()
         else:
-            if self.outline.collidepoint(self.mouse.screen_xy):
+            if self.outline_rect.collidepoint(self.mouse.screen_xy):
                 if item_name := self.get_clicked_item():
                     self.start_drag(item_name, 'left' if l_click else 'right')   
             else:
@@ -81,7 +82,7 @@ class ItemDrag:
         for item_name, item_data in self.inventory.contents.items():
             row, col = divmod(item_data['index'], self.num_cols)
             padding = pg.Vector2(col * self.slot_len, row * self.slot_len)
-            if (rect := self.rect_base.move(self.outline.topleft + padding)).collidepoint(self.mouse.screen_xy):
+            if (rect := self.item_rect_base.move(self.outline_rect.topleft + padding)).collidepoint(self.mouse.screen_xy):
                 return item_name
 
     def start_drag(self, item_name: str, click_type: str) -> None:

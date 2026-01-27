@@ -32,62 +32,22 @@ class UI:
         self.cam_offset = cam_offset
         self.assets, self.fonts, self.colors = assets, assets['fonts'], assets['colors']
         self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
-        self.sprite_manager = sprite_manager
         self.player, self.inventory = player, player.inventory
         self.saved_data = saved_data
 
-        self.mini_map = MiniMap(
-            self.screen, 
-            self.cam_offset, 
-            proc_gen, 
-            self.gen_outline,
-            self.sprite_manager.mining.get_tile_material, 
-            self.saved_data
-        )
-        
-        self.mouse_grid = MouseGrid(self.mouse, self.screen, self.cam_offset, self.get_grid_xy)
+        self.mini_map = MiniMap(self, proc_gen, sprite_manager)
+        self.mouse_grid = MouseGrid(self)
+        self.inventory_ui = InventoryUI(self, input_manager, sprite_manager)
 
-        self.inventory_ui = InventoryUI(
-            self.screen, 
-            self.cam_offset, 
-            self.assets, 
-            input_manager,
-            self.mini_map.outline_h + self.mini_map.padding, 
-            self.player,
-            self.sprite_manager, 
-            self.gen_outline, 
-            self.gen_bg, 
-            self.render_inventory_item_name, 
-            self.get_scaled_image, 
-            self.get_grid_xy,
-            self.render_item_amount
-        )
-
-        self.craft_window = CraftWindow(
-            self.mouse, 
-            self.screen, 
-            self.cam_offset, 
-            self.assets, 
-            self.inventory_ui, 
-            self.sprite_manager, 
-            self.player, 
-            self.get_craft_window_height, 
-            self.gen_outline, 
-            self.gen_bg, 
-            self.render_inventory_item_name, 
-            self.get_scaled_image
-        )
-
-        self.HUD = HUD(self.screen, self.assets, self.craft_window.outline.right, self.gen_outline, self.gen_bg)
-
+        self.craft_window = CraftWindow(self, sprite_manager)
+        self.HUD = HUD(self.screen, self.assets, self.craft_window.outline_rect.right, self.gen_outline, self.gen_bg)
         for key in ('expand inventory ui', 'toggle inventory ui', 'toggle craft window ui', 'toggle mini map ui', 'toggle HUD ui'):
             setattr(self, '_'.join(key.split(' ')), self.keyboard.key_bindings[key])
-
         self.active_item_names = []
     
     def get_craft_window_height(self) -> int:
-        inv_grid_max_height = self.inventory_ui.slot_len * (self.inventory.num_slots // self.inventory_ui.num_cols)
-        return inv_grid_max_height + self.mini_map.outline_h + self.mini_map.padding
+        inv_grid_height = self.inventory_ui.slot_len * (self.inventory.num_slots // self.inventory_ui.num_cols)
+        return inv_grid_height + self.mini_map.outline_h + self.mini_map.padding
 
     def gen_outline(
         self, 
@@ -115,7 +75,7 @@ class UI:
         img.set_alpha(alpha)
         self.screen.blit(img, rect)
 
-    def render_inventory_item_name(self, rect: pg.Rect, name: str) -> None:
+    def render_inv_item_name(self, rect: pg.Rect, name: str) -> None:
         if rect.collidepoint(pg.mouse.get_pos()):
             font = self.assets['fonts']['item label'].render(name, True, self.assets['colors']['text'])
             self.screen.blit(font, font.get_rect(topleft = rect.bottomleft))
@@ -192,11 +152,11 @@ class UI:
         
 
 class MouseGrid:
-    def __init__(self, mouse: Mouse, screen: pg.Surface, cam_offset: pg.Vector2, get_grid_xy: callable):
-        self.mouse = mouse
-        self.screen = screen
-        self.cam_offset = cam_offset
-        self.get_grid_xy = get_grid_xy
+    def __init__(self, ui: UI):
+        self.mouse = ui.mouse
+        self.screen = ui.screen
+        self.cam_offset = ui.cam_offset
+        self.get_grid_xy = ui.get_grid_xy
 
         self.tile_w = self.tile_h = 3
 
