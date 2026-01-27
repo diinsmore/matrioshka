@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import numpy as np
 from collections import defaultdict
+from math import ceil
 
 from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, PRODUCTION, PIPE_TRANSPORT_DIRS
 
@@ -112,8 +113,8 @@ class ItemPlacement:
     def get_tiles_covered(xy: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
         tiles = [] 
         x, y = xy
-        for tx in range(round(image.get_width() / TILE_SIZE)):
-            for ty in range(round(image.get_height() / TILE_SIZE)):
+        for tx in range(ceil(image.get_width() / TILE_SIZE)):
+            for ty in range(ceil(image.get_height() / TILE_SIZE)):
                 tiles.append((x + tx, y + ty))
         return tiles
 

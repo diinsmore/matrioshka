@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from drills import BurnerDrill, ElectricDrill
     from input_manager import InputManager
     from player import Player
+    from ui import UI
 
 import pygame as pg
 
@@ -29,23 +30,10 @@ class DrillUI(MachineUI):
         input_manager: InputManager, 
         player: Player, 
         assets: dict[str, dict[str, any]], 
-        gen_outline: callable, 
-        gen_bg: callable, 
+        ui: UI, 
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable
     ):
-        super().__init__(
-            machine, 
-            screen, 
-            cam_offset, 
-            input_manager, 
-            player, 
-            assets, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount
-        )
+        super().__init__(machine, screen, cam_offset, input_manager, player, assets, ui, rect_in_sprite_radius)
         self.bg_width, self.bg_height = 200, 150
         self.box_len = 40
         self.ore_names = list(self.machine.ore_data.keys())

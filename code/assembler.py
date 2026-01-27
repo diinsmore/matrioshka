@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import InputManager
     from player import Player
+    from ui import UI
 
 import pygame as pg
 
@@ -15,8 +16,7 @@ class Assembler(Machine):
     def __init__(
         self, 
         xy: tuple[int, int], 
-        image: pg.Surface, 
-        z: int, 
+        image: pg.Surface,  
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2, 
@@ -25,29 +25,13 @@ class Assembler(Machine):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable, 
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
+        ui: UI,
+        rect_in_sprite_radius: callable,  
         save_data: dict[str, any]
     ):
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            input_manager, 
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline,
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui,
+            rect_in_sprite_radius, save_data
         )
         self.inv = MachineInventory(input_slots={})
         self.item_category, self.item, self.recipe = None, None, None

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import InputManager
     from player import Player
+    from ui import UI
 
 import pygame as pg
 import numpy as np
@@ -13,14 +14,13 @@ from abc import ABC
 from alarm import Alarm
 from drill_ui import DrillUI
 from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
-from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES
+from settings import TILE_SIZE, TILE_ORE_RATIO, MAP_SIZE, RES, Z_LAYERS
 
 class Drill(Machine, ABC):
     def __init__(
         self, 
         xy: tuple[int, int], 
         image: pg.Surface, 
-        z: int, 
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2, 
@@ -28,35 +28,18 @@ class Drill(Machine, ABC):
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
-        obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable, 
+        obj_map: np.ndarray,  
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any], 
         names_to_ids: dict[str, int], 
         ids_to_names: dict[int, str]
     ):
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            input_manager,
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui,
+            rect_in_sprite_radius, save_data
         )
-        self.tile_map = tile_map
-        self.names_to_ids = names_to_ids
+        self.names_to_ids= names_to_ids
         self.ids_to_names = ids_to_names
 
         self.inv = MachineInventory(input_slots=None) # only burners have an input slot (for fuel)
@@ -75,7 +58,10 @@ class Drill(Machine, ABC):
         self.alarms = {'extract': Alarm(2000 * self.speed_factor * self.extract_time_factor * (self.ore_row + 1), self.extract, loop=True, track_pct=True)}
 
     def get_ore_data(self) -> dict[str, int]:
-        ore_data = {self.ids_to_names[i]: {'amount': amt * TILE_ORE_RATIO} for i, amt in zip(*np.unique(self.map_slice, return_counts=True)) if i not in self.ignore_ids}
+        ore_data = {
+            self.ids_to_names[i]: {'amount': amt * TILE_ORE_RATIO}
+            for i, amt in zip(*np.unique(self.map_slice, return_counts=True)) if i not in self.ignore_ids
+        }
         for k in ore_data:
             ore_data[k]['locations'] = np.argwhere(self.map_slice == self.names_to_ids[k])
         return ore_data
@@ -162,43 +148,24 @@ class BurnerDrill(Drill):
         self, 
         xy: tuple[int, int], 
         image: pg.Surface, 
-        z: int, 
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
-        cam_offset: pg.Vector2,
+        cam_offset: pg.Vector2, 
         input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
-        obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable,
+        obj_map: np.ndarray,  
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any], 
         names_to_ids: dict[str, int], 
         ids_to_names: dict[int, str]
-    ):  
+    ):
         self.speed_factor = 1
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset,
-            input_manager,
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg,
-            rect_in_sprite_radius, 
-            render_item_amount,
-            save_data, 
-            names_to_ids, 
-            ids_to_names
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui,
+            rect_in_sprite_radius, save_data, names_to_ids, ids_to_names
         )
         self.variant = 'burner'
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 3000}, 'coal': {'capacity': 99, 'burn speed': 6000}}
@@ -216,44 +183,25 @@ class ElectricDrill(Drill):
     def __init__(
         self, 
         xy: tuple[int, int], 
-        image: pg.Surface,
-        z: int, 
+        image: pg.Surface,  
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
-        cam_offset: pg.Vector2,
+        cam_offset: pg.Vector2, 
         input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
-        obj_map: np.ndarray,
-        gen_outline: callable, 
-        gen_bg: callable,
+        obj_map: np.ndarray,  
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any], 
         names_to_ids: dict[str, int], 
         ids_to_names: dict[int, str]
-    ):  
+    ):
         self.speed_factor = 1.5
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            input_manager,
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg,
-            rect_in_sprite_radius, 
-            render_item_amount,
-            save_data, 
-            names_to_ids, 
-            ids_to_names
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui,
+            rect_in_sprite_radius, save_data, names_to_ids, ids_to_names
         )
         self.variant = 'electric'
         self.fuel_sources = {'electric poles'}

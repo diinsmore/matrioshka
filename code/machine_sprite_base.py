@@ -51,7 +51,6 @@ class Machine(Sprite, ABC):
         save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, Z_LAYERS['main'], sprite_groups)
-        print(ui)
         self.screen = screen
         self.cam_offset = cam_offset
         self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
