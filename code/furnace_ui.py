@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import InputManager
     from player import Player
+    from ui import UI
 
 import pygame as pg
 from machine_ui import MachineUI
@@ -16,23 +17,11 @@ class FurnaceUI(MachineUI):
         input_manager: InputManager, 
         player: Player, 
         assets: dict[str, dict[str, any]],
-        gen_outline: callable,
-        gen_bg: callable, 
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable
     ):
-        super().__init__(
-            machine, 
-            screen, 
-            cam_offset, 
-            input_manager, 
-            player, 
-            assets, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount
-        )
+        print(rect_in_sprite_radius)
+        super().__init__(machine, screen, cam_offset, input_manager, player, assets, ui, rect_in_sprite_radius)
         self.y_offset = self.padding if self.machine.variant == 'burner' else (self.box_len // 2)
         self.right_arrow_surf = self.icons['right arrow'].convert()
         if self.machine.variant == 'burner':

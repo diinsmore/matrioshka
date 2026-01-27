@@ -47,31 +47,23 @@ class Machine(Sprite, ABC):
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
         ui: UI=None,
-        gen_outline: callable=None, 
-        gen_bg: callable=None,
         rect_in_sprite_radius: callable=None, 
-        render_item_amount: callable=None, 
         save_data: dict[str, any]=None
     ):
         super().__init__(xy, image, Z_LAYERS['main'], sprite_groups)
+        print(ui)
         self.screen = screen
         self.cam_offset = cam_offset
-        self.keyboard = input_manager.keyboard
-        self.mouse = input_manager.mouse
+        self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.player = player
-        self.assets = assets
-        self.graphics = assets['graphics']
+        self.assets, self.graphics = assets, assets['graphics']
         self.tile_map = tile_map
         self.obj_map = obj_map
         if ui:
             self.gen_outline, self.gen_bg, self.render_item_amount = ui.gen_outline, ui.gen_bg, ui.render_item_amount
             self.rect_in_sprite_radius = rect_in_sprite_radius
             _vars = vars()
-            self.ui_params = {
-                k: _vars[k] for k in (
-                    'screen', 'cam_offset', 'input_manager', 'player', 'assets', 'gen_outline', 'gen_bg', 'rect_in_sprite_radius', 'render_item_amount'
-                )
-            }
+            self.ui_params = {k: _vars[k] for k in ('screen', 'cam_offset', 'input_manager', 'player', 'assets', 'ui', 'rect_in_sprite_radius')}
             self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
             self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
             self.pipe_connections = {}

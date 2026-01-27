@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from input_manager import InputManager
     from player import Player
     import numpy as np
+    from ui import UI
     
 import pygame as pg
 from dataclasses import dataclass, field
@@ -12,13 +13,13 @@ from abc import ABC
 from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
 from furnace_ui import FurnaceUI
 from alarm import Alarm
+from settings import Z_LAYERS, PRODUCTION
 
 class Furnace(Machine, ABC):
     def __init__(
         self, 
         xy: pg.Vector2, 
         image: pg.Surface, 
-        z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
@@ -27,29 +28,13 @@ class Furnace(Machine, ABC):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
-        gen_outline: callable,
-        gen_bg: callable,
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any]
-    ):
+    ):  
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            input_manager, 
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui, 
+            rect_in_sprite_radius, save_data
         )
         self.can_smelt = {
             'copper': {'speed': 3000, 'output': 'copper plate'}, 
@@ -121,8 +106,7 @@ class BurnerFurnace(Furnace):
     def __init__(
         self, 
         xy: pg.Vector2, 
-        image: pg.Surface, 
-        z: dict[str, int], 
+        image: pg.Surface,  
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
@@ -131,33 +115,18 @@ class BurnerFurnace(Furnace):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable,
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any]
     ):  
         self.fuel_sources = {'wood': {'capacity': 99, 'burn speed': 2000}, 'coal': {'capacity': 99, 'burn speed': 4000}}
+        print(rect_in_sprite_radius)
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            input_manager, 
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui, 
+            rect_in_sprite_radius, save_data
         )
         self.variant = 'burner'
-        self.recipe = MACHINES['burner furnace']['recipe']
+        self.recipe = PRODUCTION['burner furnace']['recipe']
         self.speed_factor = 1
         self.init_ui(FurnaceUI)
 
@@ -167,7 +136,6 @@ class SteelFurnace(Furnace):
         self, 
         xy: pg.Vector2, 
         image: pg.Surface, 
-        z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
@@ -176,29 +144,13 @@ class SteelFurnace(Furnace):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable,
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any]
     ):  
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset,
-            input_manager, 
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui, 
+            rect_in_sprite_radius, save_data
         )
         self.variant = 'steel'
         self.recipe = MACHINES['steel furnace']['recipe']
@@ -218,38 +170,21 @@ class ElectricFurnace(Furnace):
         self, 
         xy: pg.Vector2, 
         image: pg.Surface, 
-        z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
-        input_manager: InputManager, 
+        input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
-        gen_outline: callable, 
-        gen_bg: callable,
+        ui: UI,
         rect_in_sprite_radius: callable, 
-        render_item_amount: callable, 
         save_data: dict[str, any]
     ):  
         super().__init__(
-            xy, 
-            image, 
-            z, 
-            sprite_groups, 
-            screen, 
-            cam_offset, 
-            input_manager, 
-            player, 
-            assets, 
-            tile_map, 
-            obj_map, 
-            gen_outline, 
-            gen_bg, 
-            rect_in_sprite_radius, 
-            render_item_amount, 
-            save_data
+            xy, image, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map, ui, 
+            rect_in_sprite_radius, save_data
         )
         self.variant = 'electric'
         self.recipe = MACHINES['electric furnace']['recipe']

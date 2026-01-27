@@ -188,20 +188,18 @@ class SpriteManager:
             'assets': self.assets, 
             'tile_map': self.tile_map, 
             'obj_map': self.item_placement.obj_map,
-            'ui': self.ui,
-            'rect_in_sprite_radius': self.rect_in_sprite_radius, 
-            'save_data': self.save_data['sprites'][name][save_idx] if self.save_data else None
         }
-        if 'drill' in name:
-            params.update([('names_to_ids', self.names_to_ids), ('ids_to_names', self.ids_to_names)])
-        elif 'pipe' in name or name in LOGISTICS:
-            params = dict(islice(params.items(), 10))
-            if 'pipe' in name:
-                params.update([('names_to_ids', self.names_to_ids), ('variant_idx', int(name[-1]))])
-                params['sprite_groups'][-1] = self.logistics_sprites
-            elif name == 'pump':
-                params.update([('names_to_ids', self.names_to_ids)])
-                params['sprite_groups'][-1] = self.logistics_sprites
+        if name in PRODUCTION:
+            params.update([
+                ('ui', self.ui),
+                ('rect_in_sprite_radius', self.rect_in_sprite_radius), 
+                ('save_data', self.save_data['sprites'][name][save_idx] if self.save_data else None)
+            ])
+            if 'drill' in name:
+                params.update([('names_to_ids', self.names_to_ids), ('ids_to_names', self.ids_to_names)])
+        elif 'pipe' in name or name == 'pump':
+            params.update([('names_to_ids', self.names_to_ids), ('variant_idx', int(name[-1]))] if 'pipe' in name else [('names_to_ids', self.names_to_ids)])
+            params['sprite_groups'].append(self.logistics_sprites)
         return params
 
     def update(self, player: pg.sprite.Sprite, dt: float) -> None:

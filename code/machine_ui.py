@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from input_manager import InputManager
     from player import Player
+    from ui import UI
 
 import pygame as pg
 
@@ -15,10 +16,8 @@ class MachineUI:
         input_manager: InputManager,
         player: Player, 
         assets: dict[str, dict[str, any]],
-        gen_outline: callable, 
-        gen_bg: callable, 
-        rect_in_sprite_radius: callable, 
-        render_item_amount: callable
+        ui: UI,
+        rect_in_sprite_radius: callable
     ):
         self.machine = machine
         self.screen = screen
@@ -26,10 +25,8 @@ class MachineUI:
         self.keyboard, self.mouse = input_manager.keyboard, input_manager.mouse
         self.player = player
         self.graphics, self.fonts, self.colors = assets['graphics'], assets['fonts'], assets['colors']
-        self.gen_outline = gen_outline
-        self.gen_bg = gen_bg
+        self.gen_outline, self.gen_bg, self.render_item_amount = ui.gen_outline, ui.gen_bg, ui.render_item_amount
         self.rect_in_sprite_radius = rect_in_sprite_radius
-        self.render_item_amount = render_item_amount
        
         self.render = False
         self.mouse_hover = False
