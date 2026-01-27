@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 import pygame as pg
 from math import ceil
 
-from settings import TILE_SIZE, TOOLS, MATERIALS, MACHINES, STORAGE, DECOR, RESEARCH
+from settings import TILE_SIZE, TOOLS, MATERIALS, ELECTRICITY, PRODUCTION, LOGISTICS, RESEARCH, STORAGE, DECOR
 
 class CraftWindow:
     def __init__(
@@ -108,10 +108,12 @@ class CategoryGrid:
         self.categories = {
             'tools': {**TOOLS},
             'materials': {**MATERIALS},
-            'machines': {**MACHINES},
+            'electricity': {**ELECTRICITY},
+            'production': {**PRODUCTION},
+            'logistics': {**LOGISTICS},
             'research': {**RESEARCH},
-            'decor': {**DECOR},
-            'storage': {**STORAGE}
+            'storage': {**STORAGE},
+            'decor': {**DECOR}
         }
         self.selected_category = None
         self.open_subcategory = False

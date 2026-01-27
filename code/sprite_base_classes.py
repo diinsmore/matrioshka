@@ -4,13 +4,7 @@ from abc import ABC
 from settings import TILE_SIZE
 
 class Sprite(pg.sprite.Sprite, ABC):
-    def __init__(
-        self, 
-        xy: tuple[int, int], 
-        image: pg.Surface, 
-        z: int, 
-        sprite_groups: list[pg.sprite.Group]
-    ):
+    def __init__(self, xy: tuple[int, int], image: pg.Surface, z: int, sprite_groups: list[pg.sprite.Group]):
         super().__init__(*sprite_groups)
         self.xy = xy
         self.image = image

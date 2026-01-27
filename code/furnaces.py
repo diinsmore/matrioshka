@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from abc import ABC
 
 from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
-from settings import MACHINES
 from furnace_ui import FurnaceUI
 from alarm import Alarm
 

@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from input_manager import InputManager
     import numpy as np
     from machine_ui import MachineUI
+    from ui import UI
 
 import pygame as pg
 from dataclasses import dataclass, field
@@ -19,7 +20,6 @@ class MachineInventorySlot:
     valid_inputs: set=None
     amount: int=0
     max_capacity: int=99
-
 
 @dataclass
 class MachineInventory:
@@ -38,7 +38,6 @@ class Machine(Sprite, ABC):
         self, 
         xy: tuple[int, int], 
         image: pg.Surface, 
-        z: int, 
         sprite_groups: list[pg.sprite.Group], 
         screen: pg.Surface, 
         cam_offset: pg.Vector2,
@@ -47,13 +46,14 @@ class Machine(Sprite, ABC):
         assets: dict[str, dict[str, any]], 
         tile_map: np.ndarray, 
         obj_map: np.ndarray, 
+        ui: UI=None,
         gen_outline: callable=None, 
         gen_bg: callable=None,
         rect_in_sprite_radius: callable=None, 
         render_item_amount: callable=None, 
         save_data: dict[str, any]=None
     ):
-        super().__init__(xy, image, z, sprite_groups)
+        super().__init__(xy, image, Z_LAYERS['main'], sprite_groups)
         self.screen = screen
         self.cam_offset = cam_offset
         self.keyboard = input_manager.keyboard
@@ -63,34 +63,20 @@ class Machine(Sprite, ABC):
         self.graphics = assets['graphics']
         self.tile_map = tile_map
         self.obj_map = obj_map
-        
-        self.active = False
-        self.tile_xy = (self.xy[0] // TILE_SIZE, self.xy[1] // TILE_SIZE)
-        if 'transport_sprites' in sprite_groups:
-            self.image = self.image.copy() # a copy for rotating the inserters
-            self.obj_connections = {}
-        else:
-            self.gen_outline = gen_outline
-            self.gen_bg = gen_bg
+        if ui:
+            self.gen_outline, self.gen_bg, self.render_item_amount = ui.gen_outline, ui.gen_bg, ui.render_item_amount
             self.rect_in_sprite_radius = rect_in_sprite_radius
-            self.render_item_amount = render_item_amount
             _vars = vars()
             self.ui_params = {
                 k: _vars[k] for k in (
-                    'screen', 
-                    'cam_offset', 
-                    'input_manager', 
-                    'player', 
-                    'assets', 
-                    'gen_outline', 
-                    'gen_bg', 
-                    'rect_in_sprite_radius', 
-                    'render_item_amount'
+                    'screen', 'cam_offset', 'input_manager', 'player', 'assets', 'gen_outline', 'gen_bg', 'rect_in_sprite_radius', 'render_item_amount'
                 )
             }
             self.fuel_input = save_data['fuel input'] if save_data else {'item': None, 'amount': 0}
             self.output = save_data['output'] if save_data else {'item': None, 'amount': 0}
             self.pipe_connections = {}
+            
+        self.active = False
 
     def init_ui(self, ui_cls: MachineUI) -> None:
         self.ui = ui_cls(machine=self, **self.ui_params) # not initializing self.ui until the machine variant (burner/electric) is determined

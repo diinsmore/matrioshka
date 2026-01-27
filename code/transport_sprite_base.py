@@ -41,7 +41,7 @@ class TransportSprite(Machine, ABC):
         )
         self.dir_ui = self.graphics['transport dirs']
         self.item_holding = None
-        self.xy_to_cardinal = {
+        self.xy_to_dir = {
             0: {(1, 0): 'E', (-1, 0): 'W'},
             1: {(0, -1): 'N', (0, 1): 'S'},
             2: {(1, 0): 'SE', (0, -1): 'WN'},
@@ -54,6 +54,9 @@ class TransportSprite(Machine, ABC):
             9: {(1, 0): 'E', (-1, 0): 'W', (0, -1): 'N'},
             10: {(1, 0): 'E', (-1, 0): 'W', (0, 1): 'S'}
         }
+        self.obj_connections = {}
+        if hasattr(self, 'rotated_over'): # is an inserter
+             self.image = self.image.copy() # for the rotations
 
     def update_alarms(self) -> None:
         for alarm in self.alarms.values():

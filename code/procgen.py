@@ -4,7 +4,8 @@ import noise
 from random import randint, choice
 from dataclasses import dataclass
 
-from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, MACHINES, STORAGE, PIPE_TRANSPORT_DIRS
+from settings import TILES, RAMP_TILES, TILE_SIZE, MAP_SIZE, CELL_SIZE, RES, BIOMES, BIOME_WIDTH, Z_LAYERS, PRODUCTION, \
+ELECTRICITY, PIPE_TRANSPORT_DIRS, LOGISTICS, STORAGE
 from helper_functions import load_image
 
 # TODO: refine the ore distribution to generate clusters of a particular gemstone rather than randomized for each tile 
@@ -21,7 +22,10 @@ class ProcGen:
             self.current_biome = 'forest'
             self.biome_order, self.idxs_to_biomes = self.order_biomes()
             self.terrain = TerrainGen(self)
-            self.tile_map, self.height_map, self.tree_map = self.terrain.tile_map, self.terrain.height_map, self.terrain.tree_gen.map
+            self.tile_map = self.terrain.tile_map
+            self.height_map = self.terrain.height_map
+            self.tree_map = self.terrain.tree_gen.map
+            self.cave_maps = self.terrain.cave_gen.maps
             self.player_spawn_point = self.get_player_spawn_point()
         
     def load_saved_data(self) -> None:
@@ -30,9 +34,8 @@ class ProcGen:
         self.tree_map = self.saved_data['tree map']
         self.cave_maps = self.saved_data['cave maps']
         self.biome_order = self.saved_data['biome order']
-        self.current_biome = self.saved_data['current biome']
-        
         self.idxs_to_biomes = {i: biome for biome, i in self.biome_order.items()}
+        self.current_biome = self.saved_data['current biome']
 
     @staticmethod
     def get_tile_ids() -> tuple[dict[str, int], dict[int, str], set]:
@@ -41,13 +44,8 @@ class ProcGen:
         ramp_ids = set()
         existing_ids = len(ids_to_names)
         for i, name in enumerate([
-            *TILES.keys(), 
-            *RAMP_TILES, 
-            *[m for m in MACHINES if m != 'pipe'],
-            *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
-            *STORAGE.keys(), 
-            'tree base', 
-            'water', 
+            *TILES.keys(), *RAMP_TILES, *[k for k in PRODUCTION if k != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
+            *ELECTRICITY, *LOGISTICS, *STORAGE.keys(), 'tree base', 'water', 
         ]):
             id_num = existing_ids + i
             names_to_ids[name] = id_num
@@ -89,7 +87,7 @@ class ProcGen:
             'tile map': self.tile_map.tolist(),
             'height map': self.height_map.tolist(),
             'tree map': [list(xy) for xy in self.tree_map],
-            'cave maps': {biome: arr if isinstance(arr, list) else arr.tolist() for biome, arr in self.terrain.cave_gen.maps.items()},
+            'cave maps': {biome: arr if isinstance(arr, list) else arr.tolist() for biome, arr in self.cave_maps.items()},
             'biome order': self.biome_order,
         }
 

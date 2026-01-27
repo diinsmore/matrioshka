@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 import pygame as pg
 
-from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPORT_DIRS, MACHINES
+from settings import MATERIALS, TILES, TILE_SIZE, PLACEABLE_ITEMS, PIPE_TRANSPORT_DIRS, PRODUCTION
 
 class ItemDrag:
     def __init__(
@@ -45,7 +45,7 @@ class ItemDrag:
         self.item_name = None
         self.amount = None
         self.material_names, self.tile_names = set(MATERIALS.keys()), set(TILES.keys())
-        self.machine_recipes = {item for machine in MACHINES.values() for item in machine['recipe']}
+        self.machine_recipes = {item for machine in PRODUCTION.values() for item in machine['recipe']}
         self.machine_inputs = (self.material_names | self.tile_names | self.machine_recipes)
         self.old_pipe_idx = None # storing the original pipe index if it gets rotated while being dragged
         self.item_placement = None # not initialized yet

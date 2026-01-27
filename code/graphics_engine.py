@@ -89,12 +89,12 @@ class GraphicsEngine:
         if self.animated_sprites in groups:
             self.animate_sprite(sprite, dt)
         # TODO: this may need to be updated if more sprites can also hold objects
-        if self.human_sprites in groups:
+        if self.colonist_sprites in groups:
             self.render_item_held(dt)
 
     def render_item_held(self, dt: float) -> None:
         # TODO: this is unfinished
-        for sprite in self.human_sprites:
+        for sprite in self.colonist_sprites:
             if sprite.item_holding:
                 item_category = self.get_item_category(sprite)
                 if item_category:

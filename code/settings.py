@@ -4,7 +4,7 @@ FPS = 60
 TILE_SIZE = 16
 CHUNK_SIZE = 24
 CELL_SIZE = 10
-MAP_SIZE = (3000, 400)
+MAP_SIZE = (3000, 200)
 WORLD_EDGE_RIGHT = (MAP_SIZE[0] * TILE_SIZE) - 19 # minus 19 to prevent going partially off-screen
 WORLD_EDGE_BOTTOM = MAP_SIZE[1] * TILE_SIZE
 
@@ -119,22 +119,21 @@ TOOLS = {
     'dynamite': {}
 }
 
-MACHINES = {
+PRODUCTION = { # TODO: add crafting speeds
     'burner furnace': {'recipe': {'stone': 7, 'wood torch': 1}, 'rgb': (47, 15, 15)}, 
     'electric furnace': {'recipe': {'iron plate': 7, 'circuit': 4}, 'rgb': (49, 63, 71)},
     'steel furnace': {'recipe': {'steel': 7, 'circuit': 4}, 'rgb': (84, 84, 84)},
     'burner drill': {'recipe': {'iron plate': 7, 'iron gear': 5, 'burner furnace': 1}, 'rgb': (137, 126, 126)},
     'electric drill': {'recipe': {'iron plate': 7, 'circuit': 5, 'electric furnace': 1}, 'rgb': (111, 122, 112)},
-    'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'wood torch': 1}, 'rgb': (47, 29, 29)}, 
-    'electric inserter': {'recipe': {'iron plate': 5, 'circuit': 3}, 'rgb': (118, 107, 107)}, 
     'assembler': {'recipe': {'iron plate': 10, 'iron gear': 5, 'circuit': 4}, 'rgb': (80, 74, 73)},
     'boiler': {'recipe': {'iron plate': 8, 'pipe': 4, 'burner furnace': 1}, 'rgb': (38, 33, 31)}, 
-    'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27)}
+    'steam engine': {'recipe': {'iron plate': 12, 'pipe': 7}, 'rgb': (59, 35, 27)},
 }
 
 LOGISTICS = {
-    'inlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
-    'outlet pump': {'recipe': {'iron plate': 6, 'iron gear': 3, 'pipe': 4}, 'rgb': (87, 95, 104),},
+    'burner inserter': {'recipe': {'iron plate': 5, 'iron gear': 3, 'wood torch': 1}, 'rgb': (47, 29, 29)}, 
+    'electric inserter': {'recipe': {'iron plate': 5, 'circuit': 3}, 'rgb': (118, 107, 107)},
+    'pump': {'recipe': {'iron gear': 2, 'pipe 0': 3}, 'rgb': (87, 95, 104),},
     'pipe': {'recipe': {'iron plate': 3}, 'rgb': (72, 92, 93),}, 
 }
 
@@ -151,6 +150,7 @@ PIPE_TRANSPORT_DIRS = {
     9: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, -1)]},
     10: {'horizontal': [(1, 0), (-1, 0)], 'vertical': [(0, 1)]}
 }
+
 INSERTER_TRANSPORT_DIRS = list(PIPE_TRANSPORT_DIRS.values())[:6] + [[(-1, 0), (1, 0)]]
 
 ELECTRICITY = {
@@ -201,8 +201,8 @@ DECOR = {
 }
 
 PLACEABLE_ITEMS = [
-    *TILES, *MACHINES, *[item for item in LOGISTICS if item != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
-    *[f'{material} chest' for material in STORAGE['chest']['materials']], 'glass', 'lab', 'wood torch'
+    *TILES, *PRODUCTION, *[k for k in LOGISTICS if k != 'pipe'], *[f'pipe {i}' for i in range(len(PIPE_TRANSPORT_DIRS))], 
+    *ELECTRICITY, *[f'{k} chest' for k in STORAGE['chest']['materials']], 'glass', 'lab', 'wood torch'
 ]
 
 OBJ_ITEMS = [item for item in PLACEABLE_ITEMS if item not in {*TILES, 'glass'}] # has a class to instantiate after placement

@@ -14,7 +14,6 @@ class SpriteInventory:
     def __init__(self, parent_sprite: pg.sprite.Sprite, save_data: dict[str, any]=None, default_contents: dict[str, dict[str, int]]=None):
         self.parent_sprite = parent_sprite
         if save_data:
-            print(save_data)
             self.contents = save_data['contents']
             self.index = save_data['index']
         else:
@@ -64,20 +63,17 @@ class SpriteInventory:
 
 class PlayerInventory(SpriteInventory):
     def __init__(self, parent_sprite: Player, save_data: dict[str, any]):
-        super().__init__(
-            parent_sprite, 
-            save_data, 
-            default_contents=None if save_data else {
-                'stone': {'amount': 100}, 
-                'wood': {'amount': 100}, 
-                'copper': {'amount': 10}, 
-                'stone axe': {'amount': 1}, 
-                'stone pickaxe': {'amount': 1}, 
-                'pipe 0': {'amount': 100}, 
-                'burner inserter': {'amount': 10}, 
-                'burner furnace': {'amount': 10}, 
-                'assembler': {'amount': 10}, 
-                'wood torch': {'amount': 99}
+        super().__init__(parent_sprite, save_data, default_contents=None if save_data else {
+            'wood': {'amount': 100}, 
+            'copper': {'amount': 100}, 
+            'stone axe': {'amount': 1}, 
+            'stone pickaxe': {'amount': 1}, 
+            'pipe 0': {'amount': 100}, 
+            'burner inserter': {'amount': 10}, 
+            'burner furnace': {'amount': 10}, 
+            'assembler': {'amount': 10}, 
+            'wood torch': {'amount': 99},
+            'iron gear': {'amount': 100}
         })
          
     def get_idx_selection(self, keyboard: Keyboard) -> None:

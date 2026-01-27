@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 import pygame as pg
 import numpy as np
 
-from settings import MAP_SIZE, TILE_SIZE, PIPE_TRANSPORT_DIRS
+from settings import MAP_SIZE, TILE_SIZE, PIPE_TRANSPORT_DIRS, Z_LAYERS
 from transport_sprite_base import TransportSprite
 from alarm import Alarm
 
@@ -17,7 +17,6 @@ class Pipe(TransportSprite):
         self, 
         xy: tuple[int, int], 
         image: dict[str, dict[str, pg.Surface]],
-        z: dict[str, int], 
         sprite_groups: list[pg.sprite.Group],
         screen: pg.Surface,
         cam_offset: pg.Vector2,
@@ -29,7 +28,7 @@ class Pipe(TransportSprite):
         names_to_ids: dict[str, int],
         variant_idx: int
     ):
-        super().__init__(xy, image, z, sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map)
+        super().__init__(xy, image, Z_LAYERS['main'], sprite_groups, screen, cam_offset, input_manager, player, assets, tile_map, obj_map)
         self.names_to_ids = names_to_ids
         self.variant_idx = variant_idx
         

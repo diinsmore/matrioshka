@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 import pygame as pg
 
 from machine_sprite_base import Machine, MachineInventory, MachineInventorySlot
-from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
+from settings import PRODUCTION, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from assembler_ui import AssemblerUI
 from alarm import Alarm
 
@@ -52,7 +52,7 @@ class Assembler(Machine):
         self.inv = MachineInventory(input_slots={})
         self.item_category, self.item, self.recipe = None, None, None
         self.item_category_data = {
-            'machines': MACHINES, 
+            'production': PRODUCTION, 
             'logistics': LOGISTICS, 
             'electricity': ELECTRICITY, 
             'materials': MATERIALS, 

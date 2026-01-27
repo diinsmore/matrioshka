@@ -1,7 +1,7 @@
 import pygame as pg
 from os.path import join
 
-from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, MACHINES, LOGISTICS, MATERIALS, PIPE_TRANSPORT_DIRS, TILE_SIZE
+from settings import BIOMES, TREE_BIOMES, TILES, RAMP_TILES, TOOLS, PRODUCTION, LOGISTICS, ELECTRICITY, MATERIALS, PIPE_TRANSPORT_DIRS, TILE_SIZE
 from helper_functions import load_image, load_folder, load_subfolders, load_frames
 
 class AssetManager:
@@ -57,29 +57,27 @@ class AssetManager:
             for tool_type in self.graphics[tool]:
                 self.graphics[tool_type] = self.graphics[tool][tool_type]
 
-    def load_machine_graphics(self) -> None:
-        self.graphics['machines'] = {}
-        for name in MACHINES:
+    def load_production_graphics(self) -> None:
+        for name in PRODUCTION:
             if name in {'assembler', 'boiler', 'steam engine'}: # not stored in a folder of related graphics:
-                self.graphics[name] = load_image(join('..', 'graphics', 'machines', f'{name}.png'))
+                self.graphics[name] = load_image(join('..', 'graphics', 'production', f'{name}.png'))
+            else:
+                self.graphics[name] = load_image(join('..', 'graphics', 'production', f'{name.split()[-1]}s', f'{name}.png'))
+    
+    def load_logistics_graphics(self) -> None:
+        for name in LOGISTICS:
+            if name == 'pump':
+                self.graphics['pump'] = load_image(join('..', 'graphics', 'logistics', 'pump.png'))
             else:
                 category = name.split()[-1] + 's'
-                if category not in self.graphics['machines'].keys():
-                    self.graphics['machines'][category] = load_folder(join('..', 'graphics', 'machines', category))
-                self.graphics[name] = self.graphics['machines'][category][name]
-            
-    def load_logistics_graphics(self) -> None:
-        self.graphics['logistics'] = {}
-        for name in LOGISTICS:
-            category = name.split()[-1] + 's'
-            if category not in self.graphics['logistics'].keys():
-                self.graphics['logistics'][category] = load_folder(join('..', 'graphics', 'logistics', category))
-            if category != 'pipes':
-                self.graphics[name] = self.graphics['logistics'][category][name]
-            else:
-                for i in range(len(PIPE_TRANSPORT_DIRS)):
-                    self.graphics[f'pipe {i}'] = self.graphics['logistics']['pipes'][f'pipe {i}']
-                    self.graphics[f'pipe {i}'].set_colorkey(self.graphics[f'pipe {i}'].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
+                if category != 'pipes':
+                    folder = load_folder(join('..', 'graphics', 'logistics', category))
+                    for name in folder:
+                        self.graphics[name] = load_image(join('..', 'graphics', 'logistics', f'{category}', f'{name}.png'))
+                else:
+                    for i in range(len(PIPE_TRANSPORT_DIRS)):
+                        self.graphics[f'pipe {i}'] = load_image(join('..', 'graphics', 'logistics', 'pipes', f'pipe {i}.png'))
+                        self.graphics[f'pipe {i}'].set_colorkey(self.graphics[f'pipe {i}'].get_at((0, 0))) # not sure why the pipes are the only graphics convert_alpha() isn't working on...
 
     def load_material_graphics(self) -> None:
         for material in MATERIALS.keys():
@@ -92,6 +90,6 @@ class AssetManager:
         self.load_biome_graphics()
         self.load_tile_graphics()
         self.load_tool_graphics()
-        self.load_machine_graphics()
+        self.load_production_graphics()
         self.load_logistics_graphics()
         self.load_material_graphics()

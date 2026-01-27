@@ -7,7 +7,6 @@ if TYPE_CHECKING:
 import pygame as pg
 from math import ceil
 
-from settings import MACHINES, LOGISTICS, ELECTRICITY, MATERIALS, STORAGE, RESEARCH 
 from machine_ui import MachineUI
 from machine_sprite_base import MachineInventorySlot
 

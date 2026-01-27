@@ -54,9 +54,7 @@ class Main:
             assets,
             screen,
             self.sprite_manager,
-            [getattr(self.sprite_manager, group) for group in (
-                'all_sprites', 'player_sprite', 'active_sprites', 'human_sprites', 'animated_sprites'
-            )],
+            [getattr(self.sprite_manager, group) for group in ('all_sprites', 'player_sprite', 'active_sprites', 'colonist_sprites', 'animated_sprites')],
             self.proc_gen,
             self.input_manager.keyboard,
             player_data if save_data else None
@@ -133,7 +131,7 @@ class Main:
         while self.running:
             for event in pg.event.get():
                 if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
-                    self.make_save('save.json')
+                   # self.make_save('save.json')
                     pg.quit()
                     sys.exit()
             self.update(self.clock.tick(FPS) / 1000)

@@ -11,7 +11,7 @@ import pygame as pg
 import numpy as np
 from collections import defaultdict
 
-from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, MACHINES, PIPE_TRANSPORT_DIRS
+from settings import MAP_SIZE, TILE_SIZE, TILES, RAMP_TILES, TILE_REACH_RADIUS, Z_LAYERS, OBJ_ITEMS, PRODUCTION, PIPE_TRANSPORT_DIRS
 
 class ItemPlacement:
     def __init__(
@@ -40,7 +40,7 @@ class ItemPlacement:
         self.save_data = save_data
        
         self.obj_map = np.full(MAP_SIZE, None, dtype=object) # stores every tile an object overlaps with (tile_map only stores the topleft since it controls rendering)
-        self.machine_ids = {self.names_to_ids[m] for m in MACHINES if 'pipe' not in m} | {self.names_to_ids['item extended']}
+        self.machine_ids = {self.names_to_ids[k] for k in PRODUCTION} | {self.names_to_ids['item extended']}
         self.pipe_ids = {self.names_to_ids[f'pipe {i}'] for i in range(len(PIPE_TRANSPORT_DIRS))}
         self.tile_ids = {self.names_to_ids[name] for name in TILES}
         self.ramp_ids = {self.names_to_ids[name] for name in RAMP_TILES}
@@ -55,10 +55,7 @@ class ItemPlacement:
         else:
             tiles_covered = self.get_tiles_covered(xy, surf)
             if self.valid_placement(tiles_covered, sprite):
-                print('true')
                 self.place_multi_tile_item(tiles_covered, surf, sprite)
-            else:
-                print('false')
 
     def valid_placement(self, tiles_covered: tuple[int, int] | list[tuple[int, int]], sprite: pg.sprite.Sprite) -> bool:
         if isinstance(tiles_covered, tuple):
@@ -128,6 +125,6 @@ class ItemPlacement:
 
     def init_obj(self, name: str, tiles_covered: list[tuple[int, int]]) -> None:
         obj = self.items_init_when_placed[name if 'pipe' not in name else name.split(' ')[0]]
-        obj_instance = obj(**self.sprite_manager.get_machine_init_params(name, tiles_covered)) # don't add the pipe index here, they all use the same Pipe class
+        obj_instance = obj(**self.sprite_manager.get_cls_init_params(name, tiles_covered)) # don't add the pipe index here, they all use the same Pipe class
         for xy in tiles_covered:
             self.obj_map[xy] = obj_instance
