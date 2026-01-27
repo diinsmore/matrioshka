@@ -20,7 +20,6 @@ class FurnaceUI(MachineUI):
         ui: UI,
         rect_in_sprite_radius: callable, 
     ):
-        print(rect_in_sprite_radius)
         super().__init__(machine, screen, cam_offset, input_manager, player, assets, ui, rect_in_sprite_radius)
         self.y_offset = self.padding if self.machine.variant == 'burner' else (self.box_len // 2)
         self.right_arrow_surf = self.icons['right arrow'].convert()

@@ -112,8 +112,8 @@ class ItemPlacement:
     def get_tiles_covered(xy: tuple[int, int], image: pg.Surface) -> list[tuple[int, int]]:
         tiles = [] 
         x, y = xy
-        for tx in range(int(image.get_width() / TILE_SIZE)):
-            for ty in range(int(image.get_height() / TILE_SIZE)):
+        for tx in range(round(image.get_width() / TILE_SIZE)):
+            for ty in range(round(image.get_height() / TILE_SIZE)):
                 tiles.append((x + tx, y + ty))
         return tiles
 

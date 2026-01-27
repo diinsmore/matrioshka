@@ -73,7 +73,7 @@ class PlayerInventory(SpriteInventory):
             'burner furnace': {'amount': 10}, 
             'assembler': {'amount': 10}, 
             'wood torch': {'amount': 99},
-            'iron gear': {'amount': 100}
+            'pump': {'amount': 10}
         })
          
     def get_idx_selection(self, keyboard: Keyboard) -> None:
